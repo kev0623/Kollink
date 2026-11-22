@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(40);
+select plan(43);
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-0000000000b1', 'b1@test.local'),
@@ -145,6 +145,12 @@ select throws_ok(
     where id = '00000000-0000-0000-0000-00000000cc01'$$,
   '42501', null, '系統角色也不能直接改合作案金額');
 select throws_ok(
+  $$insert into public.collaborations
+      (brand_id, creator_id, conversation_id, title, deliverables, amount_twd, status) values
+      ('00000000-0000-0000-0000-0000000000b1', '00000000-0000-0000-0000-0000000000c1',
+       '00000000-0000-0000-0000-00000000a001', '繞過', 'x', 1000, 'awaiting_payout')$$,
+  '42501', null, '系統金鑰也不能直接建立任意狀態的合作案');
+select throws_ok(
   $$select public.transition_collaboration('00000000-0000-0000-0000-00000000cc04', 'auto_approve')$$,
   '22023', null, '未到期不能自動審核通過');
 select is(
@@ -257,6 +263,14 @@ select throws_ok(
   '42501', null, '使用者不能刪除 audit log');
 
 reset role;
+select throws_ok(
+  $$update public.collaborations set status = 'completed'
+    where id = '00000000-0000-0000-0000-00000000cc07'$$,
+  '42501', null, '擁有者也不能繞過狀態轉換直接改狀態');
+select lives_ok(
+  $$update public.collaborations set title = '改標題'
+    where id = '00000000-0000-0000-0000-00000000cc07'$$,
+  '擁有者可以修改不受保護的欄位');
 select throws_ok(
   $$update public.audit_logs set note = 'tampered'$$,
   'P0001', null, '連資料庫擁有者也不能修改 audit log');

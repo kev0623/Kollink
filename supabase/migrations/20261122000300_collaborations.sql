@@ -221,5 +221,5 @@ revoke truncate, trigger, references on public.collaborations from anon, authent
 revoke truncate, trigger, references on public.audit_logs from anon, authenticated;
 
 -- service_role 也不能繞過 transition_collaboration 直接改合作案或動 audit log 結構
-revoke update, delete, truncate, trigger, references on public.collaborations from service_role;
+revoke insert, update, delete, truncate, trigger, references on public.collaborations from service_role;
 revoke trigger, references on public.audit_logs from service_role;
