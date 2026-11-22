@@ -17,7 +17,9 @@ export function computeCheckMacValue(params: EcpayParams, hashKey: string, hashI
     .sort(([a], [b]) => {
       const la = a.toLowerCase();
       const lb = b.toLowerCase();
-      return la < lb ? -1 : la > lb ? 1 : 0;
+      if (la < lb) return -1;
+      if (la > lb) return 1;
+      return a < b ? -1 : a > b ? 1 : 0;
     })
     .map(([key, value]) => `${key}=${value}`)
     .join("&");
@@ -30,8 +32,12 @@ export function verifyCheckMacValue(params: EcpayParams, hashKey: string, hashIV
   const received = params.CheckMacValue;
   if (!received) return false;
 
-  const expected = Buffer.from(computeCheckMacValue(params, hashKey, hashIV), "utf8");
-  const actual = Buffer.from(received.toUpperCase(), "utf8");
-  if (expected.length !== actual.length) return false;
-  return timingSafeEqual(expected, actual);
+  try {
+    const expected = Buffer.from(computeCheckMacValue(params, hashKey, hashIV), "utf8");
+    const actual = Buffer.from(received.toUpperCase(), "utf8");
+    if (expected.length !== actual.length) return false;
+    return timingSafeEqual(expected, actual);
+  } catch {
+    return false;
+  }
 }

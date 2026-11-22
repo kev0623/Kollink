@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import { computeCheckMacValue, ecpayUrlEncode, verifyCheckMacValue } from "./ecpay";
 
@@ -49,6 +50,14 @@ describe("computeCheckMacValue", () => {
   });
 });
 
+describe("computeCheckMacValue sorting", () => {
+  it("sorts keys case-insensitively", () => {
+    const raw = "HashKey=k&A=2&b=1&C=3&HashIV=i";
+    const expected = createHash("sha256").update(ecpayUrlEncode(raw)).digest("hex").toUpperCase();
+    expect(computeCheckMacValue({ b: "1", A: "2", C: "3" }, "k", "i")).toBe(expected);
+  });
+});
+
 describe("verifyCheckMacValue", () => {
   const signed = { ...DOC_PARAMS, CheckMacValue: DOC_EXPECTED };
 
@@ -76,5 +85,22 @@ describe("verifyCheckMacValue", () => {
 
   it("rejects a CheckMacValue of the wrong length", () => {
     expect(verifyCheckMacValue({ ...signed, CheckMacValue: "ABC" }, DOC_KEY, DOC_IV)).toBe(false);
+  });
+
+  it("returns false instead of throwing on a lone surrogate", () => {
+    expect(verifyCheckMacValue({ ...signed, ItemName: "a\ud800b" }, DOC_KEY, DOC_IV)).toBe(false);
+  });
+
+  it("rejects a non-ASCII CheckMacValue", () => {
+    expect(verifyCheckMacValue({ ...signed, CheckMacValue: "ß".repeat(64) }, DOC_KEY, DOC_IV)).toBe(false);
+  });
+
+  it("round-trips a signature with ~, ', space and Chinese characters", () => {
+    const params = { ...DOC_PARAMS, ItemName: "~it's 測試 商品" };
+    const mac = computeCheckMacValue(params, DOC_KEY, DOC_IV);
+    expect(verifyCheckMacValue({ ...params, CheckMacValue: mac }, DOC_KEY, DOC_IV)).toBe(true);
+    expect(
+      verifyCheckMacValue({ ...params, ItemName: "~it's 測試 商品x", CheckMacValue: mac }, DOC_KEY, DOC_IV),
+    ).toBe(false);
   });
 });
