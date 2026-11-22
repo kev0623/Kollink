@@ -25,6 +25,7 @@ function makeDeps(overrides: Partial<EcpayNotifyDeps> = {}): EcpayNotifyDeps {
   return {
     hashKey: KEY,
     hashIV: IV,
+    merchantId: "3002607",
     recordPaymentSuccess: vi.fn().mockResolvedValue("paid"),
     logError: vi.fn(),
     ...overrides,
@@ -81,12 +82,46 @@ describe("handleEcpayNotify", () => {
     expect(deps.recordPaymentSuccess).not.toHaveBeenCalled();
   });
 
-  it("rejects a non-integer amount", async () => {
-    const deps = makeDeps();
-    const res = await handleEcpayNotify(signed({ TradeAmt: "45.5" }), deps);
+  it.each(["45.5", "0", "-4500", "4500.0", "1e3", " 4500", ""])(
+    "rejects malformed TradeAmt %j",
+    async (tradeAmt) => {
+      const deps = makeDeps();
+      const res = await handleEcpayNotify(signed({ TradeAmt: tradeAmt }), deps);
 
-    expect(res).toEqual({ status: 400, body: "0|Bad TradeAmt" });
+      expect(res).toEqual({ status: 400, body: "0|Bad TradeAmt" });
+      expect(deps.recordPaymentSuccess).not.toHaveBeenCalled();
+    },
+  );
+
+  it("ignores a simulated payment without recording it", async () => {
+    const deps = makeDeps();
+    const res = await handleEcpayNotify(signed({ SimulatePaid: "1" }), deps);
+
+    expect(res).toEqual({ status: 200, body: "1|OK" });
     expect(deps.recordPaymentSuccess).not.toHaveBeenCalled();
+    expect(deps.logError).toHaveBeenCalledWith("ecpay notify: simulated payment ignored", {
+      merchantTradeNo: "PL0001",
+    });
+  });
+
+  it("rejects a MerchantID mismatch without recording", async () => {
+    const deps = makeDeps();
+    const res = await handleEcpayNotify(signed({ MerchantID: "9999999" }), deps);
+
+    expect(res).toEqual({ status: 400, body: "0|MerchantID Error" });
+    expect(deps.recordPaymentSuccess).not.toHaveBeenCalled();
+    expect(deps.logError).toHaveBeenCalledWith("ecpay notify: merchant mismatch", {
+      merchantTradeNo: "PL0001",
+    });
+  });
+
+  it("truncates an overlong MerchantTradeNo in logs", async () => {
+    const deps = makeDeps();
+    await handleEcpayNotify({ MerchantTradeNo: "A".repeat(200), CheckMacValue: "x" }, deps);
+
+    expect(deps.logError).toHaveBeenCalledWith("ecpay notify: bad CheckMacValue", {
+      merchantTradeNo: "A".repeat(64),
+    });
   });
 
   it("rejects a missing or empty TradeNo without recording", async () => {
