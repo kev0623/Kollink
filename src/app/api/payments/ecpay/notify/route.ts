@@ -2,8 +2,6 @@ import { requireEnv } from "@/lib/env";
 import { handleEcpayNotify, type RecordPaymentResult } from "@/lib/payments/ecpay-notify";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-export const runtime = "nodejs";
-
 const KNOWN_RESULTS: readonly string[] = ["paid", "already_paid", "paid_refund_required"];
 
 function text(body: string, status: number): Response {
