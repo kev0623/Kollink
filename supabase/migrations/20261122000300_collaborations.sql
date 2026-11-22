@@ -42,7 +42,7 @@ create index audit_logs_collaboration_idx on public.audit_logs (collaboration_id
 revoke insert, update, delete, truncate on public.audit_logs from anon, authenticated, service_role;
 
 create function public.audit_logs_block_mutation() returns trigger
-language plpgsql as $$
+language plpgsql set search_path = '' as $$
 begin
   raise exception 'audit_logs is append-only';
 end;
@@ -51,6 +51,8 @@ create trigger audit_logs_no_update before update on public.audit_logs
   for each row execute function public.audit_logs_block_mutation();
 create trigger audit_logs_no_delete before delete on public.audit_logs
   for each row execute function public.audit_logs_block_mutation();
+create trigger audit_logs_no_truncate before truncate on public.audit_logs
+  for each statement execute function public.audit_logs_block_mutation();
 
 -- 建立合作案時自動寫入 audit log
 create function public.log_collaboration_created() returns trigger
@@ -71,6 +73,26 @@ $$;
 create trigger collaborations_audit_insert after insert on public.collaborations
   for each row execute function public.log_collaboration_created();
 
+-- 防護：合作案的關鍵欄位只能經由 transition_collaboration 變更（含擁有者與 service_role）
+create function public.collaborations_guard_update() returns trigger
+language plpgsql set search_path = '' as $$
+begin
+  if coalesce(current_setting('pollen.in_transition', true), '') <> 'on'
+     and (new.status, new.amount_twd, new.brand_id, new.creator_id, new.brief_id,
+          new.conversation_id, new.review_due_at, new.published_url)
+         is distinct from
+         (old.status, old.amount_twd, old.brand_id, old.creator_id, old.brief_id,
+          old.conversation_id, old.review_due_at, old.published_url)
+  then
+    raise exception 'collaboration state can only change via transition_collaboration'
+      using errcode = '42501';
+  end if;
+  return new;
+end;
+$$;
+create trigger collaborations_guard_update before update on public.collaborations
+  for each row execute function public.collaborations_guard_update();
+
 -- 狀態轉換：唯一可以改變合作狀態的入口
 create function public.transition_collaboration(
   p_collab_id uuid,
@@ -90,14 +112,16 @@ begin
     raise exception 'collaboration % not found', p_collab_id using errcode = 'P0002';
   end if;
 
-  if coalesce(auth.role(), '') = 'service_role' then
+  -- 身分優先順序：system > brand > creator > admin（參與者永遠以參與者身分行動）
+  if coalesce(auth.role(), '') = 'service_role'
+     and coalesce(current_setting('role', true), '') = 'service_role' then
     v_actor := 'system';
-  elsif public.is_admin() then
-    v_actor := 'admin';
   elsif v_uid = c.brand_id then
     v_actor := 'brand';
   elsif v_uid = c.creator_id then
     v_actor := 'creator';
+  elsif public.is_admin() then
+    v_actor := 'admin';
   else
     raise exception 'not a participant of collaboration %', p_collab_id using errcode = '42501';
   end if;
@@ -119,10 +143,10 @@ begin
          and c.review_due_at <= now()
       then 'awaiting_publish'::public.collab_status
     when c.status = 'in_review' and p_action = 'request_changes' and v_actor = 'brand'
-         and nullif(trim(p_note), '') is not null
+         and nullif(btrim(p_note, E' \t\r\n' || U&'\3000'), '') is not null
       then 'awaiting_submission'::public.collab_status
     when c.status = 'awaiting_publish' and p_action = 'publish' and v_actor = 'creator'
-         and p_published_url ~ '^https://'
+         and p_published_url ~ '^https://[A-Za-z0-9.-]+\.[A-Za-z]{2,}/\S+$'
       then 'awaiting_payout'::public.collab_status
     when c.status = 'awaiting_payout' and p_action = 'payout' and v_actor in ('admin', 'system')
       then 'completed'::public.collab_status
@@ -134,12 +158,14 @@ begin
       using errcode = '22023';
   end if;
 
+  perform set_config('pollen.in_transition', 'on', true);
   update public.collaborations
   set status = v_to,
       updated_at = now(),
       review_due_at = case when v_to = 'in_review' then now() + interval '3 days' else review_due_at end,
       published_url = case when v_to = 'awaiting_payout' then p_published_url else published_url end
   where id = c.id;
+  perform set_config('pollen.in_transition', 'off', true);
 
   insert into public.audit_logs (collaboration_id, actor_id, actor_kind, action, from_status, to_status, note)
   values (c.id, case when v_actor = 'system' then null else v_uid end, v_actor, p_action, c.status, v_to, p_note);
@@ -164,6 +190,9 @@ create policy collaborations_insert_brand on public.collaborations
     brand_id = auth.uid()
     and public.my_role() = 'brand'
     and status = 'invited'
+    and (collaborations.brief_id is null or exists (
+      select 1 from public.briefs b
+      where b.id = collaborations.brief_id and b.brand_id = collaborations.brand_id))
     -- 子查詢裡的欄位必須寫出外層表名；只寫 brand_id 會被解析成 cv.brand_id，條件永遠成立
     and exists (
       select 1 from public.conversations cv
@@ -190,3 +219,7 @@ create policy audit_logs_select on public.audit_logs
 -- 地基硬化規則：收回 anon / authenticated 的 truncate、trigger、references 權限
 revoke truncate, trigger, references on public.collaborations from anon, authenticated;
 revoke truncate, trigger, references on public.audit_logs from anon, authenticated;
+
+-- service_role 也不能繞過 transition_collaboration 直接改合作案或動 audit log 結構
+revoke update, delete, truncate, trigger, references on public.collaborations from service_role;
+revoke trigger, references on public.audit_logs from service_role;
