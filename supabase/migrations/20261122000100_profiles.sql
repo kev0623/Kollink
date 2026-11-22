@@ -99,10 +99,28 @@ grant update (ig_username, follower_count, engagement_rate, region, categories,
               style_tags, collab_types, bio)
   on public.creator_profiles to authenticated;
 
--- creator_rates：品牌、本人、管理員看得到；本人可以增刪改
+-- creator_rates：本人、管理員看得到自己的；品牌只看得到已審核創作者的報價；本人可以增刪改
+-- 品牌身分是註冊時自行選擇的，所以這條規則的定位是「註冊後才看得到報價」的轉換漏斗，
+-- 不是保密機制；日後若出現爬取報價的情形，再加上品牌審核或查詢頻率限制。
 create policy creator_rates_select on public.creator_rates
   for select to authenticated
-  using (creator_id = auth.uid() or public.my_role() = 'brand' or public.is_admin());
+  using (
+    creator_rates.creator_id = auth.uid()
+    or public.is_admin()
+    or (
+      public.my_role() = 'brand'
+      and exists (
+        select 1 from public.creator_profiles cp
+        where cp.user_id = creator_rates.creator_id and cp.status = 'approved'
+      )
+    )
+  );
 create policy creator_rates_write_own on public.creator_rates
   for all to authenticated
   using (creator_id = auth.uid()) with check (creator_id = auth.uid());
+
+-- 縮小預設權限（縱深防禦）
+revoke all on public.admins from anon, authenticated;
+revoke truncate, trigger, references
+  on public.profiles, public.brand_profiles, public.creator_profiles, public.creator_rates
+  from anon, authenticated;
