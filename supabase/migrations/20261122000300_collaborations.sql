@@ -134,6 +134,7 @@ begin
     when c.status in ('invited', 'awaiting_payment') and p_action = 'cancel' and v_actor = 'brand'
       then 'cancelled'::public.collab_status
     when c.status = 'awaiting_payment' and p_action = 'mark_paid' and v_actor = 'system'
+         and coalesce(current_setting('pollen.recording_payment', true), '') = 'on'
       then 'awaiting_submission'::public.collab_status
     when c.status = 'awaiting_submission' and p_action = 'submit' and v_actor = 'creator'
       then 'in_review'::public.collab_status

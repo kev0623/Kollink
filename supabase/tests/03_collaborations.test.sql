@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(43);
+select plan(44);
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-0000000000b1', 'b1@test.local'),
@@ -134,9 +134,17 @@ select throws_ok(
 -- ===== 系統（service role）標記已付款 =====
 set local role service_role;
 select set_config('request.jwt.claims', '{"role":"service_role"}', true);
+select throws_ok(
+  $$select public.transition_collaboration('00000000-0000-0000-0000-00000000cc01', 'mark_paid')$$,
+  '22023', null, '系統金鑰不能繞過付款紀錄直接標記已付款');
+reset role;
+insert into public.payments (collaboration_id, provider, merchant_trade_no, amount_twd) values
+  ('00000000-0000-0000-0000-00000000cc01', 'ecpay', 'PT0001', 4500);
+set local role service_role;
+select set_config('request.jwt.claims', '{"role":"service_role"}', true);
 select is(
-  public.transition_collaboration('00000000-0000-0000-0000-00000000cc01', 'mark_paid'),
-  'awaiting_submission'::public.collab_status, '系統標記已付款');
+  public.record_payment_success('PT0001', 4500, 'T-cc01', '{}'::jsonb),
+  'paid', '系統經由付款紀錄函式標記已付款');
 select throws_ok(
   $$insert into public.audit_logs (actor_kind, action) values ('system', 'x')$$,
   '42501', null, '系統角色也不能直接寫入 audit log');
