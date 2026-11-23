@@ -58,20 +58,22 @@
 ### 2.1 建立帳號函式
 兩個 `security definer`、`search_path = ''` 的函式，只授權給 `authenticated`：
 
-- `create_brand_account(p_display_name text, p_brand_name text, p_industry text, p_logo_url text default null) returns void`
+- `create_brand_account(p_brand_name text, p_industry text, p_logo_url text default null) returns void`（品牌的 display_name 直接用品牌名稱）
 - `create_creator_account(p_display_name text, p_handle text, p_ig_username text, p_follower_count integer, p_region text, p_categories text[]) returns text`（回傳驗證碼）
 
 共同規則：
 - `auth.uid()` 為 null → 錯誤 42501。
 - 已經有 profile → 錯誤 23505（訊息 `account already exists`）。
 - 文字欄位 btrim（含全形空白 U+3000）後不可為空。長度上限：display_name 40、brand_name 60、industry 30、region 30、ig_username 30。
-- logo_url 若有值，必須是本專案 Storage `brand-logos` bucket 內、屬於自己資料夾的公開網址（以 `/storage/v1/object/public/brand-logos/<uid>/` 結尾段落比對）。
+- logo_url 若有值，必須是 `brand-logos` bucket 內、屬於自己資料夾的公開網址（`^https?://<host>/storage/v1/object/public/brand-logos/<uid>/<檔名>$`）。這項檢查做成 `brand_profiles` 的 BEFORE INSERT OR UPDATE trigger，建立與之後修改都適用。
 - 創作者：handle 符合既有 check（`^[a-z0-9_.]{3,30}$`）；ig_username 符合 `^[A-Za-z0-9_.]{1,30}$`；follower_count ≥ 0；categories 1–5 個、不重複、每個 btrim 後非空且 ≤ 20 字。
 - handle 重複 → 錯誤 23505（訊息 `handle taken`），前端顯示「這個網址已經有人使用」。
 - 格式錯誤 → 錯誤 22023，訊息標明欄位名稱（例如 `invalid handle`）。
 - 在同一個 transaction 寫入 `profiles` 與對應的 `brand_profiles` / `creator_profiles`（創作者 status 一律 pending），創作者另外寫入 `creator_verifications`。
 
 品牌的 `profiles.display_name` 等於品牌名稱。
+
+另外加上資料表層級的欄位限制（更新時也適用）：`profiles.display_name` 1–60 字、`brand_name` 1–60、`industry` ≤ 30、`region` ≤ 30、`ig_username` 格式、`categories` 最多 5 個。創作者顯示名稱 40 字的上限由建立函式與前端檢查。
 
 拿掉 `profiles_insert_self`、`brand_profiles_insert_self`、`creator_profiles_insert_self` 三條 INSERT policy，並撤銷 authenticated 對這三張表的 INSERT 權限。建立帳號只能經由上面兩個函式。
 
@@ -91,7 +93,7 @@ created_at timestamptz not null default now()
 
 ### 2.4 Logo 儲存空間
 - Storage bucket `brand-logos`：public 讀取、檔案上限 2MB、允許 `image/png`、`image/jpeg`、`image/webp`。
-- `storage.objects` policy：authenticated 且 `my_role() = 'brand'` 才能 insert / update / delete，路徑第一層資料夾必須等於 `auth.uid()::text`。
+- `storage.objects` policy：路徑第一層資料夾必須等於 `auth.uid()::text`；寫入者必須是品牌，或還沒建立帳號的使用者（品牌註冊時是先上傳 Logo、再建立帳號），創作者不能寫入。
 - bucket 用 migration 建立（`insert into storage.buckets`），不依賴手動設定。
 
 ### 2.5 改名 Pollen → Kollink
@@ -125,13 +127,13 @@ created_at timestamptz not null default now()
 - `src/lib/supabase/admin.ts`（service role）不變，登入與註冊流程不使用它。
 
 ### 金鑰命名
-- 實作第一步執行 `npx supabase status` 確認 CLI 3.x 的金鑰名稱。若為 publishable / secret：環境變數改名為 `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`、`SUPABASE_SECRET_KEY`，同步更新 `.env.example`、`admin.ts`、notify route 與 CI。若 CLI 仍只提供 anon / service_role，沿用現有名稱。
+- 已確認 CLI 3.2 提供 `PUBLISHABLE_KEY` 與 `SECRET_KEY`。環境變數改名為 `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`、`SUPABASE_SECRET_KEY`，同步更新 `.env.example` 與 `admin.ts`；並實測 secret key 呼叫 `record_payment_success` 仍被判定為 service_role。
 - secret / service role 金鑰只出現在 import `server-only` 的檔案，絕不放進 `NEXT_PUBLIC_*`。
 
 ### Email 驗證碼
 - 寄送：`signInWithOtp({ email, options: { shouldCreateUser: true } })`。
 - 驗證：`verifyOtp({ email, token, type: 'email' })`。
-- 信件範本 `supabase/templates/magic_link.html`、`confirmation.html`（中文），只放 `{{ .Token }}`，不放連結；在 `config.toml` 的 `[auth.email.template.*]` 指定。
+- 信件範本 `supabase/templates/otp.html`（中文），只放 `{{ .Token }}`，不放連結；`config.toml` 的 `magic_link` 與 `confirmation` 兩個範本都指向它。驗證成功後，瀏覽器前往 `/auth/continue`，由伺服器查身分後導向。
 - 本機信件進 Mailpit（`http://127.0.0.1:54324`）。
 - 重寄冷卻 60 秒（`config.toml` 的 `max_frequency` 與畫面倒數一致）。
 - 正式環境 SMTP 在部署階段設定，不在本計畫範圍。
@@ -139,7 +141,7 @@ created_at timestamptz not null default now()
 ### Google 登入
 - `signInWithOAuth({ provider: 'google', options: { redirectTo: '<origin>/auth/callback?next=...&role=...' } })`。
 - `/auth/callback`（route handler）：`exchangeCodeForSession(code)`，再依第 1 節規則導向；失敗導去 `/login?error=callback`。
-- `config.toml` 開啟 `[auth.external.google]`，`client_id` / `secret` 用 `env(SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID)` / `env(SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET)`；`site_url` 與 `additional_redirect_urls` 包含 `http://127.0.0.1:3000` 和 `http://localhost:3000`。
+- `config.toml` 加入 `[auth.external.google]`（預設 `enabled = false`，照 README 設定後在本機改成 true），`client_id` / `secret` 用 `env(SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID)` / `env(SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET)`；`site_url` 與 `additional_redirect_urls` 包含 `http://127.0.0.1:3000` 和 `http://localhost:3000`。
 - 環境變數 `NEXT_PUBLIC_GOOGLE_AUTH_ENABLED`：不是 `"true"` 時，Google 按鈕顯示「尚未設定」且不可點，Email 登入不受影響。
 
 ### 安全的 `next` 參數
@@ -168,7 +170,7 @@ server action 呼叫 `supabase.auth.signOut()`，再導向 `/`。
 - `creator_verifications`：本人看得到、其他人與 anon 看不到、任何人不能寫入。
 - handle：pending 可改、approved 後不能改；不能改 status。
 - 不能更新別人的 profile / creator_profile / brand_profile（地基待辦）。
-- `brand-logos`：品牌可以上傳到自己的資料夾，不能上傳到別人的資料夾，創作者不能上傳。
+- `brand-logos`：品牌與尚未建立帳號的使用者可以上傳到自己的資料夾，不能上傳到別人的資料夾，創作者不能上傳。
 - 既有 94 項測試改名後全部通過。
 
 ### Vitest
