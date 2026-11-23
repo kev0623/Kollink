@@ -10,7 +10,7 @@
 | 未審核創作者的報價 | 品牌看不到（只看得到已審核創作者的報價）。 |
 | 預設權限收緊 | 每張 public 資料表都撤銷 anon / authenticated 的 `truncate, trigger, references`。 |
 | 狀態只能經由函式改變 | 連 service_role 與資料庫擁有者都不能直接改合作案的狀態類欄位（guard trigger）；service_role 對 `collaborations` 只有 SELECT。 |
-| 標記已付款 | 只能經由 `record_payment_success`（`pollen.recording_payment` 旗標）；service_role 也不能直接呼叫 `mark_paid`。 |
+| 標記已付款 | 只能經由 `record_payment_success`（`kollink.recording_payment` 旗標）；service_role 也不能直接呼叫 `mark_paid`。 |
 | 參與者身分優先 | 身分判斷順序為 system > brand > creator > admin。管理員若是案子的參與者，只能以參與者身分操作，不能幫自己的案子撥款。 |
 | 發佈連結 | 必須是完整網址（有網域和路徑）。 |
 | 取消後才到的付款（B1） | 記錄為已付款、`refund_required = true`，寫入 audit（`payment_requires_refund`），回覆綠界 `1|OK`；實際退款留給計畫 8。 |
