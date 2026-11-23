@@ -209,6 +209,26 @@ isOneToOne: false
       referencedColumns: ["user_id"]
     }
                   ]
+                },"creator_verifications": {
+                  Row: {
+                    "code": string,"created_at": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "code": string,"created_at"?: string,"user_id": string
+                  }
+                  Update: {
+                    "code"?: string,"created_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "creator_verifications_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: true
+      referencedRelation: "creator_profiles"
+      referencedColumns: ["user_id"]
+    }
+                  ]
                 },"messages": {
                   Row: {
                     "body": string,"conversation_id": string,"created_at": string,"flagged_contact": boolean,"id": string,"sender_id": string
@@ -275,7 +295,19 @@ isOneToOne: false
             [_ in never]: never
           }
           Functions: {
-            "is_admin":
+            "clean_text":
+{ Args: { "p": string }; Returns: string
+                           },
+"create_brand_account":
+{ Args: { "p_brand_name": string,"p_industry": string,"p_logo_url"?: string }; Returns: undefined
+                           },
+"create_creator_account":
+{ Args: { "p_categories": (string)[],"p_display_name": string,"p_follower_count": number,"p_handle": string,"p_ig_username": string,"p_region": string }; Returns: string
+                           },
+"gen_verification_code":
+{ Args: Record<PropertyKey, never>; Returns: string
+                           },
+"is_admin":
 { Args: Record<PropertyKey, never>; Returns: boolean
                            },
 "is_conversation_participant":
