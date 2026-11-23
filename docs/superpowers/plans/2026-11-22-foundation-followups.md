@@ -25,7 +25,7 @@
 - 加入 `@supabase/ssr`；確認 Supabase CLI 3.x 的金鑰命名（publishable / secret），並更新 `.env.example`。
 - 加入 `supabase gen types typescript` 產生的型別，以及 CI 的型別漂移檢查。
 - 補測試：跨使用者更新無效、創作者不能建立品牌檔案、以 pending 狀態建立檔案的正向對照。
-- 決定正式名稱（目前 repo 是 Kollink，程式內是 Pollen，GUC 前綴是 `pollen.*`，之後改名需要寫 migration）。
+- ~~決定正式名稱~~ → 已定為 Kollink（計畫 2 Task 1）
 - README 補上本機開發步驟（Docker、`supabase start`、`.env.local`、`npm run test:db`）。
 
 ### 3. 創作者公開檔案頁

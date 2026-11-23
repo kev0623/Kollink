@@ -82,9 +82,9 @@ begin
   where id = p.id;
 
   if v_status = 'awaiting_payment' then
-    perform set_config('pollen.recording_payment', 'on', true);
+    perform set_config('kollink.recording_payment', 'on', true);
     perform public.transition_collaboration(p.collaboration_id, 'mark_paid');
-    perform set_config('pollen.recording_payment', 'off', true);
+    perform set_config('kollink.recording_payment', 'off', true);
     return 'paid';
   end if;
 

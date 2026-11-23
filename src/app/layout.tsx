@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Noto_Sans_TC } from "next/font/google";
 import "./globals.css";
+import { SITE_NAME, SITE_TAGLINE } from "@/lib/site";
 
 const notoSansTC = Noto_Sans_TC({
   weight: ["400", "500", "700"],
@@ -9,8 +10,8 @@ const notoSansTC = Noto_Sans_TC({
 });
 
 export const metadata: Metadata = {
-  title: "Pollen",
-  description: "台灣品牌 × 創作者合作平台",
+  title: SITE_NAME,
+  description: SITE_TAGLINE,
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
