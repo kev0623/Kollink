@@ -1,9 +1,10 @@
 "use client";
 
-import { useId, useRef, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { BriefCover } from "@/components/briefs/BriefCover";
 import { createClient } from "@/lib/supabase/client";
 import { BRIEF_COVER_BUCKET, planCoverUpload } from "@/lib/brief-cover";
+import { createCoverOwnership } from "@/lib/cover-ownership";
 
 type Props = {
   userId: string;
@@ -14,16 +15,20 @@ type Props = {
   error?: string;
   onBusyChange?: (busy: boolean) => void;
   disabled?: boolean;
+  /** 每次儲存成功（原地存成草稿）換一個新值；目前封面此後視為已存進資料庫，不會被刪。 */
+  savedMark?: unknown;
 };
 
 /**
  * 招募封面（選填）。上傳到 brief-covers/<uid>/cover-<uuid>.<副檔名>；沒有封面時預覽顯示品牌 Logo。
- * 只刪除這次畫面上傳、後來被換掉的檔案；已存進資料庫的舊封面不刪（孤兒檔由排程清理，見 followups）。
+ * 只刪除這次畫面上傳、尚未儲存就被換掉的檔案；已存進資料庫的封面（含原地存成草稿後）不刪（孤兒檔由排程清理，見 followups）。
  */
-export function CoverField({ userId, value, onChange, brandName, brandLogoPath, error, onBusyChange, disabled }: Props) {
+export function CoverField({ userId, value, onChange, brandName, brandLogoPath, error, onBusyChange, disabled, savedMark }: Props) {
   const [msg, setMsg] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const ownedRef = useRef<string | null>(null);
+  const [ownership] = useState(() => createCoverOwnership((p) => {
+    void Promise.resolve(createClient().storage.from(BRIEF_COVER_BUCKET).remove([p])).catch(() => {});
+  }));
   const noteId = useId();
 
   function setBusyState(b: boolean) {
@@ -31,11 +36,9 @@ export function CoverField({ userId, value, onChange, brandName, brandLogoPath, 
     onBusyChange?.(b);
   }
 
-  function discard(p: string | null) {
-    if (disabled || !p || p !== ownedRef.current) return;
-    ownedRef.current = null;
-    void Promise.resolve(createClient().storage.from(BRIEF_COVER_BUCKET).remove([p])).catch(() => {});
-  }
+  useEffect(() => {
+    if (savedMark) ownership.markPersisted();
+  }, [savedMark, ownership]);
 
   async function onFile(file: File | undefined) {
     if (!file) return;
@@ -47,8 +50,7 @@ export function CoverField({ userId, value, onChange, brandName, brandLogoPath, 
       const { error: e } = await createClient().storage.from(BRIEF_COVER_BUCKET)
         .upload(plan.path, file, { contentType: file.type });
       if (e) return setMsg("上傳失敗，請再試一次");
-      discard(ownedRef.current);
-      ownedRef.current = plan.path;
+      ownership.adopt(plan.path);
       onChange(plan.path);
     } catch {
       setMsg("上傳失敗，請再試一次");
@@ -59,7 +61,7 @@ export function CoverField({ userId, value, onChange, brandName, brandLogoPath, 
 
   function remove() {
     if (disabled) return;
-    discard(value);
+    ownership.discard(value);
     onChange(null);
     setMsg(null);
   }

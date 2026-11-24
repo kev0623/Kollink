@@ -10,7 +10,7 @@ export default function BrandLayout({ children }: { children: React.ReactNode })
   return (
     <div className="flex min-h-screen bg-bg">
       <aside className="hidden shrink-0 md:block">
-        <Suspense fallback={null}><SideNav items={BRAND_NAV} footer={<SideFooter />} /></Suspense>
+        <Suspense fallback={<div aria-hidden className="h-screen w-24" />}><SideNav items={BRAND_NAV} footer={<SideFooter />} /></Suspense>
       </aside>
       <main className="min-w-0 flex-1 bg-panel px-4 pb-[calc(6rem+env(safe-area-inset-bottom))] pt-6 md:my-3 md:mr-3 md:rounded-card md:py-8 md:pl-8 md:pr-7 md:pb-8">
         <Suspense fallback={<p className="text-muted">載入中…</p>}>

@@ -65,7 +65,10 @@ export function BriefForm({ briefId, isOpen, initial, initialStep, saved, userId
   }, [step]);
 
   const errors: Record<string, string> = { ...(state.fieldErrors ?? {}), ...clientErrors };
-  const set = <K extends keyof BriefInput>(key: K, v: BriefInput[K]) => setValues((s) => ({ ...s, [key]: v }));
+  const set = <K extends keyof BriefInput>(key: K, v: BriefInput[K]) => {
+    setValues((s) => ({ ...s, [key]: v }));
+    setClientErrors((e) => (key in e ? Object.fromEntries(Object.entries(e).filter(([k]) => k !== key)) : e));
+  };
 
   function goTo(next: BriefStep) {
     setClientErrors({});
@@ -137,6 +140,7 @@ export function BriefForm({ briefId, isOpen, initial, initialStep, saved, userId
         <CoverField
           userId={userId} value={values.coverPath} onChange={(v) => set("coverPath", v)} brandName={brandName}
           brandLogoPath={brandLogoPath} error={errors.coverPath} onBusyChange={setCoverBusy} disabled={pending}
+          savedMark={state.saved ? state : null}
         />
       </section>
 
