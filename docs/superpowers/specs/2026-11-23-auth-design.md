@@ -12,7 +12,7 @@
 | 登入方式 | Google 登入 + Email 6 碼驗證碼，不使用密碼。LINE 之後再加。 |
 | 創作者審核 | 人工審核。審核中可以登入、可以修改資料，畫面顯示「審核中，通常 1–2 個工作天」。計畫 9 之前在 Supabase Studio 用 SQL 審核。 |
 | IG 本人驗證 | 建立帳號時產生 6 碼驗證碼，請創作者暫時放進 IG 自我介紹，審核時人工確認。不串 Meta API。 |
-| 品牌註冊欄位 | 品牌名稱、產業（必填），Logo（選填）。統編留到計畫 8。沒有 Logo 時顯示品牌名稱第一個字。 |
+| 品牌註冊欄位 | 品牌名稱、產業（必填），Logo（選填，存 Storage 路徑）。統編留到計畫 8。沒有 Logo 時顯示品牌名稱第一個字。 |
 | 創作者註冊欄位 | 顯示名稱、IG 帳號、粉絲數、地區、1–5 個內容領域標籤（必填）。報價、作品、受眾年齡不在註冊流程。 |
 | 公開頁網址（handle） | 預設帶入 IG 帳號，可修改。審核通過前可以隨意改，通過後鎖定。 |
 | 正式名稱 | Kollink。介面上的名稱集中在一個設定檔。 |
@@ -58,22 +58,30 @@
 ### 2.1 建立帳號函式
 兩個 `security definer`、`search_path = ''` 的函式，只授權給 `authenticated`：
 
-- `create_brand_account(p_brand_name text, p_industry text, p_logo_url text default null) returns void`（品牌的 display_name 直接用品牌名稱）
+- `create_brand_account(p_brand_name text, p_industry text, p_logo_path text default null) returns void`（品牌的 display_name 直接用品牌名稱）
 - `create_creator_account(p_display_name text, p_handle text, p_ig_username text, p_follower_count integer, p_region text, p_categories text[]) returns text`（回傳驗證碼）
 
 共同規則：
 - `auth.uid()` 為 null → 錯誤 42501。
 - 已經有 profile → 錯誤 23505（訊息 `account already exists`）。
-- 文字欄位 btrim（含全形空白 U+3000）後不可為空。長度上限：display_name 40、brand_name 60、industry 30、region 30、ig_username 30。
-- logo_url 若有值，必須是 `brand-logos` bucket 內、屬於自己資料夾的公開網址（`^https?://<host>/storage/v1/object/public/brand-logos/<uid>/<檔名>$`）。這項檢查做成 `brand_profiles` 的 BEFORE INSERT OR UPDATE trigger，建立與之後修改都適用。
+- 文字欄位去掉前後的空白與看不見的字元後不可為空：ASCII 空白（`\s`）以及 U+00A0、U+1680、U+2000–U+200D、U+2028、U+2029、U+202F、U+205F、U+2060、U+3000、U+FEFF（`clean_text`，前端 `cleanText` 用同一組）。長度上限：display_name 40、brand_name 60、industry 30、region 30、ig_username 30。
+- `brand_profiles.logo_url` 改名為 `logo_path`，只存 Storage 路徑：null，或 `<user_id>/<檔名>`（`'^' || user_id || '/[A-Za-z0-9][A-Za-z0-9._-]{0,99}$'`，檔名以英數字開頭，且不可含 `..`）。檢查做成 CHECK constraint `brand_profiles_logo_path_check`（取代原本的 trigger）；函式先自行檢查並 raise 22023 `invalid logo_path`。顯示用的公開網址由 App 的 `brandLogoUrl(path)` 用 `NEXT_PUBLIC_SUPABASE_URL` 組出。
 - 創作者：handle 符合既有 check（`^[a-z0-9_.]{3,30}$`）；ig_username 符合 `^[A-Za-z0-9_.]{1,30}$`；follower_count ≥ 0；categories 1–5 個、不重複、每個 btrim 後非空且 ≤ 20 字。
 - handle 重複 → 錯誤 23505（訊息 `handle taken`），前端顯示「這個網址已經有人使用」。
 - 格式錯誤 → 錯誤 22023，訊息標明欄位名稱（例如 `invalid handle`）。
+- 兩個 profiles insert 包 `exception when unique_violation`：handle 的唯一限制（`creator_profiles_handle_key`）→ 23505 `handle taken`；其他唯一衝突（同時建立）→ 23505 `account already exists`。
 - 在同一個 transaction 寫入 `profiles` 與對應的 `brand_profiles` / `creator_profiles`（創作者 status 一律 pending），創作者另外寫入 `creator_verifications`。
 
 品牌的 `profiles.display_name` 等於品牌名稱。
 
 另外加上資料表層級的欄位限制（更新時也適用）：`profiles.display_name` 1–60 字、`brand_name` 1–60、`industry` ≤ 30、`region` ≤ 30、`ig_username` 格式、`categories` 最多 5 個。創作者顯示名稱 40 字的上限由建立函式與前端檢查。
+
+另外有兩個修改函式（同樣 `security definer`、`search_path = ''`、只授權 `authenticated`，驗證規則與建立相同）：
+
+- `update_brand_account(p_brand_name text, p_industry text, p_logo_path text default null) returns void`：呼叫者必須已有 `brand_profiles`，否則 42501 `not a brand`；同一個 transaction 更新 `brand_profiles` 與 `profiles.display_name`。
+- `update_creator_account(p_display_name text, p_handle text, p_ig_username text, p_follower_count integer, p_region text, p_categories text[]) returns void`：呼叫者必須已有 `creator_profiles`，否則 42501 `not a creator`；handle 在 status 非 pending 時若與現值不同 → 42501 `handle locked after approval`，pending 時撞名 → 23505 `handle taken`；同一個 transaction 更新 `creator_profiles` 與 `profiles.display_name`。
+
+修改資料只能經由這兩個函式：撤銷 anon / authenticated 對 `profiles`、`brand_profiles`、`creator_profiles` 的所有 UPDATE 權限（含欄位級），並拿掉三條 `*_update_self` policy。
 
 拿掉 `profiles_insert_self`、`brand_profiles_insert_self`、`creator_profiles_insert_self` 三條 INSERT policy，並撤銷 authenticated 對這三張表的 INSERT 權限。建立帳號只能經由上面兩個函式。
 
@@ -87,9 +95,10 @@ created_at timestamptz not null default now()
 - 驗證碼字元集排除 0、O、1、I，用 `gen_random_bytes` 產生。
 
 ### 2.3 handle 鎖定
-- `grant update (handle)` 給 authenticated。
-- BEFORE UPDATE trigger：`new.handle is distinct from old.handle and old.status <> 'pending'` → 錯誤 42501（`handle locked after approval`）。
-- `status` 仍不在可更新欄位內，創作者無法自行改成 approved。
+- 不再 `grant update (handle)`；handle 只能經 `update_creator_account` 修改。
+- BEFORE UPDATE trigger：`new.handle is distinct from old.handle and old.status <> 'pending'` → 錯誤 42501（`handle locked after approval`），對所有角色都生效（含 service_role 與 definer 函式）。
+- 唯一例外：Studio 管理者在同一個 transaction 先執行 `set local kollink.allow_handle_change = 'on';`，且 `current_user in ('postgres', 'supabase_admin')`，兩個條件都成立才放行。
+- `status` 不在任何可更新欄位內，創作者無法自行改成 approved。
 
 ### 2.4 Logo 儲存空間
 - Storage bucket `brand-logos`：public 讀取、檔案上限 2MB、允許 `image/png`、`image/jpeg`、`image/webp`。
@@ -166,9 +175,12 @@ server action 呼叫 `supabase.auth.signOut()`，再導向 `/`。
 
 ### pgTAP
 - `create_brand_account` / `create_creator_account`：正向案例；重複建立；未登入；各欄位格式錯誤；handle 重複；創作者 status 必為 pending；驗證碼格式正確。
-- 直接 INSERT profiles / brand_profiles / creator_profiles 被拒絕。
-- `creator_verifications`：本人看得到、其他人與 anon 看不到、任何人不能寫入。
-- handle：pending 可改、approved 後不能改；不能改 status。
+- 直接 INSERT / UPDATE profiles / brand_profiles / creator_profiles 被拒絕（42501）。
+- `update_brand_account` / `update_creator_account`：正向案例、`not a brand` / `not a creator`、各欄位格式錯誤（含 industry、region）、display_name 與 brand_name 同步、handle 撞名。
+- `logo_path`：合法路徑可存、別人的資料夾、含 `..`、以 `.` 開頭、網址都被拒。
+- 隱形字元：名稱只有 U+200B 視為空白；前後 NBSP 被去掉。
+- `creator_verifications`：本人與管理員看得到、其他人與 anon 看不到、任何人不能寫入；anon 不能呼叫任何建立或修改函式。
+- handle：pending 可經函式修改；approved 後對 authenticated、service_role、沒設 GUC 的 postgres 都不能改，設了 `kollink.allow_handle_change` 的 postgres 可以；不能改 status。
 - 不能更新別人的 profile / creator_profile / brand_profile（地基待辦）。
 - `brand-logos`：品牌與尚未建立帳號的使用者可以上傳到自己的資料夾，不能上傳到別人的資料夾，創作者不能上傳。
 - 既有 94 項測試改名後全部通過。

@@ -32,6 +32,8 @@
 - 訪客（anon）讀不到 `profiles.display_name`；缺少頭像欄位；評分、完成案數、準時率需要合作資料，但 RLS 會擋住 → 需要一個欄位，或只開放必要欄位的 view / definer 函式，另外要建評價資料表。
 - 收藏 ♡ 需要一張資料表。
 
+- 計畫 2 Task 3 修正收回了創作者對 `engagement_rate`、`style_tags`、`collab_types`、`bio` 的直接 UPDATE（`profiles`、`brand_profiles`、`creator_profiles` 的 UPDATE 權限與 `*_update_self` policy 全部移除，修改改走 definer 函式）。公開檔案頁要改 bio / style_tags / collab_types / engagement_rate 時，擴充 `update_creator_account` 或另開 definer 函式。
+
 ### 4. 創作者廣場、5. 招募與機會頁
 - 索引：`creator_profiles(status)`、`categories` / `style_tags` 的 GIN 索引、`briefs(status, deadline)`、`briefs(brand_id)`、`brief_applications(creator_id)`、`conversations(creator_id)`、`collaborations(conversation_id)`、`collaborations(brief_id)`。
 - 報名的狀態變更需要 definer 函式（目前沒有開放 UPDATE）。錄取時，要在同一個 transaction 裡建立對話和合作案。
