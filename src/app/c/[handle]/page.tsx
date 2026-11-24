@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/current-user";
-import { loadPortfolio, loadPublicCreator, loadRates } from "@/lib/creators/public-profile";
+import { loadIsFavorite, loadPortfolio, loadPublicCreator, loadRates } from "@/lib/creators/public-profile";
 import { profileMetadata } from "@/lib/creators/metadata";
 import { viewerKindOf } from "@/lib/creators/view";
 import { ProfileView } from "./ProfileView";
@@ -31,9 +31,11 @@ async function Profile({ params }: Props) {
   if (!creator) notFound();
   const [me, portfolio] = await Promise.all([getCurrentUser(), loadPortfolio(creator.userId)]);
   const viewer = viewerKindOf(me?.profile?.role);
-  // 報價只給品牌看（RLS 也只讓品牌與本人讀得到）；本人以創作者身分看到的是鎖定區塊
-  const rates = viewer === "brand" ? await loadRates(creator.userId, creator.collabTypes) : [];
-  return <ProfileView creator={creator} portfolio={portfolio} rates={rates} viewer={viewer} />;
+  // 報價與收藏狀態只有品牌需要（RLS 也只讓品牌與自己的收藏讀得到）
+  const [rates, favorite] = viewer === "brand"
+    ? await Promise.all([loadRates(creator.userId, creator.collabTypes), loadIsFavorite(creator.userId)])
+    : [[], undefined];
+  return <ProfileView creator={creator} portfolio={portfolio} rates={rates} viewer={viewer} favorite={favorite} />;
 }
 
 function ProfileSkeleton() {
