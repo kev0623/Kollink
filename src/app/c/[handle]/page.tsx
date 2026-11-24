@@ -1,11 +1,19 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { loadPortfolio, loadPublicCreator, loadRates } from "@/lib/creators/public-profile";
+import { profileMetadata } from "@/lib/creators/metadata";
 import { viewerKindOf } from "@/lib/creators/view";
 import { ProfileView } from "./ProfileView";
 
 type Props = { params: Promise<{ handle: string }> };
+
+// 讀 cookie（本人預覽要加 noindex），在請求時解析；loadPublicCreator 有 React cache，與頁面共用同一次查詢
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { handle } = await params;
+  return profileMetadata(await loadPublicCreator(handle));
+}
 
 // 頁面殼是靜態的；資料在 <Suspense> 內逐次請求讀取，不快取（審核狀態在 SQL 改，App 無法觸發 revalidate；見計畫 3「快取決定」）。
 export default function CreatorPublicPage({ params }: Props) {
