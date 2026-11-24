@@ -31,6 +31,13 @@ describe("isRole / homeFor", () => {
     expect(isRole("admin")).toBe(false);
     expect(isRole(null)).toBe(false);
   });
+  it("任何身分登入後都可以回到創作者公開頁", () => {
+    expect(resolvePostLoginPath({ role: "brand", requestedRole: null, next: "/c/mei.daily" })).toBe("/c/mei.daily");
+    expect(resolvePostLoginPath({ role: "creator", requestedRole: null, next: "/c/mei" })).toBe("/c/mei");
+    expect(resolvePostLoginPath({ role: "brand", requestedRole: null, next: "/c/mei/x" })).toBe("/brand");
+    expect(resolvePostLoginPath({ role: "brand", requestedRole: null, next: "/c/" })).toBe("/brand");
+    expect(resolvePostLoginPath({ role: "brand", requestedRole: null, next: "/c/Bad" })).toBe("/brand");
+  });
   it("首頁路徑", () => {
     expect(homeFor("brand")).toBe("/brand");
     expect(homeFor("creator")).toBe("/creator");

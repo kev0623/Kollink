@@ -19,6 +19,19 @@ const FIELD_BY_DB: Record<string, string> = {
   follower_count: "followerCount",
   region: "region",
   categories: "categories",
+  // 公開頁（計畫 3）
+  bio: "bio",
+  style_tags: "styleTags",
+  collab_types: "collabTypes",
+  engagement_rate: "engagementRate",
+  audience_age: "audienceAge",
+  avatar_path: "avatarPath",
+  portfolio: "portfolio",
+  image_path: "portfolio",
+  link_url: "portfolio",
+  rates: "rates",
+  collab_type: "rates",
+  price_twd: "rates",
 };
 
 /** 把建立 / 更新帳號時的資料庫錯誤轉成表單錯誤。 */

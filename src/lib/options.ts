@@ -12,3 +12,7 @@ export const REGIONS = [
   "雲林縣", "嘉義市", "嘉義縣", "台南市", "高雄市", "屏東縣", "宜蘭縣", "花蓮縣", "台東縣", "澎湖縣",
   "金門縣", "連江縣", "海外",
 ] as const;
+
+// 想接的合作、受眾年齡：白名單只在 UI 端強制（資料庫只檢查數量與長度）
+export const COLLAB_TYPES = ["IG 貼文", "Reels", "限時動態", "產品互惠"] as const;
+export const AUDIENCE_AGES = ["13-17", "18-24", "25-34", "35-44", "45+"] as const;
