@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { EMPTY_BRIEF_INPUT } from "@/lib/validation/brief";
 import {
   appendUniqueById, audienceLabel, brandTabOf, briefToInput, displayStatusOf, filterApplicants, matchItems,
-  previewFromInput, proposedPriceLabel, rewardLabel, toApplicant, toApplicationStatus, toBrief, toBriefStatus,
+  deadlineText, previewFromInput, proposedPriceLabel, rewardLabel, toApplicant, toApplicationStatus, toBrief, toBriefStatus,
   toMyApplications, toOpportunityDetail, toOpportunityPage, withCounts,
   type ApplicantRow, type BriefRow, type OpportunityDetailRow, type OpportunityRow,
 } from "./view";
@@ -149,5 +149,18 @@ describe("報名者", () => {
   it("沒有提出報價顯示「依招募預算」", () => {
     expect(proposedPriceLabel(null)).toBe("依招募預算");
     expect(proposedPriceLabel(0)).toBe("NT$0");
+  });
+});
+
+describe("deadlineText（倒數標籤只在發佈中顯示）", () => {
+  const today = "2026-11-24";
+  const cases: [string, string][] = [["past", "2026-11-20"], ["today", "2026-11-24"], ["future", "2026-11-27"]];
+  it("open：過去、今天、未來都附標籤", () => {
+    expect(deadlineText("open", "2026-11-20", today)).toBe("2026/11/20（已截止）");
+    expect(deadlineText("open", "2026-11-24", today)).toBe("2026/11/24（今天截止）");
+    expect(deadlineText("open", "2026-11-27", today)).toBe("2026/11/27（剩 3 天）");
+  });
+  it.each(["draft", "closed"] as const)("%s：任何日期都只顯示日期", (st) => {
+    for (const [, d] of cases) expect(deadlineText(st, d, today)).toBe(d.replaceAll("-", "/"));
   });
 });

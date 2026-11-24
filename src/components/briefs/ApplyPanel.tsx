@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import { applyToBriefAction, withdrawApplicationAction, type ApplyFormState } from "@/app/creator/actions";
 import { Field, inputClass } from "@/components/forms/Field";
+import { MESSAGE_MAX, textLength } from "@/lib/validation/brief";
 import { proposedPriceLabel, type ApplicationStatus } from "@/lib/briefs/view";
 import { ConfirmAction } from "./ConfirmAction";
 import { ApplicationStatusBadge } from "./StatusBadges";
@@ -67,6 +68,8 @@ function ApplyForm({ briefId, isMatch }: { briefId: string; isMatch: boolean }) 
   // 受控：React 在 action 結束後會重設表單，驗證失敗時不能把使用者打的字清掉
   const [message, setMessage] = useState("");
   const [price, setPrice] = useState("");
+  const count = textLength(message);
+  const tooLong = count > MESSAGE_MAX;
 
   if (stage === "idle") {
     return (
@@ -97,12 +100,15 @@ function ApplyForm({ briefId, isMatch }: { briefId: string; isMatch: boolean }) 
               className="w-full rounded-input border border-line bg-surface px-3 py-2 outline-none focus:ring-2 focus:ring-ink" />
           )}
         </Field>
+        <p aria-live="polite" className={`-mt-2 text-right text-xs ${tooLong ? "font-semibold text-danger" : "text-muted"}`}>
+          {count}/{MESSAGE_MAX}{tooLong ? "，超過上限" : ""}
+        </p>
         <Field label="提出不同的報價（NT$，選填）" error={fe.proposedPrice} hint="留空代表依招募預算">
           {(c) => <input {...c} name="proposedPrice" inputMode="numeric" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="例如 8000" className={inputClass} />}
         </Field>
         {state.formError && <p role="alert" className="text-sm text-danger">{state.formError}</p>}
         <div className="flex gap-2">
-          <button disabled={pending} className={primary}>{pending ? "送出中…" : "送出報名"}</button>
+          <button disabled={pending || tooLong} className={primary}>{pending ? "送出中…" : "送出報名"}</button>
           <button type="button" onClick={() => setStage("idle")} disabled={pending}
             className="h-11 shrink-0 rounded-btn border border-line px-4 font-semibold text-ink">取消</button>
         </div>

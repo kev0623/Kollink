@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
-  EMPTY_BRIEF_INPUT, firstErrorStep, hasBadChar, normalizeBriefNumbers, parseApplicationForm, parseBriefForm, toSaveBriefArgs,
-  validateApplication, validateBrief, validateBriefStep, type BriefInput,
+  EMPTY_BRIEF_INPUT, MESSAGE_MAX, firstErrorStep, hasBadChar, normalizeBriefNumbers, parseApplicationForm, parseBriefForm, toSaveBriefArgs,
+  textLength, validateApplication, validateBrief, validateBriefStep, type BriefInput,
 } from "./brief";
 
 const TODAY = "2026-11-24";
@@ -157,5 +157,19 @@ describe("報名", () => {
     expect(validateApplication({ briefId: "b", message: "字".repeat(501), proposedPrice: "" })).toEqual({ message: "最多 500 字" });
     expect(validateApplication({ briefId: "b", message: "a‮", proposedPrice: "" })).toEqual({ message: "含有不允許的特殊字元" });
     expect(validateApplication({ briefId: "b", message: "", proposedPrice: "10000001" })).toEqual({ proposedPrice: "請填 0 到 10,000,000 的整數" });
+  });
+});
+
+describe("textLength（報名留言字數，與伺服器 len 相同）", () => {
+  it("以 code point 計算", () => {
+    expect(textLength("abc")).toBe(3);
+    expect(textLength("😀😀")).toBe(2);
+    expect("😀😀".length).toBe(4);
+  });
+  it("CRLF 視為一個字元", () => {
+    expect(textLength("a\r\nb")).toBe(3);
+  });
+  it("上限常數為 500", () => {
+    expect(MESSAGE_MAX).toBe(500);
   });
 });

@@ -7,9 +7,9 @@ import { BriefOwnerActions } from "@/components/briefs/BriefOwnerActions";
 import { BriefStatusBadge } from "@/components/briefs/StatusBadges";
 import { requireRole } from "@/lib/auth/current-user";
 import { loadApplicants, loadOwnBrief } from "@/lib/briefs/brand";
-import { deadlineLabel, formatDate, todayTw } from "@/lib/briefs/dates";
+import { todayTw } from "@/lib/briefs/dates";
 import { isUuid } from "@/lib/briefs/query";
-import { displayStatusOf, rewardLabel, UNTITLED_DRAFT } from "@/lib/briefs/view";
+import { deadlineText, displayStatusOf, rewardLabel, UNTITLED_DRAFT } from "@/lib/briefs/view";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -47,7 +47,7 @@ async function BriefDetail({ params }: Props) {
         </div>
         <p className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted">
           <span className="font-semibold text-primary">{rewardLabel(brief)}</span>
-          <span>{brief.deadline ? `截止 ${formatDate(brief.deadline)}（${deadlineLabel(brief.deadline, today)}）` : "未設定截止日"}</span>
+          <span>{brief.deadline ? `截止 ${deadlineText(brief.status, brief.deadline, today)}` : "未設定截止日"}</span>
           {brief.status !== "draft" && <span>報名 {counted} 人</span>}
         </p>
         <BriefOwnerActions briefId={brief.id} display={display} />

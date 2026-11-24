@@ -1,6 +1,5 @@
 import { Check, X } from "lucide-react";
-import { deadlineLabel, formatDate } from "@/lib/briefs/dates";
-import { audienceLabel, matchItems, rewardLabel, type BriefDetailData, type MatchFlags } from "@/lib/briefs/view";
+import { audienceLabel, deadlineText, matchItems, rewardLabel, type BriefDetailData, type MatchFlags } from "@/lib/briefs/view";
 import { formatNumber } from "@/lib/format";
 import { BrandMark } from "./BrandMark";
 import { BriefCover } from "./BriefCover";
@@ -44,7 +43,7 @@ export function BriefDetailView({ brief: b, today, match, aside, headingLevel = 
             <div>
               <dt className="text-xs text-muted">截止日</dt>
               <dd className="mt-0.5 font-semibold text-ink">
-                {b.deadline ? `${formatDate(b.deadline)}（${deadlineLabel(b.deadline, today)}）` : "未設定"}
+                {b.deadline ? deadlineText(b.status, b.deadline, today) : "未設定"}
               </dd>
             </div>
             {b.applicantCount !== null && (

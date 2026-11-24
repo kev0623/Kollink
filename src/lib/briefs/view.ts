@@ -1,5 +1,6 @@
 // 招募、機會、報名的顯示用型別與轉換。
 // supabase gen types 把 RPC 的 RETURNS TABLE 欄位都標成非 null，實際上可能是 null：Row 型別一律自己定義、欄位可為 null。
+import { deadlineLabel, formatDate } from "@/lib/briefs/dates";
 import { formatNumber, formatTwd } from "@/lib/format";
 import { toNumberOrNull } from "@/lib/creators/view";
 import type { BriefInput } from "@/lib/validation/brief";
@@ -20,6 +21,11 @@ export function toBriefStatus(v: unknown): BriefStatus {
 /** 不認得的值當成 withdrawn（最保守：沒有任何操作）。 */
 export function toApplicationStatus(v: unknown): ApplicationStatus {
   return typeof v === "string" && APPLICATION_STATUSES.includes(v) ? (v as ApplicationStatus) : "withdrawn";
+}
+
+/** 截止日文字：倒數標籤（剩 N 天、今天截止、已截止）只在發佈中顯示，草稿與已關閉只顯示日期。 */
+export function deadlineText(status: BriefStatus, deadline: string, today: string): string {
+  return status === "open" ? `${formatDate(deadline)}（${deadlineLabel(deadline, today)}）` : formatDate(deadline);
 }
 
 export function displayStatusOf(status: BriefStatus, deadline: string | null, today: string): BriefDisplayStatus {
@@ -182,6 +188,8 @@ export type BriefDetailData = Reward & {
   coverPath: string | null;
   brandName: string;
   brandLogoPath: string | null;
+  /** 決定截止日是否附倒數標籤；預覽時以發佈後的樣子（open）顯示 */
+  status: BriefStatus;
   /** 預覽時是 null（還沒有人報名，不顯示） */
   applicantCount: number | null;
 };
@@ -208,6 +216,7 @@ export function previewFromInput(i: BriefInput, brand: { name: string; logoPath:
     coverPath: i.coverPath,
     brandName: brand.name,
     brandLogoPath: brand.logoPath,
+    status: "open",
     applicantCount: null,
   };
 }
@@ -331,7 +340,7 @@ export function detailDataOf(o: OpportunityDetail): BriefDetailData {
     title: o.title, description: o.description, collabTypes: o.collabTypes, categories: o.categories,
     minFollowers: o.minFollowers, region: o.region, budgetMin: o.budgetMin, budgetMax: o.budgetMax,
     includesProduct: o.includesProduct, deadline: o.deadline, coverPath: o.coverPath, brandName: o.brandName,
-    brandLogoPath: o.brandLogoPath, applicantCount: o.applicantCount,
+    brandLogoPath: o.brandLogoPath, status: o.status, applicantCount: o.applicantCount,
   };
 }
 

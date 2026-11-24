@@ -118,7 +118,20 @@
   - 錄取或婉拒沒有通知（spec 不在範圍內）；錄取後建立對話、合作案在計畫 6、7。
   - 品牌刪除帳號時，招募與報名會 cascade 刪除（帳號刪除流程見計畫 8 的 soft delete 項目）。
   - 發佈、關閉、錄取後沒有 revalidate `/creator` 相關路徑（頁面本來就不快取，影響有限）；重複點擊關閉／錄取／撤回時顯示錯誤而不是靜默重新整理（`isStaleStateMessage` 以在地化文字比對，建議改用錯誤代碼）。
-  - 已知小問題：已關閉但截止日在未來的招募，列表仍顯示「剩 N 天」；分頁籤與篩選 chip 高度 36px 小於 44px 觸控目標、沒有 focus-visible；婉拒按鈕沒有進行中標示；空 handle 會連到 `/c/`；`briefs_select` 每列呼叫 definer（規模變大再看）；rows-guard 沒有 pgTAP 測試。
+  - 已知小問題：分頁籤與篩選 chip 高度 36px 小於 44px 觸控目標、沒有 focus-visible；婉拒按鈕沒有進行中標示；空 handle 會連到 `/c/`；`briefs_select` 每列呼叫 definer（規模變大再看）；rows-guard 沒有 pgTAP 測試。
+  - 計畫 5 最終審查留下的小事（皆不影響上線）：
+    - 招募表單草稿步驟 1–3 按 Enter 會儲存草稿（新招募會導向編輯頁）。
+    - 創作者手機報名面板高度 70vh，鍵盤彈出時偏擠。
+    - `list_opportunities` 的頁數超過最後一頁時 total 會是 0。
+    - `planCoverUpload` 沒有檢查 id 格式。
+    - 舊的 `budget_*` CHECK 與新的重複，可移除。
+    - 錯誤對照：invalid title／description 只顯示通用訊息，invalid accept 沒有對照。
+    - `formatDateTw` 遇到無效 ISO 字串會 throw。
+    - `delete_brief` 在多則招募共用同一個 `cover_path` 時的邊界情況。
+    - `savedMark` 型別是 `unknown`。
+    - 「已報名」分頁的 skeleton 是 grid，與實際列表不一致。
+    - `/creator` 頁沒有單元測試（只有 E2E）。
+    - 開發備註：瀏覽器測試開發伺服器請用 `http://localhost`，不要用 `127.0.0.1`（`allowedDevOrigins`）。
 
 ### 6. 合作案詳情頁
 - 貼文連結在 app 端用 `new URL()` 再檢查一次（資料庫的 regex 會接受 `a..b.com`）。

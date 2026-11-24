@@ -21,6 +21,14 @@ function len(v: string): number {
   return [...v].length;
 }
 
+/** 報名留言上限（字）。 */
+export const MESSAGE_MAX = 500;
+
+/** 報名留言的字數（給畫面計數器用；CRLF 先轉成 LF，與 parseApplicationForm 相同）。 */
+export function textLength(v: string): number {
+  return len(v.replace(/\r\n?/g, "\n"));
+}
+
 /** 數字欄位：去掉千分位逗號與空白。 */
 function digits(v: string): string {
   return cleanText(v).replace(/[,，\s]/g, "");
@@ -205,7 +213,7 @@ export function parseApplicationForm(fd: FormData): ApplicationInput {
 export function validateApplication(i: ApplicationInput): Record<string, string> | null {
   const e: Record<string, string> = {};
   if (hasBadChar(i.message)) e.message = BAD_CHAR_MESSAGE;
-  else if (len(i.message) > 500) e.message = "最多 500 字";
+  else if (len(i.message) > MESSAGE_MAX) e.message = "最多 500 字";
   if (i.proposedPrice !== "" && !priceOk(i.proposedPrice)) e.proposedPrice = "請填 0 到 10,000,000 的整數";
   return Object.keys(e).length ? e : null;
 }

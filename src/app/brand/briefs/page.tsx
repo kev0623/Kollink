@@ -4,9 +4,9 @@ import { Plus } from "lucide-react";
 import { BriefStatusBadge } from "@/components/briefs/StatusBadges";
 import { requireRole } from "@/lib/auth/current-user";
 import { loadMyBriefs } from "@/lib/briefs/brand";
-import { deadlineLabel, formatDate, formatDateTw, todayTw } from "@/lib/briefs/dates";
+import { formatDateTw, todayTw } from "@/lib/briefs/dates";
 import { BRAND_BRIEF_TABS, parseBrandBriefTab } from "@/lib/briefs/query";
-import { brandTabOf, displayStatusOf, UNTITLED_DRAFT } from "@/lib/briefs/view";
+import { brandTabOf, deadlineText, displayStatusOf, UNTITLED_DRAFT } from "@/lib/briefs/view";
 import { formatNumber } from "@/lib/format";
 
 type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> };
@@ -78,7 +78,7 @@ async function BriefList({ searchParams }: Props) {
                   <BriefStatusBadge status={b.display} />
                 </div>
                 <p className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted">
-                  <span>{b.deadline ? `截止 ${formatDate(b.deadline)}（${deadlineLabel(b.deadline, today)}）` : "未設定截止日"}</span>
+                  <span>{b.deadline ? `截止 ${deadlineText(b.status, b.deadline, today)}` : "未設定截止日"}</span>
                   {b.status !== "draft" && (
                     <span>報名 {formatNumber(b.applicantCount)} 人（待處理 {formatNumber(b.pendingCount)}）</span>
                   )}
