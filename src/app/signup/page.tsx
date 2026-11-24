@@ -17,9 +17,9 @@ export default function SignupPage({ searchParams }: { searchParams: SP }) {
           <Signup searchParams={searchParams} />
         </Suspense>
       </div>
-      <p className="mt-6 text-sm text-muted">
-        已經有帳號？<Link href="/login" className="font-bold text-primary">登入</Link>
-      </p>
+      <Suspense fallback={null}>
+        <SwitchLink searchParams={searchParams} />
+      </Suspense>
     </main>
   );
 }
@@ -40,11 +40,22 @@ async function Signup({ searchParams }: { searchParams: SP }) {
     <>
       <p className="mb-4 text-muted">
         第 2 步：以{role === "brand" ? "品牌" : "創作者"}身分註冊
-        <Link href="/signup" className="ml-2 text-sm text-primary">更改</Link>
+        <Link href={next ? `/signup?next=${encodeURIComponent(next)}` : "/signup"} className="ml-2 text-sm text-primary">更改</Link>
       </p>
       <div className="max-w-md">
         <AuthForm role={role} next={next} googleEnabled={process.env.NEXT_PUBLIC_GOOGLE_AUTH_ENABLED === "true"} />
       </div>
     </>
+  );
+}
+
+async function SwitchLink({ searchParams }: { searchParams: SP }) {
+  const sp = await searchParams;
+  const next = safeNextPath(typeof sp.next === "string" ? sp.next : null);
+  return (
+    <p className="mt-6 text-sm text-muted">
+      已經有帳號？
+      <Link href={next ? `/login?next=${encodeURIComponent(next)}` : "/login"} className="font-bold text-primary">登入</Link>
+    </p>
   );
 }
