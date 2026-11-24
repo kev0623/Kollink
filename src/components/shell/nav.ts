@@ -16,3 +16,10 @@ export const CREATOR_NAV: NavItem[] = [
   { label: "收入", href: null },
   { label: "我的", href: "/creator/me" },
 ];
+
+/** 目前路徑是否屬於這個項目；首頁（/brand、/creator）只比對完全相同，避免子頁面時首頁也亮起。 */
+export function isActive(href: string, pathname: string): boolean {
+  if (pathname === href) return true;
+  if (href === "/brand" || href === "/creator") return false;
+  return pathname.startsWith(`${href}/`);
+}

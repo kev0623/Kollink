@@ -1,6 +1,5 @@
 import { Suspense } from "react";
-import { redirect } from "next/navigation";
-import { getCurrentUser } from "@/lib/auth/current-user";
+import { requireRole } from "@/lib/auth/current-user";
 import { SideNav } from "@/components/shell/SideNav";
 import { BottomTabBar } from "@/components/shell/BottomTabBar";
 import { CREATOR_NAV } from "@/components/shell/nav";
@@ -13,7 +12,7 @@ export default function CreatorLayout({ children }: { children: React.ReactNode 
       <aside className="hidden md:block">
         <SideNav items={CREATOR_NAV} footer={<SignOutButton />} />
       </aside>
-      <main className="flex-1 px-4 pb-20 pt-6 md:px-8 md:pb-8">
+      <main className="flex-1 px-4 pb-[calc(5rem+env(safe-area-inset-bottom))] pt-6 md:px-8 md:pb-8">
         <Suspense fallback={<p className="text-muted">載入中…</p>}>
           <Gate>{children}</Gate>
         </Suspense>
@@ -24,10 +23,7 @@ export default function CreatorLayout({ children }: { children: React.ReactNode 
 }
 
 async function Gate({ children }: { children: React.ReactNode }) {
-  const me = await getCurrentUser();
-  if (!me) redirect("/login?next=/creator");
-  if (!me.profile) redirect("/onboarding");
-  if (me.profile.role !== "creator") redirect("/brand");
+  const me = await requireRole("creator");
   return (
     <>
       <StatusBanner me={me} />

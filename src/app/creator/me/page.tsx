@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { getCurrentUser } from "@/lib/auth/current-user";
+import { requireRole } from "@/lib/auth/current-user";
 import { SignOutButton } from "@/components/shell/SignOutButton";
 import { CreatorSettingsForm } from "./CreatorSettingsForm";
 
@@ -18,8 +18,8 @@ export default function CreatorMePage() {
 }
 
 async function Settings() {
-  const me = await getCurrentUser();
-  if (!me?.creator || !me.profile) return null;
+  const me = await requireRole("creator");
+  if (!me.creator || !me.profile) return null;
   const c = me.creator;
   return (
     <CreatorSettingsForm

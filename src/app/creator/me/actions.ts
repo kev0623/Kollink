@@ -2,14 +2,14 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { getCurrentUser } from "@/lib/auth/current-user";
+import { requireRole } from "@/lib/auth/current-user";
 import { mapAccountError, type FormState } from "@/lib/auth/account-errors";
 import { validateCreatorInput } from "@/lib/validation/onboarding";
 import { parseCreatorForm } from "@/lib/validation/form-data";
 
 export async function updateCreatorAction(_prev: FormState, fd: FormData): Promise<FormState> {
-  const me = await getCurrentUser();
-  if (!me?.creator) return { formError: "請重新登入" };
+  const me = await requireRole("creator");
+  if (!me.creator) return { formError: "找不到創作者資料，請重新登入" };
   const input = parseCreatorForm(fd);
   // handle 鎖定後表單不送 handle（readOnly），沿用原本的值；鎖定以資料庫的 handle_locked_at 為準
   if (me.creator.handleLocked) input.handle = me.creator.handle;

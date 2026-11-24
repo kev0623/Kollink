@@ -1,16 +1,35 @@
+"use client";
 import Link from "next/link";
-import type { NavItem } from "./nav";
+import { usePathname } from "next/navigation";
+import { isActive, type NavItem } from "./nav";
 
 export function BottomTabBar({ items }: { items: NavItem[] }) {
+  const pathname = usePathname();
   return (
-    <nav className="fixed inset-x-0 bottom-0 flex justify-around border-t border-line bg-surface py-2 text-xs md:hidden">
-      {items.map((it) =>
-        it.href ? (
-          <Link key={it.label} href={it.href} className="px-2 py-1">{it.label}</Link>
-        ) : (
-          <span key={it.label} className="px-2 py-1 text-muted opacity-60">{it.label}</span>
-        ),
-      )}
+    <nav
+      aria-label="主選單"
+      className="fixed inset-x-0 bottom-0 flex justify-around border-t border-line bg-surface pb-[env(safe-area-inset-bottom)] text-xs md:hidden"
+    >
+      {items.map((it) => {
+        if (!it.href) {
+          return (
+            <span key={it.label} className="flex min-h-11 min-w-11 items-center justify-center px-2 text-muted opacity-60">
+              {it.label}<span className="sr-only">（即將推出）</span>
+            </span>
+          );
+        }
+        const active = isActive(it.href, pathname);
+        return (
+          <Link
+            key={it.label}
+            href={it.href}
+            aria-current={active ? "page" : undefined}
+            className={`flex min-h-11 min-w-11 items-center justify-center px-2 ${active ? "font-bold text-primary" : ""}`}
+          >
+            {it.label}
+          </Link>
+        );
+      })}
     </nav>
   );
 }

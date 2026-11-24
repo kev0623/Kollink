@@ -1,7 +1,9 @@
 import "server-only";
 import { cache } from "react";
+import { redirect } from "next/navigation";
+import { connection } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import type { Role } from "./post-login";
+import { homeFor, type Role } from "./post-login";
 
 export type CreatorStatus = "pending" | "approved" | "suspended";
 
@@ -24,6 +26,8 @@ export type CurrentUser = {
 
 /** 目前登入的使用者與其資料。會讀 cookie，只能在 <Suspense> 內呼叫。 */
 export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
+  // 結果依每次請求而異：先等請求進來再往下，避免預渲染階段就建立 Supabase client（auth-js 會讀 Date.now()）
+  await connection();
   const supabase = await createClient();
   const {
     data: { user },
@@ -76,3 +80,15 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
 
   return base;
 });
+
+/**
+ * 頁面與 Server Action 的角色守門：layout 在用戶端切換頁面時不會重新執行，所以每個讀取使用者資料的頁面都要自己呼叫。
+ * 未登入導到登入頁、還沒填資料導到 /onboarding、角色不符導回自己的首頁。
+ */
+export async function requireRole(role: Role): Promise<CurrentUser> {
+  const me = await getCurrentUser();
+  if (!me) redirect(`/login?next=${homeFor(role)}`);
+  if (!me.profile) redirect("/onboarding");
+  if (me.profile.role !== role) redirect(homeFor(me.profile.role));
+  return me;
+}

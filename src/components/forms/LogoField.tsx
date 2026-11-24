@@ -1,5 +1,5 @@
 "use client";
-import { useId, useMemo, useRef, useState } from "react";
+import { useId, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { brandLogoUrl } from "@/lib/brand-logo";
 
@@ -17,7 +17,6 @@ type Props = {
 };
 
 export function LogoField({ userId, initialPath, error, onBusyChange, disabled }: Props) {
-  const supabase = useMemo(() => createClient(), []);
   const [logoPath, setLogoPath] = useState<string | null>(initialPath);
   const url = brandLogoUrl(logoPath);
   const [msg, setMsg] = useState<string | null>(null);
@@ -36,7 +35,7 @@ export function LogoField({ userId, initialPath, error, onBusyChange, disabled }
     if (disabled || !path || path !== ownedRef.current) return;
     ownedRef.current = null;
     // 盡力刪除，失敗就忽略
-    void Promise.resolve(supabase.storage.from("brand-logos").remove([path])).catch(() => {});
+    void Promise.resolve(createClient().storage.from("brand-logos").remove([path])).catch(() => {});
   }
 
   async function onFile(file: File | undefined) {
@@ -48,7 +47,7 @@ export function LogoField({ userId, initialPath, error, onBusyChange, disabled }
     setBusyState(true);
     try {
       const path = `${userId}/${crypto.randomUUID()}.${ext}`;
-      const { error: e } = await supabase.storage.from("brand-logos").upload(path, file, { contentType: file.type });
+      const { error: e } = await createClient().storage.from("brand-logos").upload(path, file, { contentType: file.type });
       if (e) return setMsg("上傳失敗，請再試一次");
       discard(ownedRef.current);
       ownedRef.current = path;

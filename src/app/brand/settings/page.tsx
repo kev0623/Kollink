@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { getCurrentUser } from "@/lib/auth/current-user";
+import { requireRole } from "@/lib/auth/current-user";
 import { BrandSettingsForm } from "./BrandSettingsForm";
 
 export default function BrandSettingsPage() {
@@ -14,7 +14,7 @@ export default function BrandSettingsPage() {
 }
 
 async function Settings() {
-  const me = await getCurrentUser();
-  if (!me?.brand) return null;
+  const me = await requireRole("brand");
+  if (!me.brand) return null;
   return <BrandSettingsForm userId={me.id} brandName={me.brand.brandName} industry={me.brand.industry} logoPath={me.brand.logoPath} />;
 }
