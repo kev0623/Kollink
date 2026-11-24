@@ -169,16 +169,36 @@ isOneToOne: false
       referencedColumns: ["user_id"]
     }
                   ]
-                },"creator_profiles": {
+                },"creator_portfolio_items": {
                   Row: {
-                    "bio": string | null,"categories": (string)[],"collab_types": (string)[],"created_at": string,"engagement_rate": number | null,"follower_count": number,"handle": string,"handle_locked_at": string | null,"ig_username": string,"region": string | null,"status": string,"style_tags": (string)[],"user_id": string
+                    "created_at": string,"creator_id": string,"id": string,"image_path": string,"link_url": string | null,"position": number
                   }
                   ComputedFields: never
                   Insert: {
-                    "bio"?: string | null,"categories"?: (string)[],"collab_types"?: (string)[],"created_at"?: string,"engagement_rate"?: number | null,"follower_count"?: number,"handle": string,"handle_locked_at"?: string | null,"ig_username": string,"region"?: string | null,"status"?: string,"style_tags"?: (string)[],"user_id": string
+                    "created_at"?: string,"creator_id": string,"id"?: string,"image_path": string,"link_url"?: string | null,"position": number
                   }
                   Update: {
-                    "bio"?: string | null,"categories"?: (string)[],"collab_types"?: (string)[],"created_at"?: string,"engagement_rate"?: number | null,"follower_count"?: number,"handle"?: string,"handle_locked_at"?: string | null,"ig_username"?: string,"region"?: string | null,"status"?: string,"style_tags"?: (string)[],"user_id"?: string
+                    "created_at"?: string,"creator_id"?: string,"id"?: string,"image_path"?: string,"link_url"?: string | null,"position"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "creator_portfolio_items_creator_id_fkey"
+      columns: ["creator_id"]
+isOneToOne: false
+      referencedRelation: "creator_profiles"
+      referencedColumns: ["user_id"]
+    }
+                  ]
+                },"creator_profiles": {
+                  Row: {
+                    "audience_age": string | null,"avatar_path": string | null,"bio": string | null,"categories": (string)[],"collab_types": (string)[],"created_at": string,"engagement_rate": number | null,"follower_count": number,"handle": string,"handle_locked_at": string | null,"ig_username": string,"region": string | null,"status": string,"style_tags": (string)[],"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "audience_age"?: string | null,"avatar_path"?: string | null,"bio"?: string | null,"categories"?: (string)[],"collab_types"?: (string)[],"created_at"?: string,"engagement_rate"?: number | null,"follower_count"?: number,"handle": string,"handle_locked_at"?: string | null,"ig_username": string,"region"?: string | null,"status"?: string,"style_tags"?: (string)[],"user_id": string
+                  }
+                  Update: {
+                    "audience_age"?: string | null,"avatar_path"?: string | null,"bio"?: string | null,"categories"?: (string)[],"collab_types"?: (string)[],"created_at"?: string,"engagement_rate"?: number | null,"follower_count"?: number,"handle"?: string,"handle_locked_at"?: string | null,"ig_username"?: string,"region"?: string | null,"status"?: string,"style_tags"?: (string)[],"user_id"?: string
                   }
                   Relationships: [
                     {
@@ -298,8 +318,17 @@ isOneToOne: false
             "check_categories":
 { Args: { "p": (string)[] }; Returns: (string)[]
                            },
+"check_instagram_url":
+{ Args: { "p": string }; Returns: string
+                           },
 "check_logo_path":
 { Args: { "p_path": string,"p_uid": string }; Returns: string
+                           },
+"check_media_path":
+{ Args: { "p_field": string,"p_kind": string,"p_path": string,"p_uid": string }; Returns: string
+                           },
+"check_text_list":
+{ Args: { "p": (string)[],"p_field": string,"p_max_count": number,"p_max_len": number }; Returns: (string)[]
                            },
 "clean_text":
 { Args: { "p": string }; Returns: string
@@ -312,6 +341,11 @@ isOneToOne: false
                            },
 "gen_verification_code":
 { Args: Record<PropertyKey, never>; Returns: string
+                           },
+"get_public_creator":
+{ Args: { "p_handle": string }; Returns: {
+              "audience_age": string,"avatar_path": string,"bio": string,"categories": (string)[],"collab_types": (string)[],"display_name": string,"engagement_rate": number,"follower_count": number,"handle": string,"is_self": boolean,"region": string,"status": string,"style_tags": (string)[],"user_id": string
+            }[]
                            },
 "has_bidi":
 { Args: { "p": string }; Returns: boolean
@@ -331,6 +365,12 @@ isOneToOne: false
 "record_payment_success":
 { Args: { "p_amount_twd": number,"p_merchant_trade_no": string,"p_provider_trade_no": string,"p_raw": Json }; Returns: string
                            },
+"set_creator_portfolio":
+{ Args: { "p_items": Json }; Returns: undefined
+                           },
+"set_creator_rates":
+{ Args: { "p_rates": Json }; Returns: undefined
+                           },
 "transition_collaboration":
 { Args: { "p_action": string,"p_collab_id": string,"p_note"?: string,"p_published_url"?: string }; Returns: Database["public"]['Enums']["collab_status"]
                            },
@@ -339,6 +379,9 @@ isOneToOne: false
                            },
 "update_creator_account":
 { Args: { "p_categories": (string)[],"p_display_name": string,"p_follower_count": number,"p_handle": string,"p_ig_username": string,"p_region": string }; Returns: string
+                           },
+"update_creator_public_profile":
+{ Args: { "p_audience_age": string,"p_avatar_path": string,"p_bio": string,"p_collab_types": (string)[],"p_engagement_rate": number,"p_style_tags": (string)[] }; Returns: undefined
                            }
           }
           Enums: {

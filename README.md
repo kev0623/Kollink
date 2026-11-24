@@ -85,6 +85,8 @@ update public.creator_profiles set status = 'approved'
 ```
 結果顯示 `UPDATE 0` 代表沒有任何列被更新，原因是兩者之一：handle 或 ig_username 打錯（請從查詢結果複製），或創作者在審核期間改了 IG 帳號（改 IG 會退回審核並換新驗證碼），請重新查詢並確認新的 IG 與驗證碼後再核准。
 
+核准後公開頁 `/c/<handle>` 立刻對所有人顯示（公開頁不快取）；把 `status` 改成 `suspended` 也會立刻下架。
+
 ### 修改已鎖定的網址代稱（handle）
 
 審核通過（或曾離開 pending）後，handle 會被鎖定，創作者自己不能改。管理員要改時，必須以 postgres 身分、在**同一個 transaction** 內先開旗標：
@@ -111,6 +113,8 @@ CLI 3.x 的 `db push` 預設推到本機，一定要加 `--remote`。**不要執
 
 雲端新專案不會自動把 public 資料表授權給 API 角色（本機會），所以權限一律寫在 migration 裡（見 `20261124000100_explicit_api_grants.sql`）。之後新增資料表時，要在同一個 migration 寫明 `grant`。
 
+創作者頭像與作品的 Storage bucket `creator-media` 由 migration `20261124000300_creator_media.sql` 建立，執行上面的 `npx supabase db push --remote` 就會一起建好，不用在後台手動建立 bucket 或 policy。這個 bucket 是公開的：未審核創作者的圖片網址如果被猜到也看得到（路徑含 UUID，很難猜），這是已接受的取捨。
+
 本機的 `config.toml` 不會自動套用到正式專案，上線前在 Supabase 後台逐項設定：
 
 1. Authentication → Providers → Email：開啟「Confirm email」（`enable_confirmations`）；Email OTP 長度 6、有效期限 900 秒（`otp_expiry = 900`）。注意後台預設是 8 碼、3600 秒，一定要改。
@@ -124,7 +128,7 @@ CLI 3.x 的 `db push` 預設推到本機，一定要加 `--remote`。**不要執
 6. Authentication → SMTP Settings：設定自訂 SMTP（例如 Resend）。內建寄信上限約每小時 2 封，不能用於正式環境。
 7. Authentication → Attack Protection：建議開啟 CAPTCHA（Turnstile 或 hCaptcha），並在登入頁加上對應元件。
 8. Google OAuth：Providers → Google 填入用戶端 ID／密鑰；Google Cloud Console 的重新導向 URI 加上 `https://<專案>.supabase.co/auth/v1/callback`。
-9. 排程清理沒被引用的 `brand-logos` 物件，見 `docs/superpowers/plans/2026-11-22-foundation-followups.md`。
+9. 排程清理沒被引用的 Storage 物件：`brand-logos`（沒被 `brand_profiles.logo_path` 引用）與 `creator-media`（沒被 `creator_profiles.avatar_path`、`creator_portfolio_items.image_path` 引用），都只刪超過 24 小時的，見 `docs/superpowers/plans/2026-11-22-foundation-followups.md`。
 
 ## 部署（Vercel）
 

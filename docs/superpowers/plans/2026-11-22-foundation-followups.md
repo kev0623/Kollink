@@ -17,6 +17,8 @@
 | 付款金額 | 必須同時等於付款單金額和合作案報價；不接受空值。 |
 | 資料表權限寫在 migration | 雲端新專案不會自動授權 public 資料表給 anon / authenticated / service_role（本機會）。`20261124000100_explicit_api_grants.sql` 補齊現有權限；之後每個新增資料表的 migration 都要自己寫 `grant`，否則本機測試會過、雲端會 permission denied。 |
 | 綠界通知 | 檢查 MerchantID（新環境變數 `ECPAY_MERCHANT_ID`）；`SimulatePaid=1` 的模擬付款只回覆收到、不記錄；金額只接受純整數。 |
+| 報價只能經由函式寫入 | 計畫 3 起 `creator_rates` 收回 anon / authenticated 的 INSERT、UPDATE、DELETE，只能用 `set_creator_rates`；取消勾選的合作形式，報價由 `update_creator_public_profile` 一併刪除。 |
+| 公開頁不快取 | `/c/[handle]` 每次請求以使用者自己的 client 讀取，因為審核狀態目前在 Studio 用 SQL 改、App 無法觸發 revalidate。找不到時回應碼是 200 + `noindex`（串流後才 `notFound()`，soft 404）。 |
 
 ## 各計畫需要處理的事項
 
@@ -36,20 +38,41 @@
   - 管理員目前登入後會被導去 `/onboarding`（計畫 9）。
   - 正式環境 SMTP 與 Google OAuth 網址（部署，見 README）。
   - `create_*_account` 尚未限制同一 IP 的註冊頻率（上線前評估）。
-  - 品牌 Logo 孤兒物件清理排程尚未實作（見上方 Logo 注意事項）。
+  - 品牌 Logo 孤兒物件清理排程尚未實作（見上方 Logo 注意事項）；計畫 3 的 `creator-media` 共用同一項。
   - 審核狀態橫幅在 client 端導覽後不會更新，要重新整理才會看到最新狀態。
   - 色彩 token：`text-white` 尚未納入 token；錯誤文字的對比度需再檢查。
-  - 之後每個資料頁都必須呼叫 `requireRole`，否則沒有角色或未審核的使用者會直接看到頁面。
+  - 之後每個資料頁都必須呼叫 `requireRole`，否則沒有角色或未審核的使用者會直接看到頁面。（計畫 3 的 `/creator/me/profile` 與其 server action 已呼叫；公開頁 `/c/*` 刻意不呼叫）
   - 選項白名單（產業、地區、內容領域等）只在 UI 端強制（同計畫 4、5 的項目）。
   - proxy 對每個 RSC prefetch 都呼叫 `getUser()`（會打 Auth 伺服器）；可評估改用 `getClaims()`。
   - 已登入的使用者造訪 `/login` 會停留在登入頁；可考慮直接導回首頁。
   - service_role 仍可直接寫入 `profiles`、`brand_profiles`；可考慮比照 `creator_profiles` 收回其寫入權限。
 
 ### 3. 創作者公開檔案頁
-- 訪客（anon）讀不到 `profiles.display_name`；缺少頭像欄位；評分、完成案數、準時率需要合作資料，但 RLS 會擋住 → 需要一個欄位，或只開放必要欄位的 view / definer 函式，另外要建評價資料表。
-- 收藏 ♡ 需要一張資料表。
-
-- 計畫 2 Task 3 修正收回了創作者對 `engagement_rate`、`style_tags`、`collab_types`、`bio` 的直接 UPDATE（`profiles`、`brand_profiles`、`creator_profiles` 的 UPDATE 權限與 `*_update_self` policy 全部移除，修改改走 definer 函式）。公開檔案頁要改 bio / style_tags / collab_types / engagement_rate 時，擴充 `update_creator_account` 或另開 definer 函式。
+- 訪客（anon）讀不到 `profiles.display_name`；缺少頭像欄位 → 已完成（計畫 3：`get_public_creator` definer 函式、`avatar_path`）。評分、完成案數、準時率與評價資料表 → 移到計畫 6（公開頁目前固定顯示「新創作者・尚無評價」）。
+- 收藏 ♡ 需要一張資料表 → 移到計畫 4。
+- 計畫 2 Task 3 收回了 bio / style_tags / collab_types / engagement_rate 的直接 UPDATE → 已完成（計畫 3：`update_creator_public_profile`）。
+- 計畫 3 新增的後續事項：
+  - 計畫 9 加入 `set_creator_status()` 與核准的 Server Action 後，評估公開資料改用 `cacheTag('creator:<handle>')` 快取，並在核准、停權、創作者儲存時 `updateTag`。
+  - `creator-media` 孤兒物件清理與 `brand-logos` 共用同一個排程（尚未實作）。
+  - OG 圖片的頭像只支援 PNG／JPEG；WebP 頭像在 OG 圖片顯示名字首字。中文字型由 `next/og` 在請求時從 Google Fonts 下載，Google Fonts 連不到時中文會缺字。
+  - `get_public_creator` 會回傳 `user_id`（頭像網址本來就含 user_id）。
+  - 已登入的創作者點「品牌登入後可查看報價」會停在登入頁（同計畫 2「已登入造訪 /login」那一項）。
+  - 公開頁 `metadataBase` 只在關閉 Vercel 系統環境變數或非 Vercel 部署時才需要設定（Next 16 會退回使用 `VERCEL_PROJECT_PRODUCTION_URL`）。
+  - 品牌透過鎖定報價的連結註冊後，onboarding 完成會落在 `/brand`（onboarding 沒有帶 `next`）；考慮讓 `next` 穿過 onboarding。
+  - 計畫 3 最終審查延後項目：
+    - 收回 `service_role` 對 `creator_rates` 的寫入權限並加測試。
+    - 缺少的測試：停權創作者、報價／作品 payload 形狀錯誤、anon client 設定、`loadPortfolio`／`loadRates` 錯誤與空資料、AvatarField。
+    - IG 連結 regex 大小寫敏感且不接受 `#fragment`（資料庫與前端要一起改）。
+    - `validatePortfolio` 路徑格式、`parseRatesForm` 去重、`parsePortfolioForm` 數量上限。
+    - `formatPercent(NaN)`、`toNumberOrNull("")`。
+    - JSDoc 註明 `loadPortfolio`／`loadRates` 會讀 cookies；PostgrestError 與 Error 的差異；本人頁 `.single()`。
+    - 跨資料夾的 pgTAP 測試有雙重防護，需要整理。
+    - `/c` layout 底部 6rem padding 對所有身分都存在。
+    - 全站 `error.tsx`。
+    - 頂列「登入」沒有帶 `next`（需要 `usePathname` 的 client island）。
+    - 「已儲存」提示改 sticky。
+    - Storage 孤兒物件（排程清理）。
+    - OG 圖片下載 Google 字型沒有 timeout。
 
 ### 4. 創作者廣場、5. 招募與機會頁
 - 索引：`creator_profiles(status)`、`categories` / `style_tags` 的 GIN 索引、`briefs(status, deadline)`、`briefs(brand_id)`、`brief_applications(creator_id)`、`conversations(creator_id)`、`collaborations(conversation_id)`、`collaborations(brief_id)`。

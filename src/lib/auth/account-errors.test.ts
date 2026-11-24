@@ -51,4 +51,18 @@ describe("mapAccountError", () => {
       kind: "state", state: { formError: "發生錯誤，請稍後再試" },
     });
   });
+  it("公開頁欄位錯誤對應到表單欄位", () => {
+    const cases: [string, string][] = [
+      ["invalid bio", "bio"], ["invalid style_tags", "styleTags"], ["invalid collab_types", "collabTypes"],
+      ["invalid engagement_rate", "engagementRate"], ["invalid audience_age", "audienceAge"],
+      ["invalid avatar_path", "avatarPath"], ["invalid portfolio", "portfolio"], ["invalid image_path", "portfolio"],
+      ["invalid link_url", "portfolio"], ["invalid rates", "rates"], ["invalid collab_type", "rates"],
+      ["invalid price_twd", "rates"],
+    ];
+    for (const [message, field] of cases) {
+      expect(mapAccountError({ code: "22023", message })).toEqual({
+        kind: "state", state: { fieldErrors: { [field]: "格式不正確" } },
+      });
+    }
+  });
 });

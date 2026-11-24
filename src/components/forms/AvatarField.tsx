@@ -1,0 +1,95 @@
+"use client";
+import { useId, useRef, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
+import { CREATOR_MEDIA_BUCKET, creatorMediaUrl, planMediaUpload } from "@/lib/creator-media";
+import { initialOf } from "@/lib/format";
+
+type Props = {
+  userId: string;
+  /** 沒有頭像時顯示名字第一個字。 */
+  name: string;
+  initialPath: string | null;
+  error?: string;
+  /** 上傳中為 true；表單用來停用送出按鈕。 */
+  onBusyChange?: (busy: boolean) => void;
+  /** 表單儲存中為 true：不能換檔、移除，也不會刪除任何檔案。 */
+  disabled?: boolean;
+};
+
+export function AvatarField({ userId, name, initialPath, error, onBusyChange, disabled }: Props) {
+  const [path, setPath] = useState<string | null>(initialPath);
+  const [msg, setMsg] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const ownedRef = useRef<string | null>(null);
+  const noteId = useId();
+  const url = creatorMediaUrl(path);
+
+  function setBusyState(b: boolean) {
+    setBusy(b);
+    onBusyChange?.(b);
+  }
+
+  function discard(p: string | null) {
+    if (disabled || !p || p !== ownedRef.current) return;
+    ownedRef.current = null;
+    // 盡力刪除，失敗就忽略（孤兒檔由排程清理，見 followups）
+    void Promise.resolve(createClient().storage.from(CREATOR_MEDIA_BUCKET).remove([p])).catch(() => {});
+  }
+
+  async function onFile(file: File | undefined) {
+    if (!file) return;
+    setMsg(null);
+    const plan = planMediaUpload(userId, "avatar", file, crypto.randomUUID());
+    if ("error" in plan) return setMsg(plan.error);
+    setBusyState(true);
+    try {
+      const { error: e } = await createClient().storage.from(CREATOR_MEDIA_BUCKET)
+        .upload(plan.path, file, { contentType: file.type });
+      if (e) return setMsg("上傳失敗，請再試一次");
+      discard(ownedRef.current);
+      ownedRef.current = plan.path;
+      setPath(plan.path);
+    } catch {
+      setMsg("上傳失敗，請再試一次");
+    } finally {
+      setBusyState(false);
+    }
+  }
+
+  function remove() {
+    if (disabled) return;
+    discard(path);
+    setPath(null);
+    setMsg(null);
+  }
+
+  const note = msg ?? error;
+  return (
+    <div>
+      <span className="text-sm font-semibold text-ink">頭像（選填）</span>
+      <div className="mt-1 flex flex-wrap items-center gap-3">
+        {url ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={url} alt="頭像預覽" className="h-16 w-16 rounded-full border border-line object-cover" />
+        ) : (
+          <div aria-hidden="true" className="flex h-16 w-16 items-center justify-center rounded-full bg-ink text-2xl font-semibold text-on-ink">
+            {initialOf(name)}
+          </div>
+        )}
+        <input
+          type="file" className="min-w-0 flex-1" accept="image/png,image/jpeg,image/webp" disabled={busy || disabled}
+          aria-label="上傳頭像" aria-describedby={note ? noteId : undefined} aria-invalid={note ? true : undefined}
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            e.target.value = ""; // 讓同一個檔案可以再選一次
+            void onFile(file);
+          }}
+        />
+        {path && <button type="button" disabled={busy || disabled} className="text-sm text-muted" onClick={remove}>移除頭像</button>}
+      </div>
+      <input type="hidden" name="avatarPath" value={path ?? ""} />
+      {note && <span id={noteId} role={msg ? "status" : undefined} className="mt-1 block text-xs text-danger">{note}</span>}
+      <span className="mt-1 block text-xs text-muted">JPG、PNG、WebP，5MB 以內</span>
+    </div>
+  );
+}
