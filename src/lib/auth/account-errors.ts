@@ -26,6 +26,9 @@ export function mapAccountError(error: { code?: string; message?: string }):
   if (error.code === "42501" && message === "handle locked after approval") {
     return { kind: "state", state: { fieldErrors: { handle: "審核通過後不能修改網址" } } };
   }
+  if (error.code === "42501" && message === "not authenticated") {
+    return { kind: "state", state: { formError: "登入已逾時，請重新登入" } };
+  }
   if (error.code === "42501" && message === "not a brand") {
     return { kind: "state", state: { formError: "這個帳號不是品牌，無法執行此操作" } };
   }
@@ -33,7 +36,8 @@ export function mapAccountError(error: { code?: string; message?: string }):
     return { kind: "state", state: { formError: "這個帳號不是創作者，無法執行此操作" } };
   }
   if (error.code === "22023") {
-    const field = FIELD_BY_DB[message.replace(/^invalid /, "")];
+    const key = message.replace(/^invalid /, "");
+    const field = Object.hasOwn(FIELD_BY_DB, key) ? FIELD_BY_DB[key] : undefined;
     if (field) return { kind: "state", state: { fieldErrors: { [field]: "格式不正確" } } };
   }
   if (error.code === "23514") {

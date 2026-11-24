@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  cleanText, hasBidi, normalizeIgUsername, suggestHandle, validateBrandInput, validateCreatorInput,
+  MAX_RAW_LENGTH, cleanText, hasBidi, normalizeIgUsername, suggestHandle, validateBrandInput, validateCreatorInput,
   type CreatorInput,
 } from "./onboarding";
 
@@ -10,32 +10,46 @@ const okCreator: CreatorInput = {
 };
 
 describe("cleanText / IG / handle", () => {
-  it("去掉前後半形與全形空白", () => expect(cleanText("　 小美 　")).toBe("小美"));
-  it("去掉前後的 NBSP", () => expect(cleanText(" 小美 ")).toBe("小美"));
+  it("去掉前後半形與全形空白", () => expect(cleanText("\u3000 小美 \u3000")).toBe("小美"));
+  it("去掉前後的 NBSP", () => expect(cleanText("\u00a0小美\u00a0")).toBe("小美"));
   it("只有零寬空白、BOM、NBSP 視為空字串", () => {
-    expect(cleanText("​‌‍")).toBe("");
-    expect(cleanText("﻿")).toBe("");
-    expect(cleanText(" ⁠　")).toBe("");
+    expect(cleanText("\u200b\u200c\u200d")).toBe("");
+    expect(cleanText("\ufeff")).toBe("");
+    expect(cleanText("\u00a0\u2060\u3000")).toBe("");
   });
   it("emoji ZWJ 序列與內部 ZWNJ 原樣保留，前後的 ZWJ/ZWNJ 仍去除", () => {
-    expect(cleanText("👩‍💻")).toBe("👩‍💻");
-    expect(cleanText("می‌خواهم")).toBe("می‌خواهم");
-    expect(cleanText("‍👩‍💻‌")).toBe("👩‍💻");
+    expect(cleanText("👩\u200d💻")).toBe("👩\u200d💻");
+    expect(cleanText("می\u200cخواهم")).toBe("می\u200cخواهم");
+    expect(cleanText("\u200d👩\u200d💻\u200c")).toBe("👩\u200d💻");
   });
   it("中間的 U+200B、U+2060、U+FEFF 一律移除", () => {
-    expect(cleanText("小​美")).toBe("小美");
-    expect(cleanText("美⁠妝﻿")).toBe("美妝");
+    expect(cleanText("小\u200b美")).toBe("小美");
+    expect(cleanText("美\u2060妝\ufeff")).toBe("美妝");
   });
   it("擴大後的看不見字元只有它們時視為空字串", () => {
-    expect(cleanText("ㅤ")).toBe("");
-    expect(cleanText("⠀ﾠ️­\u0085")).toBe("");
-    expect(cleanText("͏؜ᅟᅠ᠎‎‏⁡⁤")).toBe("");
-    expect(cleanText("ㅤ小美ㅤ")).toBe("小美");
+    expect(cleanText("\u3164")).toBe("");
+    expect(cleanText("\u2800\uffa0\ufe0f\u00ad\u0085")).toBe("");
+    expect(cleanText("\u034f\u061c\u115f\u1160\u180e\u200e\u200f\u2061\u2064")).toBe("");
+    expect(cleanText("\u3164小美\u3164")).toBe("小美");
   });
   it("雙向控制字元不會被 cleanText 吃掉（由驗證報錯）", () => {
-    expect(hasBidi(cleanText("小‮美"))).toBe(true);
-    expect(hasBidi("小美⁦")).toBe(true);
+    expect(hasBidi(cleanText("小\u202e美"))).toBe(true);
+    expect(hasBidi("小美\u2066")).toBe(true);
     expect(hasBidi("小美")).toBe(false);
+  });
+  it("超長輸入以線性時間處理", () => {
+    for (const filler of [" ", "\u200d"]) {
+      const input = "a" + filler.repeat(200_000) + "b";
+      const t0 = performance.now();
+      cleanText(input);
+      expect(performance.now() - t0).toBeLessThan(100);
+    }
+  });
+  it("超長欄位仍得到一般的長度錯誤", () => {
+    const long = " ".repeat(MAX_RAW_LENGTH + 5) + "小美";
+    expect(validateCreatorInput({ ...okCreator, displayName: long })?.displayName).toBe("請填寫顯示名稱（40 字以內）");
+    expect(validateBrandInput({ brandName: long, industry: "美妝保養", logoPath: null })?.brandName)
+      .toBe("請填寫品牌名稱（60 字以內）");
   });
   it("IG 帳號去掉開頭的 @", () => expect(normalizeIgUsername(" @Mei.Daily ")).toBe("Mei.Daily"));
   it("由 IG 帳號建議 handle", () => {
@@ -47,13 +61,13 @@ describe("cleanText / IG / handle", () => {
 describe("validateBrandInput", () => {
   it("正確資料", () => expect(validateBrandInput({ brandName: "花粉選物", industry: "美妝保養", logoPath: null })).toBeNull());
   it("名稱空白或超過 60 字", () => {
-    expect(validateBrandInput({ brandName: "　", industry: "美妝保養", logoPath: null })?.brandName).toBeTruthy();
+    expect(validateBrandInput({ brandName: "\u3000", industry: "美妝保養", logoPath: null })?.brandName).toBeTruthy();
     expect(validateBrandInput({ brandName: "長".repeat(61), industry: "美妝保養", logoPath: null })?.brandName).toBeTruthy();
     expect(validateBrandInput({ brandName: "長".repeat(60), industry: "美妝保養", logoPath: null })).toBeNull();
   });
   it("沒選產業", () => expect(validateBrandInput({ brandName: "x", industry: "", logoPath: null })?.industry).toBeTruthy());
   it("名稱含雙向控制字元", () => {
-    expect(validateBrandInput({ brandName: "花‮粉", industry: "美妝保養", logoPath: null })?.brandName)
+    expect(validateBrandInput({ brandName: "花\u202e粉", industry: "美妝保養", logoPath: null })?.brandName)
       .toBe("含有不允許的特殊字元");
   });
 });
@@ -61,12 +75,12 @@ describe("validateBrandInput", () => {
 describe("validateCreatorInput", () => {
   it("正確資料", () => expect(validateCreatorInput(okCreator)).toBeNull());
   it("顯示名稱、地區、內容領域含雙向控制字元", () => {
-    expect(validateCreatorInput({ ...okCreator, displayName: "小‮美" })?.displayName).toBe("含有不允許的特殊字元");
-    expect(validateCreatorInput({ ...okCreator, region: "台⁧北" })?.region).toBe("含有不允許的特殊字元");
-    expect(validateCreatorInput({ ...okCreator, categories: ["美‪妝"] })?.categories).toBe("含有不允許的特殊字元");
+    expect(validateCreatorInput({ ...okCreator, displayName: "小\u202e美" })?.displayName).toBe("含有不允許的特殊字元");
+    expect(validateCreatorInput({ ...okCreator, region: "台\u2067北" })?.region).toBe("含有不允許的特殊字元");
+    expect(validateCreatorInput({ ...okCreator, categories: ["美\u202a妝"] })?.categories).toBe("含有不允許的特殊字元");
   });
   it("內部零寬字元被移除後的重複內容領域", () => {
-    expect(validateCreatorInput({ ...okCreator, categories: ["美妝", "美​妝"] })?.categories).toBeTruthy();
+    expect(validateCreatorInput({ ...okCreator, categories: ["美妝", "美\u200b妝"] })?.categories).toBeTruthy();
   });
   it("顯示名稱 40 字邊界", () => {
     expect(validateCreatorInput({ ...okCreator, displayName: "長".repeat(40) })).toBeNull();

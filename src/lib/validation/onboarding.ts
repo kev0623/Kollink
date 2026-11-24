@@ -9,16 +9,29 @@ export const IG_RE = /^[A-Za-z0-9_.]{1,30}$/;
 //    U+115F、U+1160、U+1680、U+180E、U+2000–U+200F、U+2028、U+2029、U+202F、U+205F、
 //    U+2060–U+2064、U+2800、U+3000、U+3164、U+FE0F、U+FEFF、U+FFA0
 // 3) 雙向控制字元 U+202A–U+202E、U+2066–U+2069 出現在任何位置都視為無效
-const INNER_ZERO_WIDTH = /[​⁠﻿]/g;
-const EDGE_CHARS =
-  "\\s\\u0085\\u00a0\\u00ad\\u034f\\u061c\\u115f\\u1160\\u1680\\u180e\\u2000-\\u200f" +
-  "\\u2028\\u2029\\u202f\\u205f\\u2060-\\u2064\\u2800\\u3000\\u3164\\ufe0f\\ufeff\\uffa0";
-const EDGE_WS = new RegExp(`^[${EDGE_CHARS}]+|[${EDGE_CHARS}]+$`, "g");
-const BIDI = /[‪-‮⁦-⁩]/;
+const INNER_ZERO_WIDTH = /[\u200b\u2060\ufeff]/g;
+const EDGE_SINGLES = [
+  0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x20, 0x85, 0xa0, 0xad, 0x34f, 0x61c, 0x115f, 0x1160, 0x1680, 0x180e,
+  0x2028, 0x2029, 0x202f, 0x205f, 0x2800, 0x3000, 0x3164, 0xfe0f, 0xfeff, 0xffa0,
+];
+const EDGE_RANGES: [number, number][] = [[0x2000, 0x200f], [0x2060, 0x2064]];
+const EDGE_SET = new Set<number>(EDGE_SINGLES);
+for (const [from, to] of EDGE_RANGES) for (let c = from; c <= to; c++) EDGE_SET.add(c);
+const BIDI = /[\u202a-\u202e\u2066-\u2069]/;
 const BAD_CHAR_MESSAGE = "含有不允許的特殊字元";
 
+/** 單一欄位清理前允許處理的最大長度（UTF-16 單位）。超過就不再清理，直接截斷，讓長度驗證報錯。 */
+export const MAX_RAW_LENGTH = 1000;
+
 export function cleanText(v: string): string {
-  return v.replace(INNER_ZERO_WIDTH, "").replace(EDGE_WS, "");
+  // 超長輸入不做昂貴處理；回傳的前 MAX_RAW_LENGTH 個單位（至少 500 個字）必然超過所有欄位的長度上限。
+  if (v.length > MAX_RAW_LENGTH) return v.slice(0, MAX_RAW_LENGTH);
+  const cps = Array.from(v.replace(INNER_ZERO_WIDTH, ""));
+  let start = 0;
+  let end = cps.length;
+  while (start < end && EDGE_SET.has(cps[start].codePointAt(0)!)) start++;
+  while (end > start && EDGE_SET.has(cps[end - 1].codePointAt(0)!)) end--;
+  return cps.slice(start, end).join("");
 }
 
 export function hasBidi(v: string): boolean {

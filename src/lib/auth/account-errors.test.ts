@@ -33,6 +33,16 @@ describe("mapAccountError", () => {
       kind: "state", state: { formError: "這個帳號不是創作者，無法執行此操作" },
     });
   });
+  it("原型鏈上的名稱不會被當成欄位", () => {
+    expect(mapAccountError({ code: "22023", message: "invalid constructor" })).toEqual({
+      kind: "state", state: { formError: "發生錯誤，請稍後再試" },
+    });
+  });
+  it("未登入", () => {
+    expect(mapAccountError({ code: "42501", message: "not authenticated" })).toEqual({
+      kind: "state", state: { formError: "登入已逾時，請重新登入" },
+    });
+  });
   it("其他錯誤", () => {
     expect(mapAccountError({ code: "23514", message: "x" })).toEqual({
       kind: "state", state: { formError: "資料格式不正確，請檢查後再送出" },
