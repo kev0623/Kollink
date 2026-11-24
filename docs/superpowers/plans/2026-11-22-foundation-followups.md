@@ -57,7 +57,22 @@
   - OG 圖片的頭像只支援 PNG／JPEG；WebP 頭像在 OG 圖片顯示名字首字。中文字型由 `next/og` 在請求時從 Google Fonts 下載，Google Fonts 連不到時中文會缺字。
   - `get_public_creator` 會回傳 `user_id`（頭像網址本來就含 user_id）。
   - 已登入的創作者點「品牌登入後可查看報價」會停在登入頁（同計畫 2「已登入造訪 /login」那一項）。
-  - 公開頁 `metadataBase` 尚未設定：正式環境的 `og:image` 絕對網址依賴 Vercel 的預設網域；綁自訂網域時要在 root layout 設定 `metadataBase`。
+  - 公開頁 `metadataBase` 只在關閉 Vercel 系統環境變數或非 Vercel 部署時才需要設定（Next 16 會退回使用 `VERCEL_PROJECT_PRODUCTION_URL`）。
+  - 品牌透過鎖定報價的連結註冊後，onboarding 完成會落在 `/brand`（onboarding 沒有帶 `next`）；考慮讓 `next` 穿過 onboarding。
+  - 計畫 3 最終審查延後項目：
+    - 收回 `service_role` 對 `creator_rates` 的寫入權限並加測試。
+    - 缺少的測試：停權創作者、報價／作品 payload 形狀錯誤、anon client 設定、`loadPortfolio`／`loadRates` 錯誤與空資料、AvatarField。
+    - IG 連結 regex 大小寫敏感且不接受 `#fragment`（資料庫與前端要一起改）。
+    - `validatePortfolio` 路徑格式、`parseRatesForm` 去重、`parsePortfolioForm` 數量上限。
+    - `formatPercent(NaN)`、`toNumberOrNull("")`。
+    - JSDoc 註明 `loadPortfolio`／`loadRates` 會讀 cookies；PostgrestError 與 Error 的差異；本人頁 `.single()`。
+    - 跨資料夾的 pgTAP 測試有雙重防護，需要整理。
+    - `/c` layout 底部 6rem padding 對所有身分都存在。
+    - 全站 `error.tsx`。
+    - 頂列「登入」沒有帶 `next`（需要 `usePathname` 的 client island）。
+    - 「已儲存」提示改 sticky。
+    - Storage 孤兒物件（排程清理）。
+    - OG 圖片下載 Google 字型沒有 timeout。
 
 ### 4. 創作者廣場、5. 招募與機會頁
 - 索引：`creator_profiles(status)`、`categories` / `style_tags` 的 GIN 索引、`briefs(status, deadline)`、`briefs(brand_id)`、`brief_applications(creator_id)`、`conversations(creator_id)`、`collaborations(conversation_id)`、`collaborations(brief_id)`。

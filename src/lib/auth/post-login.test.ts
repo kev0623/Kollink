@@ -38,6 +38,12 @@ describe("isRole / homeFor", () => {
     expect(resolvePostLoginPath({ role: "brand", requestedRole: null, next: "/c/" })).toBe("/brand");
     expect(resolvePostLoginPath({ role: "brand", requestedRole: null, next: "/c/Bad" })).toBe("/brand");
   });
+  it("公開頁 next 帶 query、fragment、雙斜線或路徑跳脫 → 回首頁", () => {
+    for (const next of ["/c/mei?y", "/c/mei#f", "//evil", "/c/%2e%2e", "/c/.."]) {
+      expect(resolvePostLoginPath({ role: "brand", requestedRole: null, next })).toBe("/brand");
+      expect(resolvePostLoginPath({ role: "creator", requestedRole: null, next })).toBe("/creator");
+    }
+  });
   it("首頁路徑", () => {
     expect(homeFor("brand")).toBe("/brand");
     expect(homeFor("creator")).toBe("/creator");

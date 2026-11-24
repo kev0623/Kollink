@@ -84,7 +84,7 @@ export function PortfolioForm({ userId, initial }: { userId: string; initial: Po
               <img src={creatorMediaUrl(row.imagePath) ?? undefined} alt={`作品 ${i + 1}`} className="h-20 w-20 shrink-0 rounded-input object-cover" />
               <div className="min-w-0 flex-1 space-y-2">
                 <input
-                  aria-label={`作品 ${i + 1} 的 IG 貼文連結（選填）`} placeholder="https://www.instagram.com/p/..."
+                  aria-label={`作品 ${i + 1} 的 IG 貼文連結（選填）`} placeholder="https://instagram.com/p/…"
                   inputMode="url" value={row.linkUrl} onChange={(e) => setLink(i, e.target.value)} className={inputClass}
                 />
                 <div className="flex flex-wrap gap-2">

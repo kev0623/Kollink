@@ -40,7 +40,7 @@ export function ProfileView({ creator: c, portfolio, rates, viewer }: Props) {
 
 function SelfPreviewBanner({ status }: { status: CreatorStatus }) {
   return (
-    <div role="status" className="mb-4 rounded-card border border-line bg-surface p-4 text-sm text-ink md:mb-6">
+    <div role="note" className="mb-4 rounded-card border border-line bg-surface p-4 text-sm text-ink md:mb-6">
       <b>{status === "suspended" ? "帳號已暫停，公開頁目前不會顯示給其他人。" : "審核通過後才會公開。"}</b>
       <span className="text-muted"> 這是只有你看得到的預覽。</span>
     </div>
@@ -154,6 +154,15 @@ function PortfolioGrid({ name, items }: { name: string; items: PortfolioItem[] }
 }
 
 function RatesSection({ viewer, handle, rates }: { viewer: ViewerKind; handle: string; rates: Rate[] }) {
+  if (viewer === "creator") {
+    return (
+      <Section title="報價方案">
+        <p className="flex items-center gap-2 rounded-input bg-primary-soft p-4 text-sm font-semibold text-ink">
+          <Lock size={16} strokeWidth={1.5} aria-hidden="true" />報價只開放給品牌查看
+        </p>
+      </Section>
+    );
+  }
   if (viewer !== "brand") {
     return (
       <Section title="報價方案">

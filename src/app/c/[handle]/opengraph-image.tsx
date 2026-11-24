@@ -11,6 +11,9 @@ export const contentType = "image/png";
 // ImageResponse 不吃 Tailwind class；值與 src/app/globals.css 的 token 相同
 const OG_COLORS = { bg: "#F3F3F2", surface: "#FFFFFF", line: "#E4E4E7", ink: "#18181B", muted: "#686872", onInk: "#FFFFFF" };
 
+// 最多顯示前 3 個類別，避免超出 1200x630
+const MAX_OG_CATEGORIES = 3;
+
 export default async function Image({ params }: { params: Promise<{ handle: string }> }) {
   const { handle } = await params;
   // 訪客身分：只有已審核的創作者有 OG 圖片，未審核或不存在一律 404
@@ -39,20 +42,35 @@ export default async function Image({ params }: { params: Promise<{ handle: stri
               {initialOf(c.displayName)}
             </div>
           )}
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            <div style={{ fontSize: 72, fontWeight: 700 }}>{c.displayName}</div>
-            <div style={{ fontSize: 36, color: OG_COLORS.muted }}>{`@${c.handle}`}</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12, width: 808, overflow: "hidden" }}>
+            <div
+              style={{
+                display: "block", maxWidth: 808, fontSize: 72, fontWeight: 700, overflow: "hidden",
+                whiteSpace: "nowrap", textOverflow: "ellipsis",
+              }}
+            >
+              {c.displayName}
+            </div>
+            <div
+              style={{
+                display: "block", maxWidth: 808, fontSize: 36, color: OG_COLORS.muted, overflow: "hidden",
+                whiteSpace: "nowrap", textOverflow: "ellipsis",
+              }}
+            >
+              {`@${c.handle}`}
+            </div>
           </div>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
           <div style={{ fontSize: 44 }}>{`IG 粉絲 ${formatNumber(c.followerCount)}`}</div>
-          <div style={{ display: "flex", gap: 12 }}>
-            {c.categories.map((cat) => (
+          <div style={{ display: "flex", gap: 12, width: "100%", overflow: "hidden" }}>
+            {c.categories.slice(0, MAX_OG_CATEGORIES).map((cat) => (
               <div
                 key={cat}
                 style={{
-                  display: "flex", padding: "8px 24px", borderRadius: 9999, background: OG_COLORS.surface,
-                  border: `2px solid ${OG_COLORS.line}`, fontSize: 28,
+                  display: "block", padding: "8px 24px", borderRadius: 9999, background: OG_COLORS.surface,
+                  border: `2px solid ${OG_COLORS.line}`, fontSize: 28, maxWidth: 360, overflow: "hidden",
+                  whiteSpace: "nowrap", textOverflow: "ellipsis",
                 }}
               >
                 {cat}

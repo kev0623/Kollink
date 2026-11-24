@@ -20,6 +20,17 @@ describe("avatarDataUri", () => {
     expect(await avatarDataUri("u1/avatar-a.webp", f)).toBeNull();
     expect(f).not.toHaveBeenCalled();
   });
+  it("不跟隨轉址（redirect: error）", async () => {
+    const f = vi.fn(async () => png(new Uint8Array([1])));
+    await avatarDataUri("u1/avatar-a.png", f);
+    expect(f).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ redirect: "error" }));
+  });
+  it("content-length 超過 5MB 時不讀 body", async () => {
+    const res = png(new Uint8Array([1]), { headers: { "content-type": "image/png", "content-length": String(5 * 1024 * 1024 + 1) } });
+    const spy = vi.spyOn(res, "arrayBuffer");
+    expect(await avatarDataUri("u1/avatar-a.png", vi.fn(async () => res))).toBeNull();
+    expect(spy).not.toHaveBeenCalled();
+  });
   it("回應不是 200、類型不對、空檔、抓取失敗都回傳 null", async () => {
     expect(await avatarDataUri("u1/avatar-a.png", vi.fn(async () => png(null, { status: 404 })))).toBeNull();
     expect(await avatarDataUri("u1/avatar-a.png", vi.fn(async () =>

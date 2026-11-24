@@ -12,9 +12,11 @@ export async function avatarDataUri(path: string | null, fetchImpl: typeof fetch
   const url = creatorMediaUrl(path);
   if (!url) return null;
   try {
-    const res = await fetchImpl(url, { signal: AbortSignal.timeout(3000) });
+    const res = await fetchImpl(url, { signal: AbortSignal.timeout(3000), redirect: "error" });
     const type = (res.headers.get("content-type") ?? "").split(";")[0].trim();
     if (!res.ok || !OG_AVATAR_TYPES.has(type)) return null;
+    const declared = Number(res.headers.get("content-length"));
+    if (Number.isFinite(declared) && declared > MAX_BYTES) return null;
     const buf = Buffer.from(await res.arrayBuffer());
     if (buf.byteLength === 0 || buf.byteLength > MAX_BYTES) return null;
     return `data:${type};base64,${buf.toString("base64")}`;
