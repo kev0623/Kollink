@@ -23,6 +23,13 @@
 | 廣場搜尋只給品牌 | `search_creators`、`popular_style_tags` 是 definer 函式，非品牌一律 `42501`（結果含起價與貼文報價，延續「報價只給品牌看」）。總數用 window 函式放在 `total_count`。 |
 | 廣場分頁 | 篩選、排序、關鍵字在網址；「載入更多」是 Server Action 回傳下一批（一次 24 位），頁數不在網址，分享或重新整理回到第一批。 |
 | 廣場區間 | 粉絲與起價區間一律含下限、不含上限（例如「1 千到 1 萬」是 1,000–9,999）。 |
+| 招募寫入只走函式 | `briefs`、`brief_applications` 收回 anon／authenticated／service_role 的寫入（anon 連讀取都沒有）；寫入只能經由 `save_brief`、`close_brief`、`delete_brief`、`apply_to_brief`、`withdraw_application`、`decide_application`。 |
+| 台灣日期 | 「今天」一律是 `today_tw()`（`Asia/Taipei`）；TS 的 `todayTw()` 同一條規則。`today_tw(p_now)` 的參數只給測試驗證跨日邊界，policy 與函式一律不帶參數呼叫。 |
+| 招募狀態 | `draft → open → closed`；「已截止」由 `deadline < today_tw()` 算出，不寫進資料庫。截止日當天可以報名；截止或關閉後品牌仍可錄取／婉拒。只有草稿能刪除；不能重新開啟、不能改回草稿。 |
+| 未審核創作者 | 可以瀏覽機會與詳情，不能報名（`42501 creator not approved`）。 |
+| 招募可見性 | 招募主、管理員、創作者（開放中且未截止）、報名過的人（任何狀態）。品牌看不到其他品牌的招募。判斷寫在 definer helper `can_view_brief`（避免兩張表的 policy 互相遞迴）。 |
+| 錄取 | 這次只標記 `accepted`；建立對話與合作案留給計畫 6、7。錄取或婉拒後不能改；撤回後不能再報名同一則。 |
+| 預算 0 | 視為沒填（存成 null）；「現金」篩選與「預算或產品至少一項」都依此判斷。 |
 
 ## 各計畫需要處理的事項
 
@@ -79,12 +86,12 @@
     - OG 圖片下載 Google 字型沒有 timeout。
 
 ### 4. 創作者廣場、5. 招募與機會頁
-- 索引：`creator_profiles(status, created_at desc)`、`categories`／`style_tags`／`collab_types` 的 GIN、`creator_rates(creator_id, price_twd)`、`creator_favorites(brand_id, created_at desc)` → 已完成（計畫 4）。還沒做：`briefs(status, deadline)`、`briefs(brand_id)`、`brief_applications(creator_id)`（計畫 5）、`conversations(creator_id)`、`collaborations(conversation_id)`、`collaborations(brief_id)`（計畫 6、7）。
-- 報名的狀態變更需要 definer 函式（目前沒有開放 UPDATE）。錄取時，要在同一個 transaction 裡建立對話和合作案。
-- 待決定：尚未審核的創作者能不能報名；超過截止日但狀態仍是 open 的招募要不要擋；品牌刪除招募時，報名紀錄會一起被刪除（cascade），這樣是否可接受。
+- 索引：`creator_profiles(status, created_at desc)`、`categories`／`style_tags`／`collab_types` 的 GIN、`creator_rates(creator_id, price_twd)`、`creator_favorites(brand_id, created_at desc)` → 已完成（計畫 4）。`briefs(status, deadline)`、`briefs(brand_id, created_at desc)`、`brief_applications(creator_id, created_at desc)`、`brief_applications(brief_id, status)` → 已完成（計畫 5）。還沒做：`conversations(creator_id)`、`collaborations(conversation_id)`、`collaborations(brief_id)`（計畫 6、7）。
+- 報名的狀態變更需要 definer 函式 → 已完成（計畫 5：`withdraw_application`、`decide_application`）。錄取時在同一個 transaction 建立對話和合作案 → 計畫 6、7 接上 `decide_application`。
+- ~~待決定：未審核能不能報名、截止後要不要擋、刪除招募時報名一起刪~~ → 已決定（計畫 5）：未審核不能報名；截止後不能報名；只有草稿能刪除（草稿沒有報名）。
 - 刪除 `public/*.svg` 這些 scaffold 留下的圖檔 → 已完成（計畫 4）。
 - 產業、地區、內容領域的白名單只在 UI 端強制，資料庫只檢查長度與數量。
-- 搜尋與篩選必須能容忍清單以外的值 → 廣場已做到（計畫 4：網址值清理後照常比對，比對不到就是沒有結果）；計畫 5 的招募篩選比照辦理。若需要嚴格清單，要在資料庫端強制。
+- 搜尋與篩選必須能容忍清單以外的值 → 廣場已做到（計畫 4）；招募也做到（計畫 5：`?tab=`、`?cat=`、`?step=` 的垃圾值照常顯示，清單外的內容領域只是沒有結果）。若需要嚴格清單，要在資料庫端強制。
 - 計畫 4 新增的後續事項：
   - 從公開頁按 ♡ 後用瀏覽器「上一頁」回到廣場，畫面是快取的舊狀態（重新整理或從導覽列進入就正確）；♡ 刻意不 revalidate，避免每按一次重跑整頁搜尋。
   - 在「只看收藏」裡取消收藏，卡片留到下次篩選或重新整理才消失。
@@ -101,6 +108,17 @@
   - 關鍵字先 trim 再截成 50 字，結尾可能留一個空白（只影響輸入框顯示）。
   - 測試缺口：pgTAP 的 `\` 照字面比對、20 個標籤上限、排序斷言偏弱；`requireRole` 拒絕非品牌、刪除不存在的收藏沒有測試；♡ 樂觀更新與回復沒有測試；aria 斷言依賴屬性順序；♡ 疊層與頭像替代字沒有測試。
   - 角色是 brand 但沒有 `brand_profiles` 的帳號按收藏，會得到外鍵錯誤 `23503`。
+- 計畫 5 新增的後續事項：
+  - `brief-covers` 孤兒物件（換封面、刪草稿時刪檔失敗、表單離開時未儲存的上傳）與其他 bucket 共用同一個清理排程（尚未實作）。草稿的封面網址若被猜到也看得（公開 bucket，路徑含 UUID）。
+  - NUL（U+0000）只在招募與報名表單擋（`hasBadChar`）；其他既有表單仍會得到 22P05 →「發生錯誤」。要全面處理時，把 `hasBidi` 的呼叫點都換成 `hasBadChar`。
+  - 「我的報名」最多列 100 筆、沒有分頁；報名者列表沒有分頁；品牌「我的招募」最多 200 則；`brief_application_counts` 的 `p_ids` 沒有筆數上限（建議加 ≤100）。
+  - 招募與機會頁不快取（每次請求以使用者 client 讀取）；截止日在台灣午夜跨日時，已開著的頁面要重新整理才會更新。
+  - 404 在 `<Suspense>` 內觸發，回應碼是 200 + `noindex`（與 `/c/[handle]` 相同）。
+  - 「適合我」的內容領域與地區比對是完全相等（清單外的值不會模糊比對）。
+  - 錄取或婉拒沒有通知（spec 不在範圍內）；錄取後建立對話、合作案在計畫 6、7。
+  - 品牌刪除帳號時，招募與報名會 cascade 刪除（帳號刪除流程見計畫 8 的 soft delete 項目）。
+  - 發佈、關閉、錄取後沒有 revalidate `/creator` 相關路徑（頁面本來就不快取，影響有限）；重複點擊關閉／錄取／撤回時顯示錯誤而不是靜默重新整理（`isStaleStateMessage` 以在地化文字比對，建議改用錯誤代碼）。
+  - 已知小問題：已關閉但截止日在未來的招募，列表仍顯示「剩 N 天」；分頁籤與篩選 chip 高度 36px 小於 44px 觸控目標、沒有 focus-visible；婉拒按鈕沒有進行中標示；空 handle 會連到 `/c/`；`briefs_select` 每列呼叫 definer（規模變大再看）；rows-guard 沒有 pgTAP 測試。
 
 ### 6. 合作案詳情頁
 - 貼文連結在 app 端用 `new URL()` 再檢查一次（資料庫的 regex 會接受 `a..b.com`）。
