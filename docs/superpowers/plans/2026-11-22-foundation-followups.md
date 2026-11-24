@@ -15,6 +15,7 @@
 | 發佈連結 | 必須是完整網址（有網域和路徑）。 |
 | 取消後才到的付款（B1） | 記錄為已付款、`refund_required = true`，寫入 audit（`payment_requires_refund`），回覆綠界 `1|OK`；實際退款留給計畫 8。 |
 | 付款金額 | 必須同時等於付款單金額和合作案報價；不接受空值。 |
+| 資料表權限寫在 migration | 雲端新專案不會自動授權 public 資料表給 anon / authenticated / service_role（本機會）。`20261124000100_explicit_api_grants.sql` 補齊現有權限；之後每個新增資料表的 migration 都要自己寫 `grant`，否則本機測試會過、雲端會 permission denied。 |
 | 綠界通知 | 檢查 MerchantID（新環境變數 `ECPAY_MERCHANT_ID`）；`SimulatePaid=1` 的模擬付款只回覆收到、不記錄；金額只接受純整數。 |
 
 ## 各計畫需要處理的事項
