@@ -13,11 +13,14 @@ export function CreatorCard({ c }: { c: SquareCreator }) {
   return (
     <article className="relative flex h-full flex-col overflow-hidden rounded-card border border-line bg-surface focus-within:ring-2 focus-within:ring-ink hover:border-ink">
       {thumbs.length > 0 ? (
-        <div className={`grid aspect-[3/1] gap-0.5 ${THUMB_COLS[thumbs.length]}`}>
-          {thumbs.map((p) => (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img key={p} src={creatorMediaUrl(p) ?? undefined} alt="" loading="lazy" className="h-full w-full bg-primary-soft object-cover" />
-          ))}
+        // 外層固定 3:1，內層絕對定位：只有一兩張作品時，圖片的原始高度不會把卡片撐高
+        <div className="relative aspect-[3/1] overflow-hidden">
+          <div className={`absolute inset-0 grid gap-0.5 ${THUMB_COLS[thumbs.length]}`}>
+            {thumbs.map((p) => (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img key={p} src={creatorMediaUrl(p) ?? undefined} alt="" loading="lazy" className="h-full min-h-0 w-full bg-primary-soft object-cover" />
+            ))}
+          </div>
         </div>
       ) : (
         <div aria-hidden="true" className="flex aspect-[3/1] items-center justify-center bg-primary-soft text-4xl font-semibold text-muted">
@@ -43,18 +46,18 @@ export function CreatorCard({ c }: { c: SquareCreator }) {
           </div>
           <FavoriteButton creatorId={c.userId} name={c.displayName} initial={c.isFavorite} />
         </div>
-        <dl className="grid grid-cols-3 gap-2 text-center">
+        <dl className="grid grid-cols-3 gap-1 text-center tabular-nums">
           <div>
             <dt className="text-xs text-muted">粉絲</dt>
-            <dd className="mt-0.5 font-semibold text-ink">{formatNumber(c.followerCount)}</dd>
+            <dd className="mt-0.5 whitespace-nowrap text-sm font-semibold text-ink">{formatNumber(c.followerCount)}</dd>
           </div>
           <div>
             <dt className="text-xs text-muted">互動率</dt>
-            <dd className="mt-0.5 font-semibold text-ink">{formatPercent(c.engagementRate)}</dd>
+            <dd className="mt-0.5 whitespace-nowrap text-sm font-semibold text-ink">{formatPercent(c.engagementRate)}</dd>
           </div>
           <div>
             <dt className="text-xs text-muted">起價</dt>
-            <dd className="mt-0.5 font-bold text-primary">{startingPriceLabel(c.minPrice)}</dd>
+            <dd className="mt-0.5 whitespace-nowrap text-sm font-bold text-primary">{startingPriceLabel(c.minPrice)}</dd>
           </div>
         </dl>
         {cardTags(c).length > 0 && (
