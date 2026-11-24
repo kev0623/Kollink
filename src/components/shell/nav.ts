@@ -5,7 +5,7 @@ export type NavItem = { label: string; href: string | null; icon: NavIconName };
 
 export const BRAND_NAV: NavItem[] = [
   { label: "創作者廣場", href: "/brand", icon: "Compass" },
-  { label: "我的招募", href: null, icon: "FileText" },
+  { label: "我的招募", href: "/brand/briefs", icon: "FileText" },
   { label: "合作案", href: null, icon: "Handshake" },
   { label: "訊息", href: null, icon: "MessageCircle" },
   { label: "付款與發票", href: null, icon: "Receipt" },
