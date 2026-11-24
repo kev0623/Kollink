@@ -3,6 +3,8 @@ import { Suspense } from "react";
 import { requireRole } from "@/lib/auth/current-user";
 import { loadOwnPublicProfile } from "@/lib/creators/own-profile";
 import { PublicProfileForm } from "./PublicProfileForm";
+import { PortfolioForm } from "./PortfolioForm";
+import { RatesForm } from "./RatesForm";
 
 export default function CreatorProfileEditPage() {
   return (
@@ -31,6 +33,8 @@ async function Editor() {
         查看我的公開頁
       </Link>
       <PublicProfileForm userId={me.id} displayName={me.profile.displayName} initial={own.profile} />
+      <PortfolioForm userId={me.id} initial={own.portfolio} />
+      <RatesForm collabTypes={own.profile.collabTypes} initial={own.rates} />
     </div>
   );
 }

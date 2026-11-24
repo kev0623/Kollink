@@ -4,8 +4,9 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth/current-user";
 import { mapAccountError, type FormState, type FormValues } from "@/lib/auth/account-errors";
-import { validatePublicProfileInput } from "@/lib/validation/creator-profile";
-import { parsePublicProfileForm } from "@/lib/validation/form-data";
+import { loadOwnPublicProfile } from "@/lib/creators/own-profile";
+import { validatePortfolio, validatePublicProfileInput, validateRates } from "@/lib/validation/creator-profile";
+import { parsePortfolioForm, parsePublicProfileForm, parseRatesForm } from "@/lib/validation/form-data";
 
 function failure(error: { code?: string; message?: string }, values?: FormValues): FormState {
   const mapped = mapAccountError(error);
@@ -42,6 +43,45 @@ export async function updatePublicProfileAction(_prev: FormState, fd: FormData):
     p_engagement_rate: (input.engagementRate === "" ? null : Number(input.engagementRate)) as number,
     p_audience_age: input.audienceAge,
     p_avatar_path: input.avatarPath as string,
+  });
+  if (error) return failure(error, values);
+  revalidateProfile(me.creator.handle);
+  return { ok: true };
+}
+
+export async function updatePortfolioAction(_prev: FormState, fd: FormData): Promise<FormState> {
+  const me = await requireRole("creator");
+  if (!me.creator) return { formError: "找不到創作者資料，請重新登入" };
+  const items = parsePortfolioForm(fd);
+  if (!items) return { formError: "資料格式不正確，請重新整理頁面後再試" };
+  const fieldErrors = validatePortfolio(items);
+  // 作品清單由表單元件自己保存，失敗時不需要回傳 values
+  if (fieldErrors) return { fieldErrors };
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("set_creator_portfolio", {
+    p_items: items.map((it) => ({ image_path: it.imagePath, link_url: it.linkUrl || null })),
+  });
+  if (error) return failure(error);
+  revalidateProfile(me.creator.handle);
+  return { ok: true };
+}
+
+export async function updateRatesAction(_prev: FormState, fd: FormData): Promise<FormState> {
+  const me = await requireRole("creator");
+  if (!me.creator) return { formError: "找不到創作者資料，請重新登入" };
+  // 以資料庫裡已儲存的想接合作為準（表單只列出這些）
+  const { profile } = await loadOwnPublicProfile(me.id);
+  const rates = parseRatesForm(fd, profile.collabTypes);
+  const values: FormValues = Object.fromEntries(
+    profile.collabTypes.map((t) => [`price:${t}`, rates.find((r) => r.collabType === t)?.price ?? ""]),
+  );
+  const fieldErrors = validateRates(rates);
+  if (fieldErrors) return { fieldErrors, values };
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("set_creator_rates", {
+    p_rates: rates.map((r) => ({ collab_type: r.collabType, price_twd: Number(r.price) })),
   });
   if (error) return failure(error, values);
   revalidateProfile(me.creator.handle);
