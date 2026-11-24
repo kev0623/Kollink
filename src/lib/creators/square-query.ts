@@ -63,10 +63,12 @@ const P = {
 export type ParamsInput = URLSearchParams | Record<string, string | string[] | undefined>;
 
 function getAll(input: ParamsInput, key: string): string[] {
-  if (input instanceof URLSearchParams) return input.getAll(key);
+  // NUL 字元 PostgreSQL 的 text 放不進去（22P05），一律拿掉
+  const strip = (x: string) => x.replaceAll("\u0000", "");
+  if (input instanceof URLSearchParams) return input.getAll(key).map(strip);
   const v = input[key];
   if (v === undefined) return [];
-  return (Array.isArray(v) ? v : [v]).filter((x): x is string => typeof x === "string");
+  return (Array.isArray(v) ? v : [v]).filter((x): x is string => typeof x === "string").map(strip);
 }
 
 /** 多選值：清理後去掉空的、含雙向控制字元的、超過 30 字的、重複的；最多 20 個。清單以外的值保留。 */

@@ -5,6 +5,11 @@ import {
 } from "./square-query";
 
 describe("parseSquareQuery", () => {
+  it("拿掉 NUL 字元（資料庫放不進去）", () => {
+    const q = parseSquareQuery({ q: "a\u0000b", cat: ["\u0000", "x\u0000y"] });
+    expect(q.q).toBe("ab");
+    expect(q.categories).toEqual(["xy"]);
+  });
   it("沒有參數時是預設值", () => {
     expect(parseSquareQuery({})).toEqual(EMPTY_SQUARE_QUERY);
     expect(parseSquareQuery(new URLSearchParams())).toEqual(EMPTY_SQUARE_QUERY);
