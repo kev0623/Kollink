@@ -6,6 +6,8 @@ import { NextResponse } from "next/server";
  */
 export function relativeRedirect(path: string, status = 307): NextResponse {
   const u = new URL(path, "http://n");
-  const location = u.pathname + u.search + u.hash;
+  let location = u.pathname + u.search + u.hash;
+  // "/.//evil.com" 經解析後會變成 "//evil.com"（協定相對網址），一律退回首頁。
+  if (location.startsWith("//") || !location.startsWith("/")) location = "/";
   return new NextResponse(null, { status, headers: { Location: location } });
 }
