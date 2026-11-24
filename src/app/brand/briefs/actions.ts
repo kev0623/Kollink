@@ -58,6 +58,8 @@ export async function closeBriefAction(id: unknown): Promise<ActionResult> {
   if (error) return { ok: false, error: briefErrorMessage(error) };
   revalidatePath("/brand/briefs");
   revalidatePath(`/brand/briefs/${id}`);
+  revalidatePath("/creator");
+  revalidatePath("/creator/briefs/[id]", "page");
   return { ok: true };
 }
 

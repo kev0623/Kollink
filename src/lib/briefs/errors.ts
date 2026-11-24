@@ -51,3 +51,8 @@ export function briefFieldError(error: DbError): Record<string, string> | null {
   const field = FIELD_BY_DB[key];
   return { [field]: Object.hasOwn(FIELD_MESSAGE, field) ? FIELD_MESSAGE[field] : "格式不正確" };
 }
+
+/** 連點或另一個分頁已處理過：狀態已經變了，畫面重新整理即可，不必當成錯誤。 */
+export function isStaleStateMessage(message: string): boolean {
+  return message === MESSAGES["brief not open"] || message === MESSAGES["application not pending"];
+}
