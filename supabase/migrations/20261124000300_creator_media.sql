@@ -34,4 +34,8 @@ create policy creator_media_update_own on storage.objects
   );
 create policy creator_media_delete_own on storage.objects
   for delete to authenticated
-  using (bucket_id = 'creator-media' and (storage.foldername(name))[1] = auth.uid()::text);
+  using (
+    bucket_id = 'creator-media'
+    and (storage.foldername(name))[1] = auth.uid()::text
+    and public.my_role() = 'creator'
+  );
