@@ -15,28 +15,49 @@
 | 發佈連結 | 必須是完整網址（有網域和路徑）。 |
 | 取消後才到的付款（B1） | 記錄為已付款、`refund_required = true`，寫入 audit（`payment_requires_refund`），回覆綠界 `1|OK`；實際退款留給計畫 8。 |
 | 付款金額 | 必須同時等於付款單金額和合作案報價；不接受空值。 |
+| 資料表權限寫在 migration | 雲端新專案不會自動授權 public 資料表給 anon / authenticated / service_role（本機會）。`20261124000100_explicit_api_grants.sql` 補齊現有權限；之後每個新增資料表的 migration 都要自己寫 `grant`，否則本機測試會過、雲端會 permission denied。 |
 | 綠界通知 | 檢查 MerchantID（新環境變數 `ECPAY_MERCHANT_ID`）；`SimulatePaid=1` 的模擬付款只回覆收到、不記錄；金額只接受純整數。 |
 
 ## 各計畫需要處理的事項
 
 ### 2. 登入與註冊
-- 還沒有 `profiles` 的使用者，`my_role()` 會是 null；middleware 要把他們導向註冊流程，並**排除 `/api/payments/ecpay/notify`**。
-- `next.config.ts` 開了 `cacheComponents`：`cookies()` 必須放在 `<Suspense>` 底下，參考 `node_modules/next/dist/docs/01-app/02-guides/authentication-with-cache-components.md`。
-- 加入 `@supabase/ssr`；確認 Supabase CLI 3.x 的金鑰命名（publishable / secret），並更新 `.env.example`。
-- 加入 `supabase gen types typescript` 產生的型別，以及 CI 的型別漂移檢查。
-- 補測試：跨使用者更新無效、創作者不能建立品牌檔案、以 pending 狀態建立檔案的正向對照。
+- 還沒有 `profiles` 的使用者，`my_role()` 會是 null；middleware 要把他們導向註冊流程，並**排除 `/api/payments/ecpay/notify`**。 → 已完成（計畫 2）
+- `next.config.ts` 開了 `cacheComponents`：`cookies()` 必須放在 `<Suspense>` 底下，參考 `node_modules/next/dist/docs/01-app/02-guides/authentication-with-cache-components.md`。 → 已完成（計畫 2）
+- 加入 `@supabase/ssr`；確認 Supabase CLI 3.x 的金鑰命名（publishable / secret），並更新 `.env.example`。 → 已完成（計畫 2）
+- 加入 `supabase gen types typescript` 產生的型別，以及 CI 的型別漂移檢查。 → 已完成（計畫 2）
+- 補測試：跨使用者更新無效、創作者不能建立品牌檔案、以 pending 狀態建立檔案的正向對照。 → 已完成（計畫 2）
 - ~~決定正式名稱~~ → 已定為 Kollink（計畫 2 Task 1）
-- README 補上本機開發步驟（Docker、`supabase start`、`.env.local`、`npm run test:db`）。
+- README 補上本機開發步驟（Docker、`supabase start`、`.env.local`、`npm run test:db`）。 → 已完成（計畫 2）
+- 品牌 Logo（`brand-logos`）部署注意：
+  - 正式環境必須開啟 Email 驗證、關閉匿名登入，因為還沒建立 profile 的使用者也能上傳 Logo。
+  - 要加排程清理：刪除沒有被任何 `brand_profiles.logo_path` 引用、且超過 24 小時的 `brand-logos` 物件。
+  - 若日後新增上傳用的 server action，要驗證圖片 magic bytes，不能只信 MIME type 與副檔名。
+- 計畫 2 新增的後續事項：
+  - 管理員目前登入後會被導去 `/onboarding`（計畫 9）。
+  - 正式環境 SMTP 與 Google OAuth 網址（部署，見 README）。
+  - `create_*_account` 尚未限制同一 IP 的註冊頻率（上線前評估）。
+  - 品牌 Logo 孤兒物件清理排程尚未實作（見上方 Logo 注意事項）。
+  - 審核狀態橫幅在 client 端導覽後不會更新，要重新整理才會看到最新狀態。
+  - 色彩 token：`text-white` 尚未納入 token；錯誤文字的對比度需再檢查。
+  - 之後每個資料頁都必須呼叫 `requireRole`，否則沒有角色或未審核的使用者會直接看到頁面。
+  - 選項白名單（產業、地區、內容領域等）只在 UI 端強制（同計畫 4、5 的項目）。
+  - proxy 對每個 RSC prefetch 都呼叫 `getUser()`（會打 Auth 伺服器）；可評估改用 `getClaims()`。
+  - 已登入的使用者造訪 `/login` 會停留在登入頁；可考慮直接導回首頁。
+  - service_role 仍可直接寫入 `profiles`、`brand_profiles`；可考慮比照 `creator_profiles` 收回其寫入權限。
 
 ### 3. 創作者公開檔案頁
 - 訪客（anon）讀不到 `profiles.display_name`；缺少頭像欄位；評分、完成案數、準時率需要合作資料，但 RLS 會擋住 → 需要一個欄位，或只開放必要欄位的 view / definer 函式，另外要建評價資料表。
 - 收藏 ♡ 需要一張資料表。
+
+- 計畫 2 Task 3 修正收回了創作者對 `engagement_rate`、`style_tags`、`collab_types`、`bio` 的直接 UPDATE（`profiles`、`brand_profiles`、`creator_profiles` 的 UPDATE 權限與 `*_update_self` policy 全部移除，修改改走 definer 函式）。公開檔案頁要改 bio / style_tags / collab_types / engagement_rate 時，擴充 `update_creator_account` 或另開 definer 函式。
 
 ### 4. 創作者廣場、5. 招募與機會頁
 - 索引：`creator_profiles(status)`、`categories` / `style_tags` 的 GIN 索引、`briefs(status, deadline)`、`briefs(brand_id)`、`brief_applications(creator_id)`、`conversations(creator_id)`、`collaborations(conversation_id)`、`collaborations(brief_id)`。
 - 報名的狀態變更需要 definer 函式（目前沒有開放 UPDATE）。錄取時，要在同一個 transaction 裡建立對話和合作案。
 - 待決定：尚未審核的創作者能不能報名；超過截止日但狀態仍是 open 的招募要不要擋；品牌刪除招募時，報名紀錄會一起被刪除（cascade），這樣是否可接受。
 - 刪除 `public/*.svg` 這些 scaffold 留下的圖檔。
+- 產業、地區、內容領域的白名單只在 UI 端強制，資料庫只檢查長度與數量。
+- 搜尋與篩選必須能容忍清單以外的值；若需要嚴格清單，要在資料庫端強制。
 
 ### 6. 合作案詳情頁
 - 貼文連結在 app 端用 `new URL()` 再檢查一次（資料庫的 regex 會接受 `a..b.com`）。
@@ -59,7 +80,11 @@
 
 ### 9. 管理後台
 - 管理員目前只能讀取。需要 `set_creator_status()`（definer 函式，檢查 `is_admin()`），以及取消或爭議處理的狀態轉換。
-- `is_admin()`、`my_role()`、`is_conversation_participant()` 的 EXECUTE 權限從 PUBLIC 收回。
+- `is_admin()`、`my_role()`、`is_conversation_participant()` 的 EXECUTE 權限從 PUBLIC 收回。brand-logos 的 insert/update policy 以 authenticated 身分呼叫 my_role()，收回後要再 grant 給 authenticated。
 
 ### 10. 審核逾期自動通過
 - `transition_collaboration` 的 system 身分要求「透過 PostgREST 以 service_role 呼叫」；**pg_cron 以 postgres 身分執行會被判定為「不是參與者」**。可以改用 Next route 搭配 Cron 和 secret，再以 service_role 呼叫 RPC；或另外寫一個只授權給 service_role 的 `auto_approve_due()` definer 函式。
+
+## 部署
+
+正式環境（Hosted Supabase 與 Vercel）的設定清單以 README 的「正式環境（Hosted Supabase）設定」與「部署（Vercel）」為準，這裡不重複（避免兩份清單不一致）。清單包含：Redirect URLs 加 `https://<site>/auth/callback**`、關閉匿名登入、Email 範本、自訂 SMTP、CAPTCHA、Google OAuth。

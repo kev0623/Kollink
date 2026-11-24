@@ -35,3 +35,6 @@ jobs:
       # 用 package-lock.json 鎖定的 Supabase CLI 版本，避免新版 CLI 讓 CI 突然變紅
       - run: npx supabase db start
       - run: npx supabase test db
+      # 型別必須和 migration 一致：改了 schema 卻沒重新產生型別，CI 會失敗
+      - run: npm run db:types
+      - run: git diff --exit-code src/lib/supabase/database.types.ts
