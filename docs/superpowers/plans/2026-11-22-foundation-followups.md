@@ -71,3 +71,17 @@
 
 ### 10. 審核逾期自動通過
 - `transition_collaboration` 的 system 身分要求「透過 PostgREST 以 service_role 呼叫」；**pg_cron 以 postgres 身分執行會被判定為「不是參與者」**。可以改用 Next route 搭配 Cron 和 secret，再以 service_role 呼叫 RPC；或另外寫一個只授權給 service_role 的 `auto_approve_due()` definer 函式。
+
+## 部署
+
+## 正式環境（Hosted Supabase）設定
+
+上線前在 Supabase 後台逐項設定（本機的 `config.toml` 不會自動套用到正式專案）：
+
+1. Authentication → Providers → Email：開啟「Confirm email」（對應 `enable_confirmations = true`）；Email OTP 長度 6、有效期限 900 秒。
+2. Authentication → Hooks：新增 Postgres hook「Password verification attempt」，指向 `public.hook_reject_password`（migration 已建立函式）。
+3. Authentication → URL Configuration：Site URL 填正式網址；Redirect URLs 加入 `https://正式網址/**`。
+4. Authentication → Emails：「Magic Link」與「Confirm signup」範本的主旨與內容都換成 `supabase/templates/otp.html`（`Kollink 登入驗證碼` / `Kollink 註冊驗證碼`）。
+5. Authentication → SMTP Settings：設定自訂 SMTP（內建寄信有嚴格頻率上限，不能用於正式環境）。
+6. Authentication → Attack Protection：開啟 CAPTCHA（Turnstile 或 hCaptcha），並同步在登入頁加上對應元件。
+7. Google OAuth：Providers → Google 填入用戶端 ID／密鑰；Google Cloud Console 的重新導向 URI 加上 `https://<專案>.supabase.co/auth/v1/callback`。

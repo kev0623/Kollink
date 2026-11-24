@@ -12,6 +12,10 @@ export async function proxy(request: NextRequest) {
     login.searchParams.set("next", request.nextUrl.pathname + request.nextUrl.search);
     const redirect = NextResponse.redirect(login);
     response.cookies.getAll().forEach((c) => redirect.cookies.set(c));
+    // 帶上 Cache-Control 等標頭，避免帶 session cookie 的導向被 CDN 快取
+    response.headers.forEach((v, k) => {
+      if (k.toLowerCase() === "cache-control" || k.toLowerCase() === "expires" || k.toLowerCase() === "pragma") redirect.headers.set(k, v);
+    });
     return redirect;
   }
   return response;

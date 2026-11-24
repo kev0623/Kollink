@@ -13,6 +13,6 @@ export async function GET(request: NextRequest) {
   if (error) return NextResponse.redirect(new URL("/login?error=callback", url.origin));
 
   const path = await postLoginPath(supabase, url.searchParams.get("role"), url.searchParams.get("next"));
-  const target = new URL(path, url.origin);
-  return NextResponse.redirect(target.origin === url.origin ? target : new URL("/", url.origin));
+  // path 已由 resolvePostLoginPath 清理過，只會是站內相對路徑。
+  return new NextResponse(null, { status: 307, headers: { Location: path } });
 }

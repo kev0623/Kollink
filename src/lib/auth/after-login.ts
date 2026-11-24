@@ -13,6 +13,7 @@ export async function postLoginPath(
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return "/login";
-  const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle();
+  const { data: profile, error } = await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle();
+  if (error) return "/login?error=profile";
   return resolvePostLoginPath({ role: profile?.role ?? null, requestedRole, next });
 }
