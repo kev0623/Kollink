@@ -12,9 +12,11 @@ type Props = {
   error?: string;
   /** 上傳中為 true；表單用來停用送出按鈕。 */
   onBusyChange?: (busy: boolean) => void;
+  /** 表單儲存中為 true：不能換檔、移除，也不會刪除任何檔案（避免儲存途中刪掉正要寫入資料庫的 Logo）。 */
+  disabled?: boolean;
 };
 
-export function LogoField({ userId, initialPath, error, onBusyChange }: Props) {
+export function LogoField({ userId, initialPath, error, onBusyChange, disabled }: Props) {
   const supabase = useMemo(() => createClient(), []);
   const [logoPath, setLogoPath] = useState<string | null>(initialPath);
   const url = brandLogoUrl(logoPath);
@@ -31,7 +33,7 @@ export function LogoField({ userId, initialPath, error, onBusyChange }: Props) {
   }
 
   function discard(path: string | null) {
-    if (!path || path !== ownedRef.current) return;
+    if (disabled || !path || path !== ownedRef.current) return;
     ownedRef.current = null;
     // 盡力刪除，失敗就忽略
     void Promise.resolve(supabase.storage.from("brand-logos").remove([path])).catch(() => {});
@@ -59,6 +61,7 @@ export function LogoField({ userId, initialPath, error, onBusyChange }: Props) {
   }
 
   function remove() {
+    if (disabled) return;
     discard(logoPath);
     setLogoPath(null);
     setMsg(null);
@@ -77,7 +80,7 @@ export function LogoField({ userId, initialPath, error, onBusyChange }: Props) {
           <div className="h-12 w-12 rounded-btn border border-dashed border-line" />
         )}
         <input
-          ref={fileRef} type="file" accept="image/png,image/jpeg,image/webp" disabled={busy}
+          ref={fileRef} type="file" accept="image/png,image/jpeg,image/webp" disabled={busy || disabled}
           aria-label="品牌 Logo" aria-describedby={note ? noteId : undefined} aria-invalid={note ? true : undefined}
           onChange={(e) => {
             const file = e.target.files?.[0];
@@ -85,7 +88,7 @@ export function LogoField({ userId, initialPath, error, onBusyChange }: Props) {
             void onFile(file);
           }}
         />
-        {url && <button type="button" disabled={busy} className="text-sm text-muted" onClick={remove}>移除 Logo</button>}
+        {url && <button type="button" disabled={busy || disabled} className="text-sm text-muted" onClick={remove}>移除 Logo</button>}
       </div>
       <input type="hidden" name="logoPath" value={logoPath ?? ""} />
       {msg && <span id={noteId} role="status" className="mt-1 block text-xs text-primary">{msg}</span>}

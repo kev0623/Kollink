@@ -26,7 +26,7 @@ export function BrandOnboardingForm({ userId }: { userId: string }) {
           </select>
         )}
       </Field>
-      <LogoField userId={userId} initialPath={null} error={fe.logoPath} onBusyChange={setLogoBusy} />
+      <LogoField userId={userId} initialPath={null} error={fe.logoPath} onBusyChange={setLogoBusy} disabled={pending} />
       {state.formError && <p role="alert" className="text-sm text-primary">{state.formError}</p>}
       <button disabled={pending || logoBusy} className="w-full rounded-btn bg-primary px-4 py-2 font-bold text-white disabled:opacity-60">
         {logoBusy ? "Logo 上傳中…" : "完成註冊"}
