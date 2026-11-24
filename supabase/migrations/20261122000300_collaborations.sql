@@ -77,7 +77,7 @@ create trigger collaborations_audit_insert after insert on public.collaborations
 create function public.collaborations_guard_update() returns trigger
 language plpgsql set search_path = '' as $$
 begin
-  if coalesce(current_setting('pollen.in_transition', true), '') <> 'on'
+  if coalesce(current_setting('kollink.in_transition', true), '') <> 'on'
      and (new.status, new.amount_twd, new.brand_id, new.creator_id, new.brief_id,
           new.conversation_id, new.review_due_at, new.published_url)
          is distinct from
@@ -134,7 +134,7 @@ begin
     when c.status in ('invited', 'awaiting_payment') and p_action = 'cancel' and v_actor = 'brand'
       then 'cancelled'::public.collab_status
     when c.status = 'awaiting_payment' and p_action = 'mark_paid' and v_actor = 'system'
-         and coalesce(current_setting('pollen.recording_payment', true), '') = 'on'
+         and coalesce(current_setting('kollink.recording_payment', true), '') = 'on'
       then 'awaiting_submission'::public.collab_status
     when c.status = 'awaiting_submission' and p_action = 'submit' and v_actor = 'creator'
       then 'in_review'::public.collab_status
@@ -159,14 +159,14 @@ begin
       using errcode = '22023';
   end if;
 
-  perform set_config('pollen.in_transition', 'on', true);
+  perform set_config('kollink.in_transition', 'on', true);
   update public.collaborations
   set status = v_to,
       updated_at = now(),
       review_due_at = case when v_to = 'in_review' then now() + interval '3 days' else review_due_at end,
       published_url = case when v_to = 'awaiting_payout' then p_published_url else published_url end
   where id = c.id;
-  perform set_config('pollen.in_transition', 'off', true);
+  perform set_config('kollink.in_transition', 'off', true);
 
   insert into public.audit_logs (collaboration_id, actor_id, actor_kind, action, from_status, to_status, note)
   values (c.id, case when v_actor = 'system' then null else v_uid end, v_actor, p_action, c.status, v_to, p_note);

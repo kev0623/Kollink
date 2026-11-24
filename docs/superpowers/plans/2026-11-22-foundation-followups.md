@@ -10,7 +10,7 @@
 | 未審核創作者的報價 | 品牌看不到（只看得到已審核創作者的報價）。 |
 | 預設權限收緊 | 每張 public 資料表都撤銷 anon / authenticated 的 `truncate, trigger, references`。 |
 | 狀態只能經由函式改變 | 連 service_role 與資料庫擁有者都不能直接改合作案的狀態類欄位（guard trigger）；service_role 對 `collaborations` 只有 SELECT。 |
-| 標記已付款 | 只能經由 `record_payment_success`（`pollen.recording_payment` 旗標）；service_role 也不能直接呼叫 `mark_paid`。 |
+| 標記已付款 | 只能經由 `record_payment_success`（`kollink.recording_payment` 旗標）；service_role 也不能直接呼叫 `mark_paid`。 |
 | 參與者身分優先 | 身分判斷順序為 system > brand > creator > admin。管理員若是案子的參與者，只能以參與者身分操作，不能幫自己的案子撥款。 |
 | 發佈連結 | 必須是完整網址（有網域和路徑）。 |
 | 取消後才到的付款（B1） | 記錄為已付款、`refund_required = true`，寫入 audit（`payment_requires_refund`），回覆綠界 `1|OK`；實際退款留給計畫 8。 |
@@ -25,7 +25,7 @@
 - 加入 `@supabase/ssr`；確認 Supabase CLI 3.x 的金鑰命名（publishable / secret），並更新 `.env.example`。
 - 加入 `supabase gen types typescript` 產生的型別，以及 CI 的型別漂移檢查。
 - 補測試：跨使用者更新無效、創作者不能建立品牌檔案、以 pending 狀態建立檔案的正向對照。
-- 決定正式名稱（目前 repo 是 Kollink，程式內是 Pollen，GUC 前綴是 `pollen.*`，之後改名需要寫 migration）。
+- ~~決定正式名稱~~ → 已定為 Kollink（計畫 2 Task 1）
 - README 補上本機開發步驟（Docker、`supabase start`、`.env.local`、`npm run test:db`）。
 
 ### 3. 創作者公開檔案頁
