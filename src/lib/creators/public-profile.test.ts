@@ -6,7 +6,7 @@ vi.mock("next/server", () => ({ connection: async () => {} }));
 vi.mock("@/lib/supabase/server", () => ({ createClient: async () => ({ rpc, from }) }));
 vi.mock("@/lib/supabase/anon", () => ({ createAnonClient: () => ({ rpc: anonRpc }) }));
 
-import { loadApprovedCreatorAsGuest, loadPortfolio, loadPublicCreator, loadRates } from "./public-profile";
+import { loadApprovedCreatorAsGuest, loadIsFavorite, loadPortfolio, loadPublicCreator, loadRates } from "./public-profile";
 
 /** 模擬 supabase-js 的鏈式查詢：每個方法回傳自己，await 時得到 result。 */
 function chain(result: unknown) {
@@ -81,5 +81,23 @@ describe("loadRates", () => {
       { collabType: "Reels", priceTwd: 8000 }, { collabType: "IG 貼文", priceTwd: 4500 },
     ]);
     expect(from).toHaveBeenCalledWith("creator_rates");
+  });
+});
+
+describe("loadIsFavorite", () => {
+  it("查得到收藏是 true（RLS 只讓品牌看到自己的收藏）", async () => {
+    const q = chain({ data: { creator_id: "u1" }, error: null });
+    from.mockReturnValue(q);
+    expect(await loadIsFavorite("u1")).toBe(true);
+    expect(from).toHaveBeenCalledWith("creator_favorites");
+    expect(q.eq).toHaveBeenCalledWith("creator_id", "u1");
+  });
+  it("查不到是 false", async () => {
+    from.mockReturnValue(chain({ data: null, error: null }));
+    expect(await loadIsFavorite("u1")).toBe(false);
+  });
+  it("資料庫錯誤時丟出", async () => {
+    from.mockReturnValue(chain({ data: null, error: { message: "boom" } }));
+    await expect(loadIsFavorite("u1")).rejects.toEqual({ message: "boom" });
   });
 });

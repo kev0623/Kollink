@@ -169,6 +169,32 @@ isOneToOne: false
       referencedColumns: ["user_id"]
     }
                   ]
+                },"creator_favorites": {
+                  Row: {
+                    "brand_id": string,"created_at": string,"creator_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "brand_id": string,"created_at"?: string,"creator_id": string
+                  }
+                  Update: {
+                    "brand_id"?: string,"created_at"?: string,"creator_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "creator_favorites_brand_id_fkey"
+      columns: ["brand_id"]
+isOneToOne: false
+      referencedRelation: "brand_profiles"
+      referencedColumns: ["user_id"]
+    },{
+      foreignKeyName: "creator_favorites_creator_id_fkey"
+      columns: ["creator_id"]
+isOneToOne: false
+      referencedRelation: "creator_profiles"
+      referencedColumns: ["user_id"]
+    }
+                  ]
                 },"creator_portfolio_items": {
                   Row: {
                     "created_at": string,"creator_id": string,"id": string,"image_path": string,"link_url": string | null,"position": number
@@ -362,8 +388,18 @@ isOneToOne: false
 "my_role":
 { Args: Record<PropertyKey, never>; Returns: Database["public"]['Enums']["user_role"]
                            },
+"popular_style_tags":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "tag": string,"uses": number
+            }[]
+                           },
 "record_payment_success":
 { Args: { "p_amount_twd": number,"p_merchant_trade_no": string,"p_provider_trade_no": string,"p_raw": Json }; Returns: string
+                           },
+"search_creators":
+{ Args: { "p_categories"?: (string)[],"p_collab_types"?: (string)[],"p_engagement_min"?: number,"p_favorites_only"?: boolean,"p_follower_max"?: number,"p_follower_min"?: number,"p_keyword"?: string,"p_limit"?: number,"p_offset"?: number,"p_price_max"?: number,"p_price_min"?: number,"p_regions"?: (string)[],"p_sort"?: string,"p_style_tags"?: (string)[] }; Returns: {
+              "avatar_path": string,"categories": (string)[],"collab_types": (string)[],"created_at": string,"display_name": string,"engagement_rate": number,"follower_count": number,"handle": string,"is_favorite": boolean,"min_price": number,"portfolio_paths": (string)[],"post_price": number,"region": string,"style_tags": (string)[],"total_count": number,"user_id": string
+            }[]
                            },
 "set_creator_portfolio":
 { Args: { "p_items": Json }; Returns: undefined

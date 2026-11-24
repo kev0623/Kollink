@@ -1,20 +1,22 @@
 import Link from "next/link";
 import { ExternalLink, Lock, MapPin, Star } from "lucide-react";
+import { FavoriteButton } from "@/components/square/FavoriteButton";
 import { creatorMediaUrl } from "@/lib/creator-media";
 import { formatNumber, formatPercent, formatTwd, initialOf } from "@/lib/format";
 import type { CreatorStatus, PortfolioItem, PublicCreator, Rate, ViewerKind } from "@/lib/creators/view";
 
 const card = "rounded-card border border-line bg-surface p-5 md:p-8";
 
-type Props = { creator: PublicCreator; portfolio: PortfolioItem[]; rates: Rate[]; viewer: ViewerKind };
+/** favorite：品牌是否已收藏；只有品牌瀏覽時才有意義（其他身分不顯示 ♡）。 */
+type Props = { creator: PublicCreator; portfolio: PortfolioItem[]; rates: Rate[]; viewer: ViewerKind; favorite?: boolean };
 
-export function ProfileView({ creator: c, portfolio, rates, viewer }: Props) {
+export function ProfileView({ creator: c, portfolio, rates, viewer, favorite }: Props) {
   return (
     <div className="pt-2 md:pt-6">
       {c.isSelf && c.status !== "approved" && <SelfPreviewBanner status={c.status} />}
       <div className="grid gap-4 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] md:gap-6">
         <div className="space-y-4 md:space-y-6">
-          <HeaderCard c={c} />
+          <HeaderCard c={c} favorite={viewer === "brand" ? (favorite ?? false) : undefined} />
           <StatsCard c={c} />
           {c.styleTags.length > 0 && (
             <Section title="風格"><Chips label="風格標籤" items={c.styleTags} /></Section>
@@ -66,7 +68,7 @@ function Chips({ label, items, dark }: { label: string; items: string[]; dark?: 
   );
 }
 
-function HeaderCard({ c }: { c: PublicCreator }) {
+function HeaderCard({ c, favorite }: { c: PublicCreator; favorite?: boolean }) {
   const avatar = creatorMediaUrl(c.avatarPath);
   return (
     <section className={card}>
@@ -79,8 +81,11 @@ function HeaderCard({ c }: { c: PublicCreator }) {
             {initialOf(c.displayName)}
           </div>
         )}
-        <div className="min-w-0">
-          <h1 className="break-words text-2xl font-bold text-ink md:text-[32px]">{c.displayName}</h1>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start gap-2">
+            <h1 className="min-w-0 break-words text-2xl font-bold text-ink md:text-[32px]">{c.displayName}</h1>
+            {favorite !== undefined && <FavoriteButton creatorId={c.userId} name={c.displayName} initial={favorite} />}
+          </div>
           <p className="text-sm text-muted">@{c.handle}</p>
           {c.region && (
             <p className="mt-1 flex items-center gap-1 text-sm text-muted">

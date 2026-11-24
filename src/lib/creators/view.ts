@@ -62,7 +62,7 @@ export type OwnProfileRow = {
 
 export type ViewerKind = "guest" | "brand" | "creator";
 
-function toNumberOrNull(v: number | string | null): number | null {
+export function toNumberOrNull(v: number | string | null): number | null {
   if (v === null) return null;
   const n = Number(v);
   return Number.isFinite(n) ? n : null;
