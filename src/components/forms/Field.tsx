@@ -21,4 +21,4 @@ export function Field({ label, error, hint, children }: {
   );
 }
 
-export const inputClass = "w-full rounded-input border border-line bg-surface px-3 py-2 outline-none focus:ring-2 focus:ring-ink";
+export const inputClass = "h-[42px] w-full rounded-input border border-line bg-surface px-3 py-2 outline-none focus:ring-2 focus:ring-ink";

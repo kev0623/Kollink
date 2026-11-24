@@ -12,7 +12,7 @@ export function BottomTabBar({ items }: { items: NavItem[] }) {
       className="fixed inset-x-0 bottom-0 z-10 flex justify-around border-t border-line bg-surface px-2 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] text-xs md:hidden"
     >
       {items.map((it) => {
-        const base = "flex min-h-12 min-w-14 flex-col items-center justify-center gap-0.5 rounded-nav px-3";
+        const base = "flex min-h-12 min-w-14 flex-col items-center justify-center gap-0.5 rounded-nav px-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2";
         if (!it.href) {
           return (
             <span key={it.label} className={`${base} text-muted opacity-60`}>

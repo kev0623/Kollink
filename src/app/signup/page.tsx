@@ -42,9 +42,7 @@ async function Signup({ searchParams }: { searchParams: SP }) {
         第 2 步：以{role === "brand" ? "品牌" : "創作者"}身分註冊
         <Link href={next ? `/signup?next=${encodeURIComponent(next)}` : "/signup"} className="ml-2 text-sm text-ink underline">更改</Link>
       </p>
-      <div className="max-w-md">
-        <AuthForm role={role} next={next} googleEnabled={process.env.NEXT_PUBLIC_GOOGLE_AUTH_ENABLED === "true"} />
-      </div>
+      <AuthForm role={role} next={next} googleEnabled={process.env.NEXT_PUBLIC_GOOGLE_AUTH_ENABLED === "true"} />
     </>
   );
 }
