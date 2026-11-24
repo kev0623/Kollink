@@ -46,3 +46,12 @@ export async function loadRates(creatorId: string, collabTypes: string[]): Promi
   if (error) throw error;
   return sortRatesByTypes((data ?? []).map((r) => ({ collabType: r.collab_type, priceTwd: r.price_twd })), collabTypes);
 }
+
+/** 目前的品牌有沒有收藏這位創作者。RLS 只讓品牌看到自己的收藏；不是品牌時永遠是 false。會讀 cookies。 */
+export async function loadIsFavorite(creatorId: string): Promise<boolean> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("creator_favorites").select("creator_id").eq("creator_id", creatorId).maybeSingle();
+  if (error) throw error;
+  return data !== null;
+}
