@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(115);
+select plan(122);
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-0000000000d1', 'd1@test.local'),  -- 新品牌
@@ -128,7 +128,7 @@ select throws_ok($$select public.update_creator_account(E'小\u202e美', 'mei.ne
 select throws_ok($$select public.update_creator_account('小美', 'mei.new', 'mei', 100, '台北市', array['美妝', E'美\u202e妝'])$$,
   '22023', 'invalid categories', '修改時內容領域有雙向控制字元視為無效');
 select throws_ok($$select public.update_creator_account('小美', 'mei.new', 'mei', 100, '台北市', array['美妝', E'美\u200b妝'])$$,
-  '22023', 'invalid categories', '內部零寬字元被移除後視為重複');
+  '22023', 'invalid categories', '內部 U+200B 被移除後視為重複');
 select throws_ok($$select public.update_brand_account('花粉', '美妝保養', null)$$,
   '42501', 'not a brand', '創作者不能呼叫品牌修改函式');
 select throws_ok($$select public.update_creator_account('小美', 'mei.new', 'x y', 100, '台北市', array['美妝'])$$,
@@ -192,6 +192,10 @@ select is((select logo_path from public.brand_profiles where user_id = auth.uid(
   'Logo 路徑已存下');
 select is((select brand_name from public.brand_profiles where user_id = auth.uid()), '花粉',
   '前後的 U+3164 與 U+FE0F 被去掉、中間的零寬字元被移除');
+select lives_ok($$select public.update_brand_account(E'花粉\u200c👩\u200d💻', '美妝保養', null)$$,
+  '名稱含 emoji ZWJ 序列與 ZWNJ');
+select is((select brand_name from public.brand_profiles where user_id = auth.uid()), E'花粉\u200c👩\u200d💻',
+  '內部的 U+200C、U+200D 原樣保留');
 select lives_ok($$select public.update_brand_account('花粉', '美妝保養', null)$$,
   '修改時 Logo 傳 null 代表移除');
 select is((select logo_path from public.brand_profiles where user_id = auth.uid()), null,
@@ -218,21 +222,35 @@ select isnt((select handle_locked_at from public.creator_profiles where user_id 
 select throws_ok(
   $$update public.creator_profiles set handle = 'mei.pg' where user_id = '00000000-0000-0000-0000-0000000000d2'$$,
   '42501', 'handle locked after approval', 'postgres 沒設 GUC 不能改已審核的 handle');
+select throws_ok(
+  $$update public.creator_profiles set user_id = '00000000-0000-0000-0000-0000000000d4' where user_id = '00000000-0000-0000-0000-0000000000d2'$$,
+  '42501', 'handle locked after approval', 'postgres 沒設 GUC 不能改 user_id');
+select throws_ok(
+  $$update public.creator_profiles set handle_locked_at = now() where user_id = '00000000-0000-0000-0000-0000000000d3'$$,
+  '42501', 'handle locked after approval', 'postgres 沒設 GUC 不能在 pending 的列設定 handle_locked_at');
+select is((select handle_locked_at from public.creator_profiles where user_id = '00000000-0000-0000-0000-0000000000d3'), null,
+  'pending 的列 handle_locked_at 仍是 null');
 -- service_role 被拒
 set local role service_role;
 select throws_ok(
   $$update public.creator_profiles set handle = 'mei.svc' where user_id = '00000000-0000-0000-0000-0000000000d2'$$,
-  '42501', 'handle locked after approval', 'service_role 不能改已審核的 handle');
+  '42501', null, 'service_role 不能改已審核的 handle（service_role 沒有 handle 的 UPDATE 權限）');
 -- 先改回 pending 再改 handle 也不行
 select lives_ok(
   $$update public.creator_profiles set status = 'pending' where user_id = '00000000-0000-0000-0000-0000000000d2'$$,
   'service_role 可以把狀態改回 pending');
 select throws_ok(
   $$update public.creator_profiles set handle = 'mei.svc3' where user_id = '00000000-0000-0000-0000-0000000000d2'$$,
-  '42501', 'handle locked after approval', '退回 pending 後 handle 仍然鎖定');
+  '42501', null, '退回 pending 後 handle 仍然鎖定（service_role 沒有 handle 的 UPDATE 權限）');
 select throws_ok(
   $$update public.creator_profiles set handle_locked_at = null where user_id = '00000000-0000-0000-0000-0000000000d2'$$,
-  '42501', 'handle locked after approval', '不能清掉 handle_locked_at');
+  '42501', null, 'service_role 不能改 handle_locked_at');
+select throws_ok(
+  $$update public.creator_profiles set user_id = '00000000-0000-0000-0000-0000000000d4' where user_id = '00000000-0000-0000-0000-0000000000d2'$$,
+  '42501', null, 'service_role 不能改 user_id');
+select throws_ok(
+  $$update public.creator_profiles set handle_locked_at = now() where user_id = '00000000-0000-0000-0000-0000000000d3'$$,
+  '42501', null, 'service_role 不能在 pending 的列設定 handle_locked_at');
 select throws_ok(
   $$insert into public.creator_profiles (user_id, handle, ig_username) values ('00000000-0000-0000-0000-0000000000d4', 'admin.x', 'x')$$,
   '42501', null, 'service_role 不能直接新增 creator_profiles');
@@ -252,7 +270,7 @@ set local role service_role;
 select set_config('kollink.allow_handle_change', 'on', true);
 select throws_ok(
   $$update public.creator_profiles set handle = 'mei.svc2' where user_id = '00000000-0000-0000-0000-0000000000d2'$$,
-  '42501', 'handle locked after approval', 'service_role 即使設了 GUC 也被拒');
+  '42501', null, 'service_role 即使設了 GUC 也被拒（service_role 沒有 handle 的 UPDATE 權限）');
 reset role;
 select set_config('kollink.allow_handle_change', 'off', true);
 

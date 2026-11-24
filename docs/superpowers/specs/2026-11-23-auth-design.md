@@ -64,7 +64,7 @@
 共同規則：
 - `auth.uid()` 為 null → 錯誤 42501。
 - 已經有 profile → 錯誤 23505（訊息 `account already exists`）。
-- 文字清理 `clean_text`（前端 `cleanText` 必須用完全相同的集合）：(1) 任何位置的零寬字元一律移除（U+200B–U+200D、U+2060、U+FEFF），所以「美妝」與「美​妝」視為相同；(2) 去掉前後的空白與看不見的字元：ASCII 空白（`\s`）以及 U+0085、U+00A0、U+00AD、U+034F、U+061C、U+115F、U+1160、U+1680、U+180E、U+2000–U+200F、U+2028、U+2029、U+202F、U+205F、U+2060–U+2064、U+2800、U+3000、U+3164、U+FE0F、U+FEFF、U+FFA0；清完不可為空。(3) 雙向控制字元（U+202A–U+202E、U+2066–U+2069）出現在任何位置都視為無效：對應欄位報 `invalid <欄位>`，前端報「含有不允許的特殊字元」。長度上限：display_name 40、brand_name 60、industry 30、region 30、ig_username 30。
+- 文字清理 `clean_text`（前端 `cleanText` 必須用完全相同的集合）：(1) 任何位置一律移除 U+200B、U+2060、U+FEFF（所以「美妝」與「美​妝」視為相同）；U+200C、U+200D 只在前後去除，內部保留，以免拆散 emoji（如 👩‍💻）與需要它們的文字；(2) 去掉前後的空白與看不見的字元：ASCII 空白（`\s`）以及 U+0085、U+00A0、U+00AD、U+034F、U+061C、U+115F、U+1160、U+1680、U+180E、U+2000–U+200F、U+2028、U+2029、U+202F、U+205F、U+2060–U+2064、U+2800、U+3000、U+3164、U+FE0F、U+FEFF、U+FFA0；清完不可為空。(3) 雙向控制字元（U+202A–U+202E、U+2066–U+2069）出現在任何位置都視為無效：對應欄位報 `invalid <欄位>`，前端報「含有不允許的特殊字元」。長度上限：display_name 40、brand_name 60、industry 30、region 30、ig_username 30。
 - `brand_profiles.logo_url` 改名為 `logo_path`，只存 Storage 路徑：null，或 `<user_id>/<檔名>`（`'^' || user_id || '/[A-Za-z0-9][A-Za-z0-9._-]{0,99}$'`，檔名以英數字開頭，且不可含 `..`）。檢查做成 CHECK constraint `brand_profiles_logo_path_check`（取代原本的 trigger）；函式先自行檢查並 raise 22023 `invalid logo_path`。顯示用的公開網址由 App 的 `brandLogoUrl(path)` 用 `NEXT_PUBLIC_SUPABASE_URL` 組出。
 - 創作者：handle 符合既有 check（`^[a-z0-9_.]{3,30}$`）；ig_username 符合 `^[A-Za-z0-9_.]{1,30}$`；follower_count ≥ 0；categories 1–5 個、不重複、每個 `clean_text` 後非空且 ≤ 20 字。
 - handle 重複 → 錯誤 23505（訊息 `handle taken`），前端顯示「這個網址已經有人使用」。
@@ -101,6 +101,7 @@ created_at timestamptz not null default now()
 - `creator_profiles.handle_locked_at timestamptz`（null = 未鎖）。第一次離開 pending（或 INSERT 時 status 就不是 pending）時由 trigger 自動設為 `now()`；之後狀態退回 pending 也不會解鎖。
 - BEFORE INSERT OR UPDATE trigger：`old.handle_locked_at is not null` 時，`handle` 或 `handle_locked_at` 被改動 → 42501（`handle locked after approval`），對所有角色都生效（含 service_role 與 definer 函式）。
 - 唯一例外：Studio 管理者在同一個 transaction 先執行 `set local kollink.allow_handle_change = 'on';`（Studio 請用 `set local`，不要用 `set`），且 `current_user in ('postgres', 'supabase_admin')`，兩個條件都成立才放行。
+- `handle_locked_at` 與 `user_id` 只能由 trigger 管理：INSERT 時 `handle_locked_at` 由 status 決定（忽略傳入值）；UPDATE 時未經 GUC 例外不能改 `user_id`，也不能在未鎖定的列自行設定 `handle_locked_at`。`service_role` 的 UPDATE 權限只剩 `ig_username, follower_count, engagement_rate, region, categories, style_tags, collab_types, bio, status`。
 - 不再 `grant update (handle)`；handle 只能經 `update_creator_account` 修改。`status` 不在任何可更新欄位內，創作者無法自行改成 approved。
 
 ### 2.4 Logo 儲存空間
@@ -184,6 +185,7 @@ server action 呼叫 `supabase.auth.signOut()`，再導向 `/`。
 - 隱形字元：名稱只有 U+200B 或 U+3164 視為空白；前後 NBSP、U+3164、U+FE0F 被去掉；中間的零寬字元被移除；雙向控制字元在任何位置無效。
 - `not authenticated`（有 authenticated 角色但沒有 sub）四個函式都測；資料庫擁有者直接寫入不合法的 logo_path 被 CHECK 擋下（23514）；authenticated 不能 DELETE 三張表；handle 唯一約束名稱為 `creator_profiles_handle_key`（錯誤對應依賴它，Postgres 預設命名）。
 - `creator_verifications`：本人與管理員看得到、其他人與 anon 看不到、任何人不能寫入；anon 不能呼叫任何建立或修改函式。
+- 停權中改 IG：頁面提示「已更換 IG 帳號。帳號目前暫停中，請聯絡客服」（approved 改 IG 則提示重新審核）。
 - handle：未鎖定可經函式修改；鎖定後（含退回 pending）對 authenticated、service_role、沒設 GUC 的 postgres 都不能改，設了 `kollink.allow_handle_change` 的 postgres 可以；不能改 status；service_role 不能新增或刪除 creator_profiles。
 - 改 IG：approved 改 IG → pending 且換新驗證碼；只改粉絲數仍 approved；suspended 改 IG 仍 suspended 且換新碼；大小寫差異不算更換。
 - 不能更新別人的 profile / creator_profile / brand_profile（地基待辦）。
@@ -212,7 +214,9 @@ db job 加型別漂移檢查；其他不變。
   where cp.status = 'pending'
   order by cp.created_at;
 
-  update public.creator_profiles set status = 'approved' where handle = '填入網址代稱';
+  update public.creator_profiles set status = 'approved'
+    where handle = '填入網址代稱' and ig_username = '填入你確認過的 IG 帳號';
+  -- 受影響 0 列代表創作者在審核期間改了 IG（會退回審核並換新驗證碼），請重新確認
   ```
 
 ## 5. 不在本次範圍

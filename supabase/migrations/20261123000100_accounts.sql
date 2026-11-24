@@ -12,7 +12,8 @@ alter table public.creator_profiles
   add constraint creator_profiles_categories_max check (cardinality(categories) <= 5);
 
 -- 2. 文字清理（前端 src/lib/validation/onboarding.ts 的 cleanText 必須用完全相同的集合）
---    a) 任何位置的零寬字元一律移除：U+200B-U+200D、U+2060、U+FEFF
+--    a) 任何位置一律移除：U+200B、U+2060、U+FEFF（U+200C、U+200D 要留給 emoji 與需要它們的文字，
+--       只在前後去除）
 --    b) 去掉前後的空白與看不見的字元：ASCII 空白（含 \f、\v）、U+0085、U+00A0、U+00AD、
 --       U+034F、U+061C、U+115F、U+1160、U+1680、U+180E、U+2000-U+200F、U+2028、U+2029、
 --       U+202F、U+205F、U+2060-U+2064、U+2800、U+3000、U+3164、U+FE0F、U+FEFF、U+FFA0
@@ -21,7 +22,7 @@ alter table public.creator_profiles
 create function public.clean_text(p text) returns text
 language sql immutable set search_path = '' as $$
   select btrim(
-    regexp_replace(p, E'[\u200b-\u200d\u2060\ufeff]', '', 'g'),
+    regexp_replace(p, E'[\u200b\u2060\ufeff]', '', 'g'),
     E' \t\r\n\f\u000b\u0085\u00a0\u00ad\u034f\u061c\u115f\u1160\u1680\u180e'
     || E'\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a\u200b\u200c\u200d\u200e\u200f'
     || E'\u2028\u2029\u202f\u205f\u2060\u2061\u2062\u2063\u2064\u2800\u3000\u3164\ufe0f\ufeff\uffa0');
@@ -94,6 +95,7 @@ revoke insert, delete on public.creator_profiles from service_role;
 
 -- 6. handle：審核通過後對所有人鎖定（含 service_role 與 definer 函式）
 --    用 handle_locked_at 記錄鎖定時間：狀態之後退回 pending 也不會解鎖。
+--    handle_locked_at 與 user_id 只能由 trigger 管理，不接受外部寫入。
 --    唯一例外：Studio 管理者在同一個 transaction 先執行
 --    set local kollink.allow_handle_change = 'on';
 --    且 current_user 是 postgres 或 supabase_admin
@@ -101,21 +103,44 @@ revoke insert, delete on public.creator_profiles from service_role;
 alter table public.creator_profiles add column handle_locked_at timestamptz;
 update public.creator_profiles set handle_locked_at = now() where status <> 'pending';
 
+-- service_role 只保留必要欄位的 UPDATE（不能直接改 user_id、handle、handle_locked_at、created_at）
+revoke update on public.creator_profiles from service_role;
+grant update (ig_username, follower_count, engagement_rate, region, categories,
+              style_tags, collab_types, bio, status)
+  on public.creator_profiles to service_role;
+
 create function public.creator_profiles_lock_handle() returns trigger
 language plpgsql set search_path = '' as $$
+declare
+  v_admin boolean := coalesce(current_setting('kollink.allow_handle_change', true), '') = 'on'
+    and current_user in ('postgres', 'supabase_admin');
 begin
-  if tg_op = 'UPDATE' and old.handle_locked_at is not null then
-    if (new.handle is distinct from old.handle
-        or new.handle_locked_at is distinct from old.handle_locked_at)
-       and not (
-         coalesce(current_setting('kollink.allow_handle_change', true), '') = 'on'
-         and current_user in ('postgres', 'supabase_admin')
-       ) then
-      raise exception 'handle locked after approval' using errcode = '42501';
-    end if;
+  if tg_op = 'INSERT' then
+    -- 傳入的 handle_locked_at 一律忽略，由 status 決定
+    new.handle_locked_at := case when new.status <> 'pending' then now() else null end;
     return new;
   end if;
-  -- 第一次離開 pending（或一開始就不是 pending）就鎖定
+
+  if not v_admin then
+    if new.user_id is distinct from old.user_id then
+      raise exception 'handle locked after approval' using errcode = '42501';
+    end if;
+    if old.handle_locked_at is not null then
+      if new.handle is distinct from old.handle
+         or new.handle_locked_at is distinct from old.handle_locked_at then
+        raise exception 'handle locked after approval' using errcode = '42501';
+      end if;
+      return new;
+    end if;
+    -- 未鎖定時不能自行設定 handle_locked_at
+    if new.handle_locked_at is not null then
+      raise exception 'handle locked after approval' using errcode = '42501';
+    end if;
+  elsif old.handle_locked_at is not null then
+    return new;
+  end if;
+
+  -- 第一次離開 pending 就鎖定
   if new.status <> 'pending' and new.handle_locked_at is null then
     new.handle_locked_at := now();
   end if;
