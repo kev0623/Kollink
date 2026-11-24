@@ -20,17 +20,26 @@
 ## 各計畫需要處理的事項
 
 ### 2. 登入與註冊
-- 還沒有 `profiles` 的使用者，`my_role()` 會是 null；middleware 要把他們導向註冊流程，並**排除 `/api/payments/ecpay/notify`**。
-- `next.config.ts` 開了 `cacheComponents`：`cookies()` 必須放在 `<Suspense>` 底下，參考 `node_modules/next/dist/docs/01-app/02-guides/authentication-with-cache-components.md`。
-- 加入 `@supabase/ssr`；確認 Supabase CLI 3.x 的金鑰命名（publishable / secret），並更新 `.env.example`。
-- 加入 `supabase gen types typescript` 產生的型別，以及 CI 的型別漂移檢查。
-- 補測試：跨使用者更新無效、創作者不能建立品牌檔案、以 pending 狀態建立檔案的正向對照。
+- 還沒有 `profiles` 的使用者，`my_role()` 會是 null；middleware 要把他們導向註冊流程，並**排除 `/api/payments/ecpay/notify`**。 → 已完成（計畫 2）
+- `next.config.ts` 開了 `cacheComponents`：`cookies()` 必須放在 `<Suspense>` 底下，參考 `node_modules/next/dist/docs/01-app/02-guides/authentication-with-cache-components.md`。 → 已完成（計畫 2）
+- 加入 `@supabase/ssr`；確認 Supabase CLI 3.x 的金鑰命名（publishable / secret），並更新 `.env.example`。 → 已完成（計畫 2）
+- 加入 `supabase gen types typescript` 產生的型別，以及 CI 的型別漂移檢查。 → 已完成（計畫 2）
+- 補測試：跨使用者更新無效、創作者不能建立品牌檔案、以 pending 狀態建立檔案的正向對照。 → 已完成（計畫 2）
 - ~~決定正式名稱~~ → 已定為 Kollink（計畫 2 Task 1）
-- README 補上本機開發步驟（Docker、`supabase start`、`.env.local`、`npm run test:db`）。
+- README 補上本機開發步驟（Docker、`supabase start`、`.env.local`、`npm run test:db`）。 → 已完成（計畫 2）
 - 品牌 Logo（`brand-logos`）部署注意：
   - 正式環境必須開啟 Email 驗證、關閉匿名登入，因為還沒建立 profile 的使用者也能上傳 Logo。
   - 要加排程清理：刪除沒有被任何 `brand_profiles.logo_path` 引用、且超過 24 小時的 `brand-logos` 物件。
   - 若日後新增上傳用的 server action，要驗證圖片 magic bytes，不能只信 MIME type 與副檔名。
+- 計畫 2 新增的後續事項：
+  - 管理員目前登入後會被導去 `/onboarding`（計畫 9）。
+  - 正式環境 SMTP 與 Google OAuth 網址（部署，見 README）。
+  - `create_*_account` 尚未限制同一 IP 的註冊頻率（上線前評估）。
+  - 品牌 Logo 孤兒物件清理排程尚未實作（見上方 Logo 注意事項）。
+  - 審核狀態橫幅在 client 端導覽後不會更新，要重新整理才會看到最新狀態。
+  - 色彩 token：`text-white` 尚未納入 token；錯誤文字的對比度需再檢查。
+  - 之後每個資料頁都必須呼叫 `requireRole`，否則沒有角色或未審核的使用者會直接看到頁面。
+  - 選項白名單（產業、地區、內容領域等）只在 UI 端強制（同計畫 4、5 的項目）。
 
 ### 3. 創作者公開檔案頁
 - 訪客（anon）讀不到 `profiles.display_name`；缺少頭像欄位；評分、完成案數、準時率需要合作資料，但 RLS 會擋住 → 需要一個欄位，或只開放必要欄位的 view / definer 函式，另外要建評價資料表。
