@@ -59,6 +59,7 @@ async function BriefDetail({ params }: Props) {
           <BriefDetailView
             brief={{ ...brief, brandName: me.brand?.brandName ?? "", brandLogoPath: me.brand?.logoPath ?? null, applicantCount: counted }}
             today={today}
+            headingLevel={2}
           />
         </div>
       </details>
