@@ -71,7 +71,7 @@ export function LogoField({ userId, initialPath, error, onBusyChange, disabled }
   return (
     <div>
       <span className="text-sm font-bold">Logo（選填）</span>
-      <div className="mt-1 flex items-center gap-3">
+      <div className="mt-1 flex flex-wrap items-center gap-3">
         {url ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={url} alt="Logo 預覽" className="h-12 w-12 rounded-btn border border-line object-cover" />
@@ -79,7 +79,7 @@ export function LogoField({ userId, initialPath, error, onBusyChange, disabled }
           <div className="h-12 w-12 rounded-btn border border-dashed border-line" />
         )}
         <input
-          ref={fileRef} type="file" accept="image/png,image/jpeg,image/webp" disabled={busy || disabled}
+          ref={fileRef} type="file" className="min-w-0 flex-1" accept="image/png,image/jpeg,image/webp" disabled={busy || disabled}
           aria-label="品牌 Logo" aria-describedby={note ? noteId : undefined} aria-invalid={note ? true : undefined}
           onChange={(e) => {
             const file = e.target.files?.[0];

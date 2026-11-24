@@ -12,7 +12,7 @@ export default function CreatorLayout({ children }: { children: React.ReactNode 
       <aside className="hidden md:block">
         <SideNav items={CREATOR_NAV} footer={<SignOutButton />} />
       </aside>
-      <main className="flex-1 px-4 pb-[calc(5rem+env(safe-area-inset-bottom))] pt-6 md:px-8 md:pb-8">
+      <main className="min-w-0 flex-1 px-4 pb-[calc(5rem+env(safe-area-inset-bottom))] pt-6 md:px-8 md:pb-8">
         <Suspense fallback={<p className="text-muted">載入中…</p>}>
           <Gate>{children}</Gate>
         </Suspense>
