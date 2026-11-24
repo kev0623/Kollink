@@ -171,14 +171,14 @@ isOneToOne: false
                   ]
                 },"creator_profiles": {
                   Row: {
-                    "bio": string | null,"categories": (string)[],"collab_types": (string)[],"created_at": string,"engagement_rate": number | null,"follower_count": number,"handle": string,"ig_username": string,"region": string | null,"status": string,"style_tags": (string)[],"user_id": string
+                    "bio": string | null,"categories": (string)[],"collab_types": (string)[],"created_at": string,"engagement_rate": number | null,"follower_count": number,"handle": string,"handle_locked_at": string | null,"ig_username": string,"region": string | null,"status": string,"style_tags": (string)[],"user_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "bio"?: string | null,"categories"?: (string)[],"collab_types"?: (string)[],"created_at"?: string,"engagement_rate"?: number | null,"follower_count"?: number,"handle": string,"ig_username": string,"region"?: string | null,"status"?: string,"style_tags"?: (string)[],"user_id": string
+                    "bio"?: string | null,"categories"?: (string)[],"collab_types"?: (string)[],"created_at"?: string,"engagement_rate"?: number | null,"follower_count"?: number,"handle": string,"handle_locked_at"?: string | null,"ig_username": string,"region"?: string | null,"status"?: string,"style_tags"?: (string)[],"user_id": string
                   }
                   Update: {
-                    "bio"?: string | null,"categories"?: (string)[],"collab_types"?: (string)[],"created_at"?: string,"engagement_rate"?: number | null,"follower_count"?: number,"handle"?: string,"ig_username"?: string,"region"?: string | null,"status"?: string,"style_tags"?: (string)[],"user_id"?: string
+                    "bio"?: string | null,"categories"?: (string)[],"collab_types"?: (string)[],"created_at"?: string,"engagement_rate"?: number | null,"follower_count"?: number,"handle"?: string,"handle_locked_at"?: string | null,"ig_username"?: string,"region"?: string | null,"status"?: string,"style_tags"?: (string)[],"user_id"?: string
                   }
                   Relationships: [
                     {
@@ -313,6 +313,9 @@ isOneToOne: false
 "gen_verification_code":
 { Args: Record<PropertyKey, never>; Returns: string
                            },
+"has_bidi":
+{ Args: { "p": string }; Returns: boolean
+                           },
 "is_admin":
 { Args: Record<PropertyKey, never>; Returns: boolean
                            },
@@ -329,10 +332,10 @@ isOneToOne: false
 { Args: { "p_action": string,"p_collab_id": string,"p_note"?: string,"p_published_url"?: string }; Returns: Database["public"]['Enums']["collab_status"]
                            },
 "update_brand_account":
-{ Args: { "p_brand_name": string,"p_industry": string,"p_logo_path"?: string }; Returns: undefined
+{ Args: { "p_brand_name": string,"p_industry": string,"p_logo_path": string }; Returns: undefined
                            },
 "update_creator_account":
-{ Args: { "p_categories": (string)[],"p_display_name": string,"p_follower_count": number,"p_handle": string,"p_ig_username": string,"p_region": string }; Returns: undefined
+{ Args: { "p_categories": (string)[],"p_display_name": string,"p_follower_count": number,"p_handle": string,"p_ig_username": string,"p_region": string }; Returns: string
                            }
           }
           Enums: {
