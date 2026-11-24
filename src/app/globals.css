@@ -1,0 +1,23 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #E8684A;
+  --color-primary-soft: #FCE9E2;
+  --color-bg: #FBF7F2;
+  --color-surface: #FFFFFF;
+  --color-ink: #2B2522;
+  --color-muted: #8A7F78;
+  --color-line: #EFE6DE;
+  --color-success: #3E8E6A;
+  --color-success-soft: #E6F2EC;
+
+  --radius-card: 12px;
+  --radius-btn: 10px;
+
+  --font-sans: var(--font-noto-sans-tc), system-ui, sans-serif;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-ink);
+}

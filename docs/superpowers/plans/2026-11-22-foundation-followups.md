@@ -1,0 +1,65 @@
+# 地基完成後的待辦與注意事項
+
+地基計畫（`2026-11-22-foundation.md`）執行期間，審查留下的延後項目，以及執行中做出、和計畫原文不同的決定。寫後續計畫前先看這份。
+
+## 執行中做出的決定（以這裡為準，和計畫原文不同）
+
+| 決定 | 內容 |
+|---|---|
+| 品牌身分自行宣告 | MVP 接受：任何人都能註冊成品牌、看到報價。這是「註冊才看得到價格」的導流設計，不是保密。之後若出現大量抓取，再加入品牌審核或流量限制。 |
+| 未審核創作者的報價 | 品牌看不到（只看得到已審核創作者的報價）。 |
+| 預設權限收緊 | 每張 public 資料表都撤銷 anon / authenticated 的 `truncate, trigger, references`。 |
+| 狀態只能經由函式改變 | 連 service_role 與資料庫擁有者都不能直接改合作案的狀態類欄位（guard trigger）；service_role 對 `collaborations` 只有 SELECT。 |
+| 標記已付款 | 只能經由 `record_payment_success`（`pollen.recording_payment` 旗標）；service_role 也不能直接呼叫 `mark_paid`。 |
+| 參與者身分優先 | 身分判斷順序為 system > brand > creator > admin。管理員若是案子的參與者，只能以參與者身分操作，不能幫自己的案子撥款。 |
+| 發佈連結 | 必須是完整網址（有網域和路徑）。 |
+| 取消後才到的付款（B1） | 記錄為已付款、`refund_required = true`，寫入 audit（`payment_requires_refund`），回覆綠界 `1|OK`；實際退款留給計畫 8。 |
+| 付款金額 | 必須同時等於付款單金額和合作案報價；不接受空值。 |
+| 綠界通知 | 檢查 MerchantID（新環境變數 `ECPAY_MERCHANT_ID`）；`SimulatePaid=1` 的模擬付款只回覆收到、不記錄；金額只接受純整數。 |
+
+## 各計畫需要處理的事項
+
+### 2. 登入與註冊
+- 還沒有 `profiles` 的使用者，`my_role()` 會是 null；middleware 要把他們導向註冊流程，並**排除 `/api/payments/ecpay/notify`**。
+- `next.config.ts` 開了 `cacheComponents`：`cookies()` 必須放在 `<Suspense>` 底下，參考 `node_modules/next/dist/docs/01-app/02-guides/authentication-with-cache-components.md`。
+- 加入 `@supabase/ssr`；確認 Supabase CLI 3.x 的金鑰命名（publishable / secret），並更新 `.env.example`。
+- 加入 `supabase gen types typescript` 產生的型別，以及 CI 的型別漂移檢查。
+- 補測試：跨使用者更新無效、創作者不能建立品牌檔案、以 pending 狀態建立檔案的正向對照。
+- 決定正式名稱（目前 repo 是 Kollink，程式內是 Pollen，GUC 前綴是 `pollen.*`，之後改名需要寫 migration）。
+- README 補上本機開發步驟（Docker、`supabase start`、`.env.local`、`npm run test:db`）。
+
+### 3. 創作者公開檔案頁
+- 訪客（anon）讀不到 `profiles.display_name`；缺少頭像欄位；評分、完成案數、準時率需要合作資料，但 RLS 會擋住 → 需要一個欄位，或只開放必要欄位的 view / definer 函式，另外要建評價資料表。
+- 收藏 ♡ 需要一張資料表。
+
+### 4. 創作者廣場、5. 招募與機會頁
+- 索引：`creator_profiles(status)`、`categories` / `style_tags` 的 GIN 索引、`briefs(status, deadline)`、`briefs(brand_id)`、`brief_applications(creator_id)`、`conversations(creator_id)`、`collaborations(conversation_id)`、`collaborations(brief_id)`。
+- 報名的狀態變更需要 definer 函式（目前沒有開放 UPDATE）。錄取時，要在同一個 transaction 裡建立對話和合作案。
+- 待決定：尚未審核的創作者能不能報名；超過截止日但狀態仍是 open 的招募要不要擋；品牌刪除招募時，報名紀錄會一起被刪除（cascade），這樣是否可接受。
+- 刪除 `public/*.svg` 這些 scaffold 留下的圖檔。
+
+### 6. 合作案詳情頁
+- 貼文連結在 app 端用 `new URL()` 再檢查一次（資料庫的 regex 會接受 `a..b.com`）。
+- server action 代替品牌或創作者操作時，必須用**使用者自己的 client**；用 service_role 呼叫會被判定為 system，品牌或創作者的動作會被拒絕。
+
+### 7. 站內訊息
+- `flagged_contact` 用 BEFORE INSERT trigger 計算，不要讓訊息改走 service_role（那樣 `sender_id` 的預設值 `auth.uid()` 會是 null）。
+- 把 `messages` 加進 `supabase_realtime` publication。
+- 待決定：誰可以主動開啟對話（目前任何品牌或創作者都可以，包括尚未審核的創作者）。
+- 補測試：偽造 sender、第三方建立對話、update / delete 被拒絕、管理員可見性。
+
+### 8. 付款建單與撥款（**真的收錢之前必須完成**）
+- `create_payment_order(collab_id)`：definer 函式，檢查呼叫者是品牌、狀態是 `awaiting_payment`、金額等於合作案報價，並由函式產生 `merchant_trade_no`。
+- 付款金額和合作案報價不符時，目前會報錯，沒有留下任何紀錄，綠界還會一直重送 → 要記錄這筆異常並發出警示。
+- 退款流程：清除 `refund_required` 的函式；`failed → paid` 的規則要寫清楚。
+- `raw_notify` 只保留白名單欄位（可能含有 card4no / card6no）。
+- `provider_trade_no` 不接受只有空白的值；金額設定上限（綠界單筆限額）。
+- route 補單元測試（mock `createAdminClient`）；用真實的沙盒通知補一項簽章測試。
+- 帳號刪除改用 soft delete（`collaborations` 和 `payments` 的外鍵會擋住實體刪除）。
+
+### 9. 管理後台
+- 管理員目前只能讀取。需要 `set_creator_status()`（definer 函式，檢查 `is_admin()`），以及取消或爭議處理的狀態轉換。
+- `is_admin()`、`my_role()`、`is_conversation_participant()` 的 EXECUTE 權限從 PUBLIC 收回。
+
+### 10. 審核逾期自動通過
+- `transition_collaboration` 的 system 身分要求「透過 PostgREST 以 service_role 呼叫」；**pg_cron 以 postgres 身分執行會被判定為「不是參與者」**。可以改用 Next route 搭配 Cron 和 secret，再以 service_role 呼叫 RPC；或另外寫一個只授權給 service_role 的 `auto_approve_due()` definer 函式。
