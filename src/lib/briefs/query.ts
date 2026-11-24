@@ -1,7 +1,7 @@
 // 網址參數 ⇄ 查詢。任何垃圾值都不能讓頁面或資料庫報錯（followups「搜尋與篩選必須能容忍清單以外的值」）。
 import { CATEGORIES } from "@/lib/options";
 import { cleanText } from "@/lib/validation/onboarding";
-import type { BriefStep } from "@/lib/validation/brief";
+import { hasBadChar, type BriefStep } from "@/lib/validation/brief";
 import { OPPORTUNITY_PAGE_SIZE, type BrandBriefTab } from "./view";
 
 type Params = Record<string, string | string[] | undefined> | URLSearchParams;
@@ -30,7 +30,8 @@ const SIMPLE_TABS: readonly string[] = ["all", "cash", "product", "applied"];
 /** ?tab=all|cash|product|applied、?cat=<內容領域>（cat 優先）；其他一律是「適合我」。 */
 export function parseOpportunityQuery(p: Params): OpportunityQuery {
   const cat = Array.from(cleanText(first(p, "cat") ?? "")).slice(0, 30).join("");
-  if (cat) return { tab: "category", category: cat };
+  // NUL 送進資料庫會 22P05、bidi 字元資料庫也不收：這種 cat 直接忽略，退回預設
+  if (cat && !hasBadChar(cat)) return { tab: "category", category: cat };
   const tab = first(p, "tab");
   if (tab && SIMPLE_TABS.includes(tab)) return { tab: tab as OpportunityTab, category: null };
   return DEFAULT_OPPORTUNITY_QUERY;

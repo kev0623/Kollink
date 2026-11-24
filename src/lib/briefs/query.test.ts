@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  OPPORTUNITY_FILTERS, isUuid, opportunityHref, opportunityQueryString, parseBrandBriefTab, parseBriefStep,
+  DEFAULT_OPPORTUNITY_QUERY, OPPORTUNITY_FILTERS, isUuid, opportunityHref, opportunityQueryString, parseBrandBriefTab, parseBriefStep,
   parseOpportunityQuery, sameOpportunityQuery, toListArgs,
 } from "./query";
 
@@ -64,3 +64,15 @@ describe("品牌", () => {
     expect(parseBriefStep(undefined)).toBe(1);
   });
 });
+
+describe("parseOpportunityQuery：含 NUL 或 bidi 的 cat", () => {
+  it("丟掉 cat，退回預設（不能把 NUL 送進資料庫造成 22P05）", () => {
+    expect(parseOpportunityQuery({ cat: "\u0000" })).toEqual(DEFAULT_OPPORTUNITY_QUERY);
+    expect(parseOpportunityQuery({ cat: "美\u0000妝" })).toEqual(DEFAULT_OPPORTUNITY_QUERY);
+    expect(parseOpportunityQuery({ cat: "美妝\u202e" })).toEqual(DEFAULT_OPPORTUNITY_QUERY);
+  });
+  it("清單以外但乾淨的值照常保留", () => {
+    expect(parseOpportunityQuery({ cat: "不存在" })).toEqual({ tab: "category", category: "不存在" });
+  });
+});
+
