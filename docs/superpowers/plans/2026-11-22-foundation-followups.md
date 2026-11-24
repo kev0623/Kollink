@@ -79,7 +79,7 @@
 上線前在 Supabase 後台逐項設定（本機的 `config.toml` 不會自動套用到正式專案）：
 
 1. Authentication → Providers → Email：開啟「Confirm email」（對應 `enable_confirmations = true`）；Email OTP 長度 6、有效期限 900 秒。
-2. Authentication → Hooks：新增 Postgres hook「Password verification attempt」，指向 `public.hook_reject_password`（migration 已建立函式）。
+2. 密碼登入封鎖：真正的保證是 migration 裡的 `null_encrypted_password` trigger（推送 migration 即生效，不受方案限制）。另外在 Authentication → Hooks 新增 Postgres hook「Password verification attempt」指向 `public.hook_reject_password`，作為第二層防護（此 hook 可能只在付費方案提供）。
 3. Authentication → URL Configuration：Site URL 填正式網址；Redirect URLs 加入 `https://正式網址/**`。
 4. Authentication → Emails：「Magic Link」與「Confirm signup」範本的主旨與內容都換成 `supabase/templates/otp.html`（`Kollink 登入驗證碼` / `Kollink 註冊驗證碼`）。
 5. Authentication → SMTP Settings：設定自訂 SMTP（內建寄信有嚴格頻率上限，不能用於正式環境）。

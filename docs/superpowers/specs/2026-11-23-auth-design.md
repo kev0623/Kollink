@@ -74,6 +74,8 @@
 
 品牌的 `profiles.display_name` 等於品牌名稱。
 
+**安全規則：** `role` 與 `display_name` 絕不可從 `auth.users.user_metadata` 讀取（確認 Email 之前攻擊者可以任意寫入），只能讀 `profiles`。密碼登入一律封鎖：`auth.users.encrypted_password` 由 trigger 強制存 null（真正的保證），另加 `password_verification_attempt` hook 作第二層防護。
+
 另外加上資料表層級的欄位限制（更新時也適用）：`profiles.display_name` 1–60 字、`brand_name` 1–60、`industry` ≤ 30、`region` ≤ 30、`ig_username` 格式、`categories` 最多 5 個。創作者顯示名稱 40 字的上限由建立與修改函式都檢查（前端同步檢查）。
 
 另外有兩個修改函式（同樣 `security definer`、`search_path = ''`、只授權 `authenticated`，驗證規則與建立相同）：
