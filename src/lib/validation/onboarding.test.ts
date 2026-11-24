@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  MAX_RAW_LENGTH, cleanText, hasBidi, normalizeIgUsername, suggestHandle, validateBrandInput, validateCreatorInput,
+  MAX_RAW_LENGTH, cleanText, cleanTextWithin, hasBidi, normalizeIgUsername, suggestHandle, validateBrandInput, validateCreatorInput,
   type CreatorInput,
 } from "./onboarding";
 
@@ -102,5 +102,18 @@ describe("validateCreatorInput", () => {
     expect(validateCreatorInput({ ...okCreator, categories: ["a", "b", "c", "d", "e", "f"] })?.categories).toBeTruthy();
     expect(validateCreatorInput({ ...okCreator, categories: ["美妝", " 美妝"] })?.categories).toBeTruthy();
     expect(validateCreatorInput({ ...okCreator, categories: ["長".repeat(21)] })?.categories).toBeTruthy();
+  });
+});
+
+describe("cleanTextWithin", () => {
+  it("與 cleanText 相同的清理，但截斷長度可以指定", () => {
+    expect(cleanTextWithin("  小美​ ", 10)).toBe("小美");
+    const long = "字".repeat(1500);
+    expect(cleanText(long)).toHaveLength(MAX_RAW_LENGTH);
+    expect(cleanTextWithin(long, 8000)).toBe(long);
+    expect(cleanTextWithin("x".repeat(9000), 8000)).toHaveLength(8000);
+  });
+  it("cleanText 可以直接當 map 的 callback（不會把索引當成截斷長度）", () => {
+    expect(["  a ", " b"].map(cleanText)).toEqual(["a", "b"]);
   });
 });

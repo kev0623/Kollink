@@ -87,14 +87,14 @@ isOneToOne: false
                   ]
                 },"briefs": {
                   Row: {
-                    "brand_id": string,"budget_max_twd": number | null,"budget_min_twd": number | null,"categories": (string)[],"collab_types": (string)[],"cover_url": string | null,"created_at": string,"deadline": string,"description": string,"id": string,"includes_product": boolean,"min_followers": number,"region": string | null,"status": string,"title": string
+                    "brand_id": string,"budget_max_twd": number | null,"budget_min_twd": number | null,"categories": (string)[],"collab_types": (string)[],"cover_path": string | null,"created_at": string,"deadline": string | null,"description": string | null,"id": string,"includes_product": boolean,"min_followers": number,"published_at": string | null,"region": string | null,"status": string,"title": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "brand_id": string,"budget_max_twd"?: number | null,"budget_min_twd"?: number | null,"categories"?: (string)[],"collab_types"?: (string)[],"cover_url"?: string | null,"created_at"?: string,"deadline": string,"description": string,"id"?: string,"includes_product"?: boolean,"min_followers"?: number,"region"?: string | null,"status"?: string,"title": string
+                    "brand_id": string,"budget_max_twd"?: number | null,"budget_min_twd"?: number | null,"categories"?: (string)[],"collab_types"?: (string)[],"cover_path"?: string | null,"created_at"?: string,"deadline"?: string | null,"description"?: string | null,"id"?: string,"includes_product"?: boolean,"min_followers"?: number,"published_at"?: string | null,"region"?: string | null,"status"?: string,"title"?: string | null
                   }
                   Update: {
-                    "brand_id"?: string,"budget_max_twd"?: number | null,"budget_min_twd"?: number | null,"categories"?: (string)[],"collab_types"?: (string)[],"cover_url"?: string | null,"created_at"?: string,"deadline"?: string,"description"?: string,"id"?: string,"includes_product"?: boolean,"min_followers"?: number,"region"?: string | null,"status"?: string,"title"?: string
+                    "brand_id"?: string,"budget_max_twd"?: number | null,"budget_min_twd"?: number | null,"categories"?: (string)[],"collab_types"?: (string)[],"cover_path"?: string | null,"created_at"?: string,"deadline"?: string | null,"description"?: string | null,"id"?: string,"includes_product"?: boolean,"min_followers"?: number,"published_at"?: string | null,"region"?: string | null,"status"?: string,"title"?: string | null
                   }
                   Relationships: [
                     {
@@ -341,7 +341,18 @@ isOneToOne: false
             [_ in never]: never
           }
           Functions: {
-            "check_categories":
+            "apply_to_brief":
+{ Args: { "p_brief_id": string,"p_message"?: string,"p_proposed_price"?: number }; Returns: string
+                           },
+"brief_application_counts":
+{ Args: { "p_ids": (string)[] }; Returns: {
+              "applicant_count": number,"brief_id": string,"pending_count": number
+            }[]
+                           },
+"can_view_brief":
+{ Args: { "p_brand_id": string,"p_deadline": string,"p_id": string,"p_status": string }; Returns: boolean
+                           },
+"check_categories":
 { Args: { "p": (string)[] }; Returns: (string)[]
                            },
 "check_instagram_url":
@@ -359,14 +370,28 @@ isOneToOne: false
 "clean_text":
 { Args: { "p": string }; Returns: string
                            },
+"close_brief":
+{ Args: { "p_id": string }; Returns: undefined
+                           },
 "create_brand_account":
 { Args: { "p_brand_name": string,"p_industry": string,"p_logo_path"?: string }; Returns: undefined
                            },
 "create_creator_account":
 { Args: { "p_categories": (string)[],"p_display_name": string,"p_follower_count": number,"p_handle": string,"p_ig_username": string,"p_region": string }; Returns: string
                            },
+"decide_application":
+{ Args: { "p_accept": boolean,"p_id": string }; Returns: undefined
+                           },
+"delete_brief":
+{ Args: { "p_id": string }; Returns: string
+                           },
 "gen_verification_code":
 { Args: Record<PropertyKey, never>; Returns: string
+                           },
+"get_opportunity":
+{ Args: { "p_id": string }; Returns: {
+              "applicant_count": number,"brand_id": string,"brand_logo_path": string,"brand_name": string,"budget_max_twd": number,"budget_min_twd": number,"categories": (string)[],"category_ok": boolean,"collab_ok": boolean,"collab_types": (string)[],"cover_path": string,"deadline": string,"description": string,"followers_ok": boolean,"id": string,"includes_product": boolean,"is_match": boolean,"min_followers": number,"my_application_id": string,"my_message": string,"my_proposed_price_twd": number,"my_status": string,"region": string,"region_ok": boolean,"status": string,"title": string
+            }[]
                            },
 "get_public_creator":
 { Args: { "p_handle": string }; Returns: {
@@ -385,6 +410,24 @@ isOneToOne: false
 "is_conversation_participant":
 { Args: { "p_conversation_id": string }; Returns: boolean
                            },
+"list_brief_applicants":
+{ Args: { "p_brief_id": string }; Returns: {
+              "avatar_path": string,"created_at": string,"creator_id": string,"display_name": string,"engagement_rate": number,"follower_count": number,"handle": string,"id": string,"message": string,"proposed_price_twd": number,"region": string,"status": string
+            }[]
+                           },
+"list_opportunities":
+{ Args: { "p_category"?: string,"p_filter"?: string,"p_limit"?: number,"p_offset"?: number }; Returns: {
+              "applicant_count": number,"brand_id": string,"brand_logo_path": string,"brand_name": string,"budget_max_twd": number,"budget_min_twd": number,"categories": (string)[],"category_ok": boolean,"collab_ok": boolean,"collab_types": (string)[],"cover_path": string,"deadline": string,"followers_ok": boolean,"has_applied": boolean,"id": string,"includes_product": boolean,"is_match": boolean,"min_followers": number,"my_status": string,"region": string,"region_ok": boolean,"title": string,"total_count": number
+            }[]
+                           },
+"match_brief":
+{ Args: { "p_brief": Omit<Database["public"]['Tables']["briefs"]['Row'], Database["public"]['Tables']["briefs"]['ComputedFields']>,"p_creator": Omit<Database["public"]['Tables']["creator_profiles"]['Row'], Database["public"]['Tables']["creator_profiles"]['ComputedFields']> }; Returns: Database["public"]['CompositeTypes']["brief_match"]
+                          SetofOptions: {
+        from: "*"
+        to: "brief_match"
+        isOneToOne: true
+        isSetofReturn: false
+      } },
 "my_role":
 { Args: Record<PropertyKey, never>; Returns: Database["public"]['Enums']["user_role"]
                            },
@@ -395,6 +438,9 @@ isOneToOne: false
                            },
 "record_payment_success":
 { Args: { "p_amount_twd": number,"p_merchant_trade_no": string,"p_provider_trade_no": string,"p_raw": Json }; Returns: string
+                           },
+"save_brief":
+{ Args: { "p_budget_max_twd"?: number,"p_budget_min_twd"?: number,"p_categories"?: (string)[],"p_collab_types"?: (string)[],"p_cover_path"?: string,"p_deadline"?: string,"p_description"?: string,"p_id"?: string,"p_includes_product"?: boolean,"p_min_followers"?: number,"p_publish"?: boolean,"p_region"?: string,"p_title"?: string }; Returns: string
                            },
 "search_creators":
 { Args: { "p_categories"?: (string)[],"p_collab_types"?: (string)[],"p_engagement_min"?: number,"p_favorites_only"?: boolean,"p_follower_max"?: number,"p_follower_min"?: number,"p_keyword"?: string,"p_limit"?: number,"p_offset"?: number,"p_price_max"?: number,"p_price_min"?: number,"p_regions"?: (string)[],"p_sort"?: string,"p_style_tags"?: (string)[] }; Returns: {
@@ -407,6 +453,12 @@ isOneToOne: false
 "set_creator_rates":
 { Args: { "p_rates": Json }; Returns: undefined
                            },
+"text_items_within":
+{ Args: { "p": (string)[],"p_max_len": number }; Returns: boolean
+                           },
+"today_tw":
+{ Args: { "p_now"?: string }; Returns: string
+                           },
 "transition_collaboration":
 { Args: { "p_action": string,"p_collab_id": string,"p_note"?: string,"p_published_url"?: string }; Returns: Database["public"]['Enums']["collab_status"]
                            },
@@ -418,13 +470,18 @@ isOneToOne: false
                            },
 "update_creator_public_profile":
 { Args: { "p_audience_age": string,"p_avatar_path": string,"p_bio": string,"p_collab_types": (string)[],"p_engagement_rate": number,"p_style_tags": (string)[] }; Returns: undefined
+                           },
+"withdraw_application":
+{ Args: { "p_id": string }; Returns: undefined
                            }
           }
           Enums: {
             "collab_status": "invited"|"awaiting_payment"|"awaiting_submission"|"in_review"|"awaiting_publish"|"awaiting_payout"|"completed"|"declined"|"cancelled","user_role": "brand"|"creator"
           }
           CompositeTypes: {
-            [_ in never]: never
+            "brief_match": {
+                        "followers_ok": boolean | null,"region_ok": boolean | null,"category_ok": boolean | null,"collab_ok": boolean | null
+                      }
           }
         }
 }

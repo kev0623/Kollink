@@ -24,8 +24,17 @@ const BAD_CHAR_MESSAGE = "含有不允許的特殊字元";
 export const MAX_RAW_LENGTH = 1000;
 
 export function cleanText(v: string): string {
-  // 超長輸入不做昂貴處理；回傳的前 MAX_RAW_LENGTH 個單位（至少 500 個字）必然超過所有欄位的長度上限。
-  if (v.length > MAX_RAW_LENGTH) return v.slice(0, MAX_RAW_LENGTH);
+  // 超長輸入不做昂貴處理；回傳的前 MAX_RAW_LENGTH 個單位（至少 500 個字）必然超過 499 字以內欄位的長度上限。
+  // 注意：常被當成 .map(cleanText) 使用，所以不能加第二個參數（map 會把索引傳進來）。
+  return cleanTextWithin(v, MAX_RAW_LENGTH);
+}
+
+/**
+ * 與 cleanText 相同，但可以指定截斷長度（給上限 500 字以上的欄位，例如招募說明 2000 字）。
+ * 截斷後至少有 maxRaw / 2 個字，所以 maxRaw 必須大於「欄位字數上限 × 2」。
+ */
+export function cleanTextWithin(v: string, maxRaw: number): string {
+  if (v.length > maxRaw) return v.slice(0, maxRaw);
   const cps = Array.from(v.replace(INNER_ZERO_WIDTH, ""));
   let start = 0;
   let end = cps.length;
