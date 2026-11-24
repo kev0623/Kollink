@@ -1,4 +1,13 @@
-export type FormState = { fieldErrors?: Record<string, string>; formError?: string; ok?: boolean; notice?: string };
+/** 送出失敗時回傳使用者填的值，讓表單在 React 重設後仍能還原。 */
+export type FormValues = Record<string, string | string[]>;
+
+export type FormState = {
+  fieldErrors?: Record<string, string>;
+  formError?: string;
+  ok?: boolean;
+  notice?: string;
+  values?: FormValues;
+};
 
 const FIELD_BY_DB: Record<string, string> = {
   brand_name: "brandName",

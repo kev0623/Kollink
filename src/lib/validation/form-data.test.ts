@@ -9,7 +9,7 @@ function fd(entries: [string, string][]) {
 
 describe("parseBrandForm", () => {
   it("去空白、空的 Logo 變成 null", () => {
-    expect(parseBrandForm(fd([["brandName", " 花粉選物　"], ["industry", "美妝保養"], ["logoPath", " "]]))).toEqual({
+    expect(parseBrandForm(fd([["brandName", " 花粉選物\u3000"], ["industry", "美妝保養"], ["logoPath", " "]]))).toEqual({
       brandName: "花粉選物", industry: "美妝保養", logoPath: null,
     });
   });

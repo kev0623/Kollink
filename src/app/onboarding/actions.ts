@@ -4,12 +4,14 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { mapAccountError, type FormState } from "@/lib/auth/account-errors";
 import { validateBrandInput, validateCreatorInput } from "@/lib/validation/onboarding";
+import { homeFor } from "@/lib/auth/post-login";
 import { parseBrandForm, parseCreatorForm } from "@/lib/validation/form-data";
 
 export async function createBrandAccountAction(_prev: FormState, fd: FormData): Promise<FormState> {
   const input = parseBrandForm(fd);
+  const values = { ...input, logoPath: input.logoPath ?? "" };
   const fieldErrors = validateBrandInput(input);
-  if (fieldErrors) return { fieldErrors };
+  if (fieldErrors) return { fieldErrors, values };
 
   const supabase = await createClient();
   const { error } = await supabase.rpc("create_brand_account", {
@@ -19,15 +21,18 @@ export async function createBrandAccountAction(_prev: FormState, fd: FormData): 
   });
   if (error) {
     const mapped = mapAccountError(error);
-    if (mapped.kind === "state") return mapped.state;
+    // 帳號已存在：回到 /onboarding，由 layout 依實際身分導向
+    if (mapped.kind === "exists") redirect("/onboarding");
+    return { ...mapped.state, values };
   }
-  redirect("/brand");
+  redirect(homeFor("brand"));
 }
 
 export async function createCreatorAccountAction(_prev: FormState, fd: FormData): Promise<FormState> {
   const input = parseCreatorForm(fd);
+  const values = { ...input };
   const fieldErrors = validateCreatorInput(input);
-  if (fieldErrors) return { fieldErrors };
+  if (fieldErrors) return { fieldErrors, values };
 
   const supabase = await createClient();
   const { error } = await supabase.rpc("create_creator_account", {
@@ -40,7 +45,8 @@ export async function createCreatorAccountAction(_prev: FormState, fd: FormData)
   });
   if (error) {
     const mapped = mapAccountError(error);
-    if (mapped.kind === "state") return mapped.state;
+    if (mapped.kind === "exists") redirect("/onboarding");
+    return { ...mapped.state, values };
   }
-  redirect("/creator");
+  redirect(homeFor("creator"));
 }
