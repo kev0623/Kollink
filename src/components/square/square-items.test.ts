@@ -74,5 +74,7 @@ describe("CreatorTable", () => {
   });
   it("表格可以左右捲動", () => {
     expect(table()).toContain("overflow-x-auto");
+    // sr-only 的 absolute 元素要以捲動容器定位，否則手機版整頁會出現水平捲軸
+    expect(table()).toMatch(/class="relative overflow-x-auto/);
   });
 });

@@ -22,7 +22,7 @@ type Props = { items: SquareCreator[]; sort: SquareSort; onSort: (s: SquareSort)
 
 export function CreatorTable({ items, sort, onSort }: Props) {
   return (
-    <div className="overflow-x-auto rounded-card border border-line bg-surface">
+    <div className="relative overflow-x-auto rounded-card border border-line bg-surface">
       <table className="w-full min-w-[640px] text-sm">
         <thead>
           <tr className="border-b border-line">
