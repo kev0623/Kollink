@@ -34,6 +34,10 @@ describe("parseCreatorForm", () => {
 });
 
 describe("parsePublicProfileForm", () => {
+  it("自我介紹的換行統一成 \\n（textarea 送出 \\r\\n，長度要和使用者看到的一致）", () => {
+    const r = parsePublicProfileForm(fd([["bio", "第一行\r\n第二行\r第三行"], ["avatarPath", ""]]));
+    expect(r.bio).toBe("第一行\n第二行\n第三行");
+  });
   it("清理文字、拆標籤、多值合作形式、去掉互動率的 %", () => {
     expect(parsePublicProfileForm(fd([
       ["bio", " 日常穿搭\n分享　"], ["styleTags", "日系，簡約、"], ["collabTypes", "IG 貼文"], ["collabTypes", "Reels"],

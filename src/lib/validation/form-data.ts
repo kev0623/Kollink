@@ -29,7 +29,7 @@ function strings(fd: FormData, key: string): string[] {
 export function parsePublicProfileForm(fd: FormData): PublicProfileInput {
   const avatar = cleanText(str(fd, "avatarPath"));
   return {
-    bio: cleanText(str(fd, "bio")),
+    bio: cleanText(str(fd, "bio").replace(/\r\n?/g, "\n")),
     styleTags: splitTags(str(fd, "styleTags")),
     collabTypes: strings(fd, "collabTypes").map(cleanText),
     engagementRate: cleanText(str(fd, "engagementRate")).replace(/%$/, "").trim(),
