@@ -26,6 +26,10 @@ npm run dev                        # http://127.0.0.1:3000
 | 改了 migration 後重新產生型別 | `npm run db:types` |
 | 拉到新的 migration 後 | `npx supabase migration up`（或 `npx supabase db reset`）；`supabase stop/start` 會沿用舊的資料庫，不會套用新 migration |
 
+### 測試快速登入（只在本機）
+
+本機 `npm run dev` 且 `NEXT_PUBLIC_SUPABASE_URL` 指向 `127.0.0.1` 或 `localhost` 時，登入頁下方會出現「測試快速登入」，按「測試品牌」或「測試創作者」就能直接登入，不用收驗證碼（帳號 `dev-brand@kollink.test`、`dev-creator@kollink.test`，第一次按會自動建立，創作者直接是已審核狀態）。正式建置（`NODE_ENV=production`）或連到雲端專案時不會顯示，API 也回 404。需要 `.env.local` 有 `SUPABASE_SECRET_KEY`。
+
 ## 登入方式
 
 - Email 6 位數驗證碼（OTP），有效 15 分鐘。本機的信在 Mailpit 看。
