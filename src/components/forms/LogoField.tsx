@@ -70,13 +70,13 @@ export function LogoField({ userId, initialPath, error, onBusyChange, disabled }
   const note = msg ?? error;
   return (
     <div>
-      <span className="text-sm font-bold">Logo（選填）</span>
+      <span className="text-sm font-semibold text-ink">Logo（選填）</span>
       <div className="mt-1 flex flex-wrap items-center gap-3">
         {url ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={url} alt="Logo 預覽" className="h-12 w-12 rounded-btn border border-line object-cover" />
+          <img src={url} alt="Logo 預覽" className="h-12 w-12 rounded-input border border-line object-cover" />
         ) : (
-          <div className="h-12 w-12 rounded-btn border border-dashed border-line" />
+          <div className="h-12 w-12 rounded-input border border-dashed border-line" />
         )}
         <input
           ref={fileRef} type="file" className="min-w-0 flex-1" accept="image/png,image/jpeg,image/webp" disabled={busy || disabled}
@@ -90,8 +90,8 @@ export function LogoField({ userId, initialPath, error, onBusyChange, disabled }
         {url && <button type="button" disabled={busy || disabled} className="text-sm text-muted" onClick={remove}>移除 Logo</button>}
       </div>
       <input type="hidden" name="logoPath" value={logoPath ?? ""} />
-      {msg && <span id={noteId} role="status" className="mt-1 block text-xs text-primary">{msg}</span>}
-      {!msg && error && <span id={noteId} className="mt-1 block text-xs text-primary">{error}</span>}
+      {msg && <span id={noteId} role="status" className="mt-1 block text-xs text-danger">{msg}</span>}
+      {!msg && error && <span id={noteId} className="mt-1 block text-xs text-danger">{error}</span>}
     </div>
   );
 }

@@ -1,10 +1,16 @@
 import type { Metadata, Viewport } from "next";
-import { Noto_Sans_TC } from "next/font/google";
+import { Noto_Sans_TC, Rubik } from "next/font/google";
 import "./globals.css";
 import { SITE_NAME, SITE_TAGLINE } from "@/lib/site";
 
+const rubik = Rubik({
+  weight: ["400", "500", "600", "700"],
+  subsets: ["latin"],
+  variable: "--font-rubik",
+});
+
 const notoSansTC = Noto_Sans_TC({
-  weight: ["400", "500", "700"],
+  weight: ["400", "500", "600", "700"],
   variable: "--font-noto-sans-tc",
   preload: false,
 });
@@ -21,7 +27,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="zh-Hant" className={notoSansTC.variable}>
+    <html lang="zh-Hant" className={`${rubik.variable} ${notoSansTC.variable}`}>
       <body className="font-sans antialiased">{children}</body>
     </html>
   );

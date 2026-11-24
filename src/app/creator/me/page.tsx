@@ -7,7 +7,7 @@ export default function CreatorMePage() {
   return (
     <>
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold">我的</h1>
+        <h1 className="text-[32px] font-bold text-ink">我的</h1>
         <div className="md:hidden"><SignOutButton /></div>
       </div>
       <Suspense fallback={null}>

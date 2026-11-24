@@ -17,7 +17,7 @@ export function CreatorOnboardingForm() {
   // React 送出後會重設表單；用 key 讓預設值（上次填的內容）重新套用。ig 與 handle 是受控欄位，不受影響。
   const k = JSON.stringify(state.values ?? null);
   return (
-    <form action={action} className="space-y-4 rounded-card border border-line bg-surface p-6 shadow-sm">
+    <form action={action} className="space-y-4 rounded-card border border-line bg-surface p-5 md:p-8">
       <Field label="顯示名稱" error={fe.displayName}>
         {(c) => <input key={k} {...c} name="displayName" required maxLength={40} defaultValue={str(v.displayName)} className={inputClass} />}
       </Field>
@@ -67,8 +67,8 @@ export function CreatorOnboardingForm() {
         )}
       </Field>
       <CategoryPicker name="categories" initial={[]} error={fe.categories} />
-      {state.formError && <p role="alert" className="text-sm text-primary">{state.formError}</p>}
-      <button disabled={pending} className="w-full rounded-btn bg-primary px-4 py-2 font-bold text-white disabled:opacity-60">
+      {state.formError && <p role="alert" className="text-sm text-danger">{state.formError}</p>}
+      <button disabled={pending} className="w-full h-11 rounded-btn bg-ink px-6 font-semibold text-on-ink disabled:opacity-60">
         送出審核
       </button>
     </form>

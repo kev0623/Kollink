@@ -20,7 +20,7 @@ export function CreatorSettingsForm(p: Props) {
   // 儲存成功後 props 變了（<select> 掛載後不會套用新的 defaultValue），所以 props 也放進 key 讓欄位重新掛載
   const k = JSON.stringify(state.values ?? [p.displayName, p.handle, p.igUsername, p.followerCount, p.region]);
   return (
-    <form action={action} className="max-w-xl space-y-4 rounded-card border border-line bg-surface p-6 shadow-sm">
+    <form action={action} className="max-w-xl space-y-4 rounded-card border border-line bg-surface p-5 md:p-8">
       <Field label="顯示名稱" error={fe.displayName}>
         {(c) => <input key={k} {...c} name="displayName" required maxLength={40} defaultValue={val("displayName", p.displayName)} className={inputClass} />}
       </Field>
@@ -55,10 +55,10 @@ export function CreatorSettingsForm(p: Props) {
         )}
       </Field>
       <CategoryPicker name="categories" initial={p.categories} error={fe.categories} />
-      {state.formError && <p role="alert" className="text-sm text-primary">{state.formError}</p>}
+      {state.formError && <p role="alert" className="text-sm text-danger">{state.formError}</p>}
       {state.ok && !state.notice && <p role="status" className="text-sm text-success">已儲存</p>}
-      {state.notice && <p role="status" className="text-sm text-primary">{state.notice}</p>}
-      <button disabled={pending} className="rounded-btn bg-primary px-4 py-2 font-bold text-white disabled:opacity-60">儲存</button>
+      {state.notice && <p role="status" className="text-sm text-ink">{state.notice}</p>}
+      <button disabled={pending} className="h-11 w-full rounded-btn bg-ink px-6 font-semibold text-on-ink disabled:opacity-60 md:w-auto">儲存</button>
     </form>
   );
 }

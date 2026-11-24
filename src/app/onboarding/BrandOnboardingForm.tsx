@@ -14,7 +14,7 @@ export function BrandOnboardingForm({ userId }: { userId: string }) {
   // React 送出後會重設表單；用 key 讓預設值（上次填的內容）重新套用
   const k = JSON.stringify(state.values ?? null);
   return (
-    <form action={action} className="space-y-4 rounded-card border border-line bg-surface p-6 shadow-sm">
+    <form action={action} className="space-y-4 rounded-card border border-line bg-surface p-5 md:p-8">
       <Field label="品牌名稱" error={fe.brandName}>
         {(c) => <input key={k} {...c} name="brandName" required maxLength={60} defaultValue={str(v.brandName)} className={inputClass} />}
       </Field>
@@ -27,8 +27,8 @@ export function BrandOnboardingForm({ userId }: { userId: string }) {
         )}
       </Field>
       <LogoField userId={userId} initialPath={null} error={fe.logoPath} onBusyChange={setLogoBusy} disabled={pending} />
-      {state.formError && <p role="alert" className="text-sm text-primary">{state.formError}</p>}
-      <button disabled={pending || logoBusy} className="w-full rounded-btn bg-primary px-4 py-2 font-bold text-white disabled:opacity-60">
+      {state.formError && <p role="alert" className="text-sm text-danger">{state.formError}</p>}
+      <button disabled={pending || logoBusy} className="w-full h-11 rounded-btn bg-ink px-6 font-semibold text-on-ink disabled:opacity-60">
         {logoBusy ? "Logo 上傳中…" : "完成註冊"}
       </button>
     </form>

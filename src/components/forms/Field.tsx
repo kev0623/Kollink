@@ -12,13 +12,13 @@ export function Field({ label, error, hint, children }: {
   const note = error ?? hint;
   return (
     <div>
-      <label htmlFor={id} className="text-sm font-bold">{label}</label>
+      <label htmlFor={id} className="text-sm font-semibold text-ink">{label}</label>
       <div className="mt-1">
         {children({ id, "aria-describedby": note ? descId : undefined, "aria-invalid": error ? true : undefined })}
       </div>
-      {note && <span id={descId} className={`mt-1 block text-xs ${error ? "text-primary" : "text-muted"}`}>{note}</span>}
+      {note && <span id={descId} className={`mt-1 block text-xs ${error ? "text-danger" : "text-muted"}`}>{note}</span>}
     </div>
   );
 }
 
-export const inputClass = "w-full rounded-btn border border-line bg-surface px-3 py-2";
+export const inputClass = "h-[42px] w-full rounded-input border border-line bg-surface px-3 py-2 outline-none focus:ring-2 focus:ring-ink";

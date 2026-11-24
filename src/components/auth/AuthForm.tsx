@@ -87,12 +87,12 @@ export function AuthForm({ role, next, googleEnabled }: Props) {
   }
 
   return (
-    <div className="rounded-card border border-line bg-surface p-6 shadow-sm">
+    <div>
       <button
         type="button"
         onClick={google}
         disabled={!googleEnabled || pending}
-        className="w-full rounded-btn border border-line px-4 py-2 font-bold disabled:cursor-not-allowed disabled:text-muted"
+        className="h-11 w-full rounded-btn border border-line bg-surface px-4 font-semibold text-ink disabled:cursor-not-allowed disabled:text-muted"
       >
         {googleEnabled ? "用 Google 繼續" : "Google 登入（尚未設定）"}
       </button>
@@ -105,9 +105,9 @@ export function AuthForm({ role, next, googleEnabled }: Props) {
           <input
             id="auth-email" type="email" required autoComplete="email" value={email}
             onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com"
-            className="w-full rounded-btn border border-line px-3 py-2"
+            className="w-full rounded-input border border-line bg-surface px-3 py-2 outline-none focus:ring-2 focus:ring-ink"
           />
-          <button type="submit" disabled={pending} className="w-full rounded-btn bg-primary px-4 py-2 font-bold text-white disabled:opacity-60">
+          <button type="submit" disabled={pending} className="h-11 w-full rounded-btn bg-ink px-4 font-semibold text-on-ink disabled:opacity-60">
             寄驗證碼
           </button>
         </form>
@@ -118,9 +118,9 @@ export function AuthForm({ role, next, googleEnabled }: Props) {
           <input
             id="auth-code" ref={codeRef} inputMode="numeric" autoComplete="one-time-code" pattern="\d{6}" maxLength={6} required
             value={code} onChange={(e) => setCode(toCode(e.target.value))} placeholder="6 碼驗證碼"
-            className="w-full rounded-btn border border-line px-3 py-2 tracking-widest"
+            className="w-full rounded-input border border-line bg-surface px-3 py-2 outline-none focus:ring-2 focus:ring-ink tracking-widest"
           />
-          <button type="submit" disabled={pending} className="w-full rounded-btn bg-primary px-4 py-2 font-bold text-white disabled:opacity-60">
+          <button type="submit" disabled={pending} className="h-11 w-full rounded-btn bg-ink px-4 font-semibold text-on-ink disabled:opacity-60">
             登入
           </button>
           <button
@@ -139,7 +139,7 @@ export function AuthForm({ role, next, googleEnabled }: Props) {
         </form>
       )}
 
-      {error && <p key={attempt} role="alert" className="mt-3 text-sm text-primary">{error}</p>}
+      {error && <p key={attempt} role="alert" className="mt-3 text-sm text-danger">{error}</p>}
     </div>
   );
 }
