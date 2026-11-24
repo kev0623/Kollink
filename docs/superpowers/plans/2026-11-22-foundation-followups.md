@@ -40,6 +40,9 @@
   - 色彩 token：`text-white` 尚未納入 token；錯誤文字的對比度需再檢查。
   - 之後每個資料頁都必須呼叫 `requireRole`，否則沒有角色或未審核的使用者會直接看到頁面。
   - 選項白名單（產業、地區、內容領域等）只在 UI 端強制（同計畫 4、5 的項目）。
+  - proxy 對每個 RSC prefetch 都呼叫 `getUser()`（會打 Auth 伺服器）；可評估改用 `getClaims()`。
+  - 已登入的使用者造訪 `/login` 會停留在登入頁；可考慮直接導回首頁。
+  - service_role 仍可直接寫入 `profiles`、`brand_profiles`；可考慮比照 `creator_profiles` 收回其寫入權限。
 
 ### 3. 創作者公開檔案頁
 - 訪客（anon）讀不到 `profiles.display_name`；缺少頭像欄位；評分、完成案數、準時率需要合作資料，但 RLS 會擋住 → 需要一個欄位，或只開放必要欄位的 view / definer 函式，另外要建評價資料表。
@@ -76,21 +79,11 @@
 
 ### 9. 管理後台
 - 管理員目前只能讀取。需要 `set_creator_status()`（definer 函式，檢查 `is_admin()`），以及取消或爭議處理的狀態轉換。
-- `is_admin()`、`my_role()`、`is_conversation_participant()` 的 EXECUTE 權限從 PUBLIC 收回。
+- `is_admin()`、`my_role()`、`is_conversation_participant()` 的 EXECUTE 權限從 PUBLIC 收回。brand-logos 的 insert/update policy 以 authenticated 身分呼叫 my_role()，收回後要再 grant 給 authenticated。
 
 ### 10. 審核逾期自動通過
 - `transition_collaboration` 的 system 身分要求「透過 PostgREST 以 service_role 呼叫」；**pg_cron 以 postgres 身分執行會被判定為「不是參與者」**。可以改用 Next route 搭配 Cron 和 secret，再以 service_role 呼叫 RPC；或另外寫一個只授權給 service_role 的 `auto_approve_due()` definer 函式。
 
 ## 部署
 
-## 正式環境（Hosted Supabase）設定
-
-上線前在 Supabase 後台逐項設定（本機的 `config.toml` 不會自動套用到正式專案）：
-
-1. Authentication → Providers → Email：開啟「Confirm email」（對應 `enable_confirmations = true`）；Email OTP 長度 6、有效期限 900 秒。
-2. 密碼登入封鎖：真正的保證是 migration 裡的 `null_encrypted_password` trigger（推送 migration 即生效，不受方案限制）。另外在 Authentication → Hooks 新增 Postgres hook「Password verification attempt」指向 `public.hook_reject_password`，作為第二層防護（此 hook 可能只在付費方案提供）。
-3. Authentication → URL Configuration：Site URL 填正式網址；Redirect URLs 加入 `https://正式網址/**`。
-4. Authentication → Emails：「Magic Link」與「Confirm signup」範本的主旨與內容都換成 `supabase/templates/otp.html`（`Kollink 登入驗證碼` / `Kollink 註冊驗證碼`）。
-5. Authentication → SMTP Settings：設定自訂 SMTP（內建寄信有嚴格頻率上限，不能用於正式環境）。
-6. Authentication → Attack Protection：開啟 CAPTCHA（Turnstile 或 hCaptcha），並同步在登入頁加上對應元件。
-7. Google OAuth：Providers → Google 填入用戶端 ID／密鑰；Google Cloud Console 的重新導向 URI 加上 `https://<專案>.supabase.co/auth/v1/callback`。
+正式環境（Hosted Supabase 與 Vercel）的設定清單以 README 的「正式環境（Hosted Supabase）設定」與「部署（Vercel）」為準，這裡不重複（避免兩份清單不一致）。清單包含：Redirect URLs 加 `https://<site>/auth/callback**`、關閉匿名登入、Email 範本、自訂 SMTP、CAPTCHA、Google OAuth。

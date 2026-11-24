@@ -20,6 +20,7 @@ npm run dev                        # http://127.0.0.1:3000
 |---|---|
 | 收驗證碼信（本機不會真的寄出） | http://127.0.0.1:54324 （Mailpit） |
 | Supabase Studio | http://127.0.0.1:54323 |
+| 在本機跑正式版建置 | `npm run build && npx next start` |
 | 單元測試 | `npm test` |
 | 資料庫測試 | `npm run test:db` |
 | 改了 migration 後重新產生型別 | `npm run db:types` |
@@ -59,9 +60,12 @@ npm run dev                        # http://127.0.0.1:3000
 
 ## 審核創作者（管理後台完成前）
 
-在 Supabase Studio 的 SQL Editor 執行（直接複製）。
+在 Supabase Studio 的 SQL Editor 執行（直接複製）。本機也可以用 psql 連線：
+```
+postgresql://postgres:postgres@127.0.0.1:54322/postgres
+```
 
-列出待審核的創作者與 IG 驗證碼：
+先列出待審核的創作者與 IG 驗證碼：
 ```sql
 select cp.handle, cp.ig_username, cp.follower_count, v.code, cp.created_at
 from public.creator_profiles cp
@@ -70,12 +74,12 @@ where cp.status = 'pending'
 order by cp.created_at;
 ```
 
-打開 `https://www.instagram.com/<ig_username>/`，確認自我介紹裡有驗證碼、粉絲數合理，然後：
+打開 `https://www.instagram.com/<ig_username>/`，確認自我介紹裡有驗證碼、粉絲數合理，然後執行下面的核准指令。`handle` 與 `ig_username` 請直接從上面查詢結果複製，不要照創作者填的內容手打，因為 handle 儲存時會被正規化（例如填 `e2e-handle-one` 會存成 `e2ehandleone`）：
 ```sql
 update public.creator_profiles set status = 'approved'
   where handle = '填入網址代稱' and ig_username = '填入你確認過的 IG 帳號';
 ```
-受影響 0 列代表創作者在審核期間改了 IG 帳號（改 IG 會退回審核並換新驗證碼），請重新查詢並確認新的 IG 與驗證碼後再核准。
+結果顯示 `UPDATE 0` 代表沒有任何列被更新，原因是兩者之一：handle 或 ig_username 打錯（請從查詢結果複製），或創作者在審核期間改了 IG 帳號（改 IG 會退回審核並換新驗證碼），請重新查詢並確認新的 IG 與驗證碼後再核准。
 
 ### 修改已鎖定的網址代稱（handle）
 
