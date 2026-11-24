@@ -1,0 +1,25 @@
+import { NextResponse, type NextRequest } from "next/server";
+import { updateSession } from "@/lib/supabase/proxy";
+import { requiresAuth } from "@/lib/auth/routes";
+
+// 只做樂觀檢查：更新 session cookie、沒登入就導去 /login。身分與資料完整度由各區 layout 檢查。
+export async function proxy(request: NextRequest) {
+  const { response, user } = await updateSession(request);
+  if (!user && requiresAuth(request.nextUrl.pathname)) {
+    const login = request.nextUrl.clone();
+    login.pathname = "/login";
+    login.search = "";
+    login.searchParams.set("next", request.nextUrl.pathname + request.nextUrl.search);
+    const redirect = NextResponse.redirect(login);
+    response.cookies.getAll().forEach((c) => redirect.cookies.set(c));
+    return redirect;
+  }
+  return response;
+}
+
+export const config = {
+  matcher: [
+    // 排除靜態檔、圖片與綠界付款通知（綠界伺服器不會帶 cookie，也不需要 session）
+    "/((?!_next/static|_next/image|favicon.ico|api/payments/ecpay/notify|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
+  ],
+};
