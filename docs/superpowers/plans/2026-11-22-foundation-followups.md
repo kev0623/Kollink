@@ -19,6 +19,10 @@
 | 綠界通知 | 檢查 MerchantID（新環境變數 `ECPAY_MERCHANT_ID`）；`SimulatePaid=1` 的模擬付款只回覆收到、不記錄；金額只接受純整數。 |
 | 報價只能經由函式寫入 | 計畫 3 起 `creator_rates` 收回 anon / authenticated 的 INSERT、UPDATE、DELETE，只能用 `set_creator_rates`；取消勾選的合作形式，報價由 `update_creator_public_profile` 一併刪除。 |
 | 公開頁不快取 | `/c/[handle]` 每次請求以使用者自己的 client 讀取，因為審核狀態目前在 Studio 用 SQL 改、App 無法觸發 revalidate。找不到時回應碼是 200 + `noindex`（串流後才 `notFound()`，soft 404）。 |
+| 收藏直接寫資料表 | `creator_favorites` 由品牌自己的 client 直接 insert／delete（RLS：只能讀、增、刪自己的，新增時必須是品牌；不開放 UPDATE）；重複收藏的 `23505` 視為成功。資料庫允許收藏未審核的創作者，廣場只列出已審核的。 |
+| 廣場搜尋只給品牌 | `search_creators`、`popular_style_tags` 是 definer 函式，非品牌一律 `42501`（結果含起價與貼文報價，延續「報價只給品牌看」）。總數用 window 函式放在 `total_count`。 |
+| 廣場分頁 | 篩選、排序、關鍵字在網址；「載入更多」是 Server Action 回傳下一批（一次 24 位），頁數不在網址，分享或重新整理回到第一批。 |
+| 廣場區間 | 粉絲與起價區間一律含下限、不含上限（例如「1 千到 1 萬」是 1,000–9,999）。 |
 
 ## 各計畫需要處理的事項
 
@@ -75,12 +79,24 @@
     - OG 圖片下載 Google 字型沒有 timeout。
 
 ### 4. 創作者廣場、5. 招募與機會頁
-- 索引：`creator_profiles(status)`、`categories` / `style_tags` 的 GIN 索引、`briefs(status, deadline)`、`briefs(brand_id)`、`brief_applications(creator_id)`、`conversations(creator_id)`、`collaborations(conversation_id)`、`collaborations(brief_id)`。
+- 索引：`creator_profiles(status, created_at desc)`、`categories`／`style_tags`／`collab_types` 的 GIN、`creator_rates(creator_id, price_twd)`、`creator_favorites(brand_id, created_at desc)` → 已完成（計畫 4）。還沒做：`briefs(status, deadline)`、`briefs(brand_id)`、`brief_applications(creator_id)`（計畫 5）、`conversations(creator_id)`、`collaborations(conversation_id)`、`collaborations(brief_id)`（計畫 6、7）。
 - 報名的狀態變更需要 definer 函式（目前沒有開放 UPDATE）。錄取時，要在同一個 transaction 裡建立對話和合作案。
 - 待決定：尚未審核的創作者能不能報名；超過截止日但狀態仍是 open 的招募要不要擋；品牌刪除招募時，報名紀錄會一起被刪除（cascade），這樣是否可接受。
-- 刪除 `public/*.svg` 這些 scaffold 留下的圖檔。
+- 刪除 `public/*.svg` 這些 scaffold 留下的圖檔 → 已完成（計畫 4）。
 - 產業、地區、內容領域的白名單只在 UI 端強制，資料庫只檢查長度與數量。
-- 搜尋與篩選必須能容忍清單以外的值；若需要嚴格清單，要在資料庫端強制。
+- 搜尋與篩選必須能容忍清單以外的值 → 廣場已做到（計畫 4：網址值清理後照常比對，比對不到就是沒有結果）；計畫 5 的招募篩選比照辦理。若需要嚴格清單，要在資料庫端強制。
+- 計畫 4 新增的後續事項：
+  - 從公開頁按 ♡ 後用瀏覽器「上一頁」回到廣場，畫面是快取的舊狀態（重新整理或從導覽列進入就正確）；♡ 刻意不 revalidate，避免每按一次重跑整頁搜尋。
+  - 在「只看收藏」裡取消收藏，卡片留到下次篩選或重新整理才消失。
+  - 列表模式的使用者進入廣場時，會先看到一瞬間卡片（server snapshot 固定是卡片）。
+  - 列表的「貼文報價」欄顯示 IG 貼文價，但點標題是依起價排序（spec 只有四種排序）。
+  - 關鍵字是 `ilike '%…%'`，用不到索引；目前資料量下搜尋相關索引大多用不到，創作者到數千位時重新評估（例如 `pg_trgm` GIN 索引）。
+  - 風格標籤選項只列最熱門的 20 個；冷門標籤只能用網址 `?tag=` 篩選。
+  - 收藏數沒有上限、也沒有收藏清單頁（spec 決定用「只看收藏」開關）。
+  - 表單輸入的 NUL（`\u0000`）會進到資料庫並以 22P05 失敗：要比照雙向控制字元（bidi）處理，JS 的 `cleanText`／`hasBidi` 與 SQL 的 `clean_text`／`has_bidi` 兩邊都要擋，且兩邊的字元集合必須完全一致。
+  - 篩選抽屜（FilterDrawer）開著時若視窗拉寬超過 `lg`，仍維持 modal 狀態。
+  - `FavoriteButton` 在請求進行中沒有 disabled。
+  - 角色是 brand 但沒有 `brand_profiles` 的帳號按收藏，會得到外鍵錯誤 `23503`。
 
 ### 6. 合作案詳情頁
 - 貼文連結在 app 端用 `new URL()` 再檢查一次（資料庫的 regex 會接受 `a..b.com`）。
