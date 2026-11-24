@@ -316,6 +316,9 @@ isOneToOne: false
 "has_bidi":
 { Args: { "p": string }; Returns: boolean
                            },
+"hook_reject_password":
+{ Args: { "event": Json }; Returns: Json
+                           },
 "is_admin":
 { Args: Record<PropertyKey, never>; Returns: boolean
                            },
