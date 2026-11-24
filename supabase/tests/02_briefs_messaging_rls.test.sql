@@ -16,11 +16,12 @@ insert into public.brand_profiles (user_id, brand_name) values
 insert into public.creator_profiles (user_id, handle, ig_username, status) values
   ('00000000-0000-0000-0000-0000000000c1', 'mei', 'mei.ig', 'approved');
 
-insert into public.briefs (id, brand_id, title, description, deadline, status) values
+insert into public.briefs
+  (id, brand_id, title, description, collab_types, includes_product, deadline, status, published_at) values
   ('00000000-0000-0000-0000-00000000f001', '00000000-0000-0000-0000-0000000000b1',
-   '春季新品開箱', 'IG 貼文 + 限動', current_date + 7, 'open'),
+   '春季新品開箱', 'IG 貼文 + 限動', array['IG 貼文'], true, public.today_tw() + 7, 'open', now()),
   ('00000000-0000-0000-0000-00000000f002', '00000000-0000-0000-0000-0000000000b1',
-   '已截止的招募', '舊案', current_date - 1, 'closed');
+   '已截止的招募', '舊案', array['IG 貼文'], true, public.today_tw() - 1, 'closed', now());
 
 insert into public.conversations (id, brand_id, creator_id) values
   ('00000000-0000-0000-0000-00000000a001',
@@ -31,7 +32,7 @@ insert into public.messages (conversation_id, sender_id, body) values
 -- 訪客
 set local role anon;
 select set_config('request.jwt.claims', '{"role":"anon"}', true);
-select is((select count(*)::int from public.briefs), 0, '訪客看不到招募');
+select throws_ok($$select count(*) from public.briefs$$, '42501', null, '訪客讀不到招募（計畫 5 收回 anon 權限）');
 
 -- 品牌 b2（第三方）
 set local role authenticated;
@@ -39,7 +40,7 @@ select set_config('request.jwt.claims',
   '{"sub":"00000000-0000-0000-0000-0000000000b2","role":"authenticated"}', true);
 select is((select count(*)::int from public.messages), 0, '第三方看不到別人的訊息');
 select is((select count(*)::int from public.conversations), 0, '第三方看不到別人的對話');
-select is((select count(*)::int from public.briefs), 1, '其他品牌只看得到開放中的招募');
+select is((select count(*)::int from public.briefs), 0, '品牌看不到其他品牌的招募（計畫 5）');
 select throws_ok(
   $$insert into public.messages (conversation_id, body)
     values ('00000000-0000-0000-0000-00000000a001', '插話')$$,
@@ -58,13 +59,11 @@ select throws_ok(
     values ('00000000-0000-0000-0000-00000000a001', 'x', false)$$,
   '42501', null, '使用者不能自己設定違規標記');
 select lives_ok(
-  $$insert into public.brief_applications (brief_id, creator_id, message)
-    values ('00000000-0000-0000-0000-00000000f001', auth.uid(), '我想報名')$$,
-  '創作者可以報名開放中的招募');
+  $$select public.apply_to_brief('00000000-0000-0000-0000-00000000f001', '我想報名')$$,
+  '創作者可以報名開放中的招募（計畫 5 起經由 apply_to_brief）');
 select throws_ok(
-  $$insert into public.brief_applications (brief_id, creator_id, message)
-    values ('00000000-0000-0000-0000-00000000f002', auth.uid(), '我想報名')$$,
-  '42501', null, '創作者不能報名已截止的招募');
+  $$select public.apply_to_brief('00000000-0000-0000-0000-00000000f002', '我想報名')$$,
+  '55000', 'brief closed', '創作者不能報名已關閉的招募');
 
 -- 品牌 b1（招募主）與 b2
 select set_config('request.jwt.claims',
