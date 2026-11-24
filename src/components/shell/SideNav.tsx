@@ -2,14 +2,17 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { SITE_NAME } from "@/lib/site";
+import { NavIcon } from "./NavIcon";
 import { isActive, type NavItem } from "./nav";
+
+const itemBase = "flex h-[60px] w-16 flex-col items-center justify-center gap-1 rounded-nav text-xs";
 
 export function SideNav({ items, footer }: { items: NavItem[]; footer?: React.ReactNode }) {
   const pathname = usePathname();
   return (
-    <nav aria-label="主選單" className="flex h-full w-56 flex-col border-r border-line bg-surface p-4">
-      <p className="mb-6 text-lg font-bold">{SITE_NAME}</p>
-      <ul className="flex-1 space-y-1">
+    <nav aria-label="主選單" className="sticky top-0 flex h-screen w-24 flex-col items-center bg-bg py-6">
+      <p className="mb-6 text-sm font-bold tracking-tight text-ink">{SITE_NAME}</p>
+      <ul className="flex flex-1 flex-col items-center gap-2 overflow-y-auto">
         {items.map((it) => {
           const active = it.href !== null && isActive(it.href, pathname);
           return (
@@ -18,13 +21,16 @@ export function SideNav({ items, footer }: { items: NavItem[]; footer?: React.Re
                 <Link
                   href={it.href}
                   aria-current={active ? "page" : undefined}
-                  className={`flex min-h-11 items-center rounded-btn px-3 hover:bg-primary-soft ${active ? "bg-primary-soft font-bold text-primary" : ""}`}
+                  className={`${itemBase} ${active ? "bg-ink font-medium text-on-ink" : "text-ink hover:bg-line"}`}
                 >
-                  {it.label}
+                  <NavIcon name={it.icon} size={22} />
+                  <span>{it.label}</span>
                 </Link>
               ) : (
-                <span className="flex min-h-11 items-center justify-between px-3 text-muted">
-                  {it.label}<span className="text-xs">即將推出</span>
+                <span className={`${itemBase} text-muted opacity-60`}>
+                  <NavIcon name={it.icon} size={22} />
+                  <span>{it.label}</span>
+                  <span className="sr-only">（即將推出）</span>
                 </span>
               )}
             </li>

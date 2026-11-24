@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { requireRole } from "@/lib/auth/current-user";
+import { SideFooter } from "@/components/shell/SideFooter";
 import { SideNav } from "@/components/shell/SideNav";
 import { BottomTabBar } from "@/components/shell/BottomTabBar";
 import { BRAND_NAV } from "@/components/shell/nav";
@@ -7,11 +8,11 @@ import { SignOutButton } from "@/components/shell/SignOutButton";
 
 export default function BrandLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex min-h-screen">
-      <aside className="hidden md:block">
-        <SideNav items={BRAND_NAV} footer={<SignOutButton />} />
+    <div className="flex min-h-screen bg-bg">
+      <aside className="hidden shrink-0 md:block">
+        <SideNav items={BRAND_NAV} footer={<SideFooter />} />
       </aside>
-      <main className="min-w-0 flex-1 px-4 pb-[calc(5rem+env(safe-area-inset-bottom))] pt-8 md:px-8 md:pb-8">
+      <main className="min-w-0 flex-1 bg-panel px-4 pb-[calc(6rem+env(safe-area-inset-bottom))] pt-6 md:my-3 md:mr-3 md:rounded-card md:py-8 md:pl-8 md:pr-7 md:pb-8">
         <Suspense fallback={<p className="text-muted">載入中…</p>}>
           <Gate>{children}</Gate>
         </Suspense>
@@ -27,7 +28,7 @@ async function Gate({ children }: { children: React.ReactNode }) {
   return (
     <>
       <div className="mb-6 flex items-center justify-between md:hidden">
-        <p className="font-bold">{me.brand?.brandName}</p>
+        <p className="font-semibold">{me.brand?.brandName}</p>
         <SignOutButton />
       </div>
       {children}

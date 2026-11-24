@@ -9,14 +9,14 @@ export function CategoryPicker({ name, initial, error }: { name: string; initial
   }
   return (
     <fieldset>
-      <legend className="text-sm font-bold">內容領域（1–5 個）</legend>
+      <legend className="text-sm font-semibold text-ink">內容領域（1–5 個）</legend>
       <div className="mt-2 flex flex-wrap gap-2">
         {CATEGORIES.map((c) => {
           const on = selected.includes(c);
           return (
             <button
               key={c} type="button" onClick={() => toggle(c)} aria-pressed={on}
-              className={`rounded-full border px-3 py-1 text-sm ${on ? "border-ink bg-ink text-white" : "border-line bg-surface"}`}
+              className={`rounded-full border min-h-9 px-3 py-1 text-sm font-medium ${on ? "border-ink bg-ink text-on-ink" : "border-line bg-surface"}`}
             >
               {c}
             </button>
@@ -24,7 +24,7 @@ export function CategoryPicker({ name, initial, error }: { name: string; initial
         })}
       </div>
       {selected.map((c) => <input key={c} type="hidden" name={name} value={c} />)}
-      {error && <span role="alert" className="mt-1 block text-xs text-primary">{error}</span>}
+      {error && <span role="alert" className="mt-1 block text-xs text-danger">{error}</span>}
     </fieldset>
   );
 }

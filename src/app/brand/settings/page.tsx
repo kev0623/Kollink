@@ -5,7 +5,7 @@ import { BrandSettingsForm } from "./BrandSettingsForm";
 export default function BrandSettingsPage() {
   return (
     <>
-      <h1 className="mb-6 text-2xl font-bold">設定</h1>
+      <h1 className="mb-6 text-[32px] font-bold text-ink">設定</h1>
       <Suspense fallback={null}>
         <Settings />
       </Suspense>

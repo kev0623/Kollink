@@ -5,7 +5,7 @@ import { homeFor } from "@/lib/auth/post-login";
 
 export default function OnboardingLayout({ children }: { children: React.ReactNode }) {
   return (
-    <main className="mx-auto max-w-xl px-4 py-12">
+    <main className="mx-auto max-w-xl px-4 py-8 md:py-12">
       <Suspense fallback={<p className="text-muted">載入中…</p>}>
         <Gate>{children}</Gate>
       </Suspense>
