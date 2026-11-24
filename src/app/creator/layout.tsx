@@ -10,14 +10,14 @@ export default function CreatorLayout({ children }: { children: React.ReactNode 
   return (
     <div className="flex min-h-screen bg-bg">
       <aside className="hidden shrink-0 md:block">
-        <SideNav items={CREATOR_NAV} footer={<SideFooter />} />
+        <Suspense fallback={null}><SideNav items={CREATOR_NAV} footer={<SideFooter />} /></Suspense>
       </aside>
       <main className="min-w-0 flex-1 bg-panel px-4 pb-[calc(6rem+env(safe-area-inset-bottom))] pt-6 md:my-3 md:mr-3 md:rounded-card md:py-8 md:pl-8 md:pr-7 md:pb-8">
         <Suspense fallback={<p className="text-muted">載入中…</p>}>
           <Gate>{children}</Gate>
         </Suspense>
       </main>
-      <BottomTabBar items={CREATOR_NAV} />
+      <Suspense fallback={null}><BottomTabBar items={CREATOR_NAV} /></Suspense>
     </div>
   );
 }
