@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { AuthForm } from "@/components/auth/AuthForm";
+import { DevLoginBox } from "@/components/auth/DevLoginBox";
 import { safeNextPath } from "@/lib/auth/safe-next";
 import { SITE_NAME } from "@/lib/site";
 
@@ -15,6 +16,7 @@ export default function LoginPage({ searchParams }: { searchParams: SP }) {
           <Login searchParams={searchParams} />
         </Suspense>
       </div>
+      <DevLoginBox />
       <Suspense fallback={null}>
         <SwitchLink searchParams={searchParams} />
       </Suspense>
