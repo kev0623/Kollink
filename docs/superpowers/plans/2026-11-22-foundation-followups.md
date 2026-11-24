@@ -27,6 +27,10 @@
 - 補測試：跨使用者更新無效、創作者不能建立品牌檔案、以 pending 狀態建立檔案的正向對照。
 - ~~決定正式名稱~~ → 已定為 Kollink（計畫 2 Task 1）
 - README 補上本機開發步驟（Docker、`supabase start`、`.env.local`、`npm run test:db`）。
+- 品牌 Logo（`brand-logos`）部署注意：
+  - 正式環境必須開啟 Email 驗證、關閉匿名登入，因為還沒建立 profile 的使用者也能上傳 Logo。
+  - 要加排程清理：刪除沒有被任何 `brand_profiles.logo_path` 引用、且超過 24 小時的 `brand-logos` 物件。
+  - 若日後新增上傳用的 server action，要驗證圖片 magic bytes，不能只信 MIME type 與副檔名。
 
 ### 3. 創作者公開檔案頁
 - 訪客（anon）讀不到 `profiles.display_name`；缺少頭像欄位；評分、完成案數、準時率需要合作資料，但 RLS 會擋住 → 需要一個欄位，或只開放必要欄位的 view / definer 函式，另外要建評價資料表。
