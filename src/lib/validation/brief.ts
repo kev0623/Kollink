@@ -26,6 +26,11 @@ function digits(v: string): string {
   return cleanText(v).replace(/[,，\s]/g, "");
 }
 
+/** 前端檢查用：數字欄位和伺服器一樣先去掉千分位逗號與空白（避免「5,000」在前端被擋、送到伺服器卻可以）。 */
+export function normalizeBriefNumbers(i: BriefInput): BriefInput {
+  return { ...i, minFollowers: digits(i.minFollowers), budgetMin: digits(i.budgetMin), budgetMax: digits(i.budgetMax) };
+}
+
 function str(fd: FormData, key: string): string {
   const v = fd.get(key);
   return typeof v === "string" ? v : "";

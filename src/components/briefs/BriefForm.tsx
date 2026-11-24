@@ -8,7 +8,7 @@ import { Field, inputClass } from "@/components/forms/Field";
 import { addDays, MAX_DEADLINE_DAYS } from "@/lib/briefs/dates";
 import { previewFromInput } from "@/lib/briefs/view";
 import { CATEGORIES, COLLAB_TYPES, REGIONS } from "@/lib/options";
-import { firstErrorStep, validateBrief, validateBriefStep, type BriefInput, type BriefStep } from "@/lib/validation/brief";
+import { firstErrorStep, normalizeBriefNumbers, validateBrief, validateBriefStep, type BriefInput, type BriefStep } from "@/lib/validation/brief";
 import { BriefDetailView } from "./BriefDetailView";
 
 const STEPS: { step: BriefStep; label: string }[] = [
@@ -78,7 +78,7 @@ export function BriefForm({ briefId, isOpen, initial, initialStep, saved, userId
   }
 
   function next() {
-    const e = validateBriefStep(step, values, today);
+    const e = validateBriefStep(step, normalizeBriefNumbers(values), today);
     if (e) return setClientErrors(e);
     goTo((step + 1) as BriefStep);
   }
@@ -86,7 +86,7 @@ export function BriefForm({ briefId, isOpen, initial, initialStep, saved, userId
   /** 送出前在前端先檢查；有錯就不送，跳到有錯的那一步。 */
   function guard(mode: "draft" | "publish") {
     return (ev: React.MouseEvent<HTMLButtonElement>) => {
-      const e = validateBrief(values, mode, today);
+      const e = validateBrief(normalizeBriefNumbers(values), mode, today);
       if (!e) return;
       ev.preventDefault();
       setClientErrors(e);
@@ -208,7 +208,7 @@ export function BriefForm({ briefId, isOpen, initial, initialStep, saved, userId
 
       <section hidden={step !== 4} className="space-y-4">
         <h2 className="text-lg font-bold text-ink">預覽（創作者看到的樣子）</h2>
-        <BriefDetailView brief={previewFromInput(values, { name: brandName, logoPath: brandLogoPath })} today={today} />
+        <BriefDetailView brief={previewFromInput(normalizeBriefNumbers(values), { name: brandName, logoPath: brandLogoPath })} today={today} />
       </section>
 
       {state.formError && <p role="alert" className="text-sm text-danger">{state.formError}</p>}
@@ -227,13 +227,14 @@ export function BriefForm({ briefId, isOpen, initial, initialStep, saved, userId
           </button>
         )}
         <div className="ml-auto">
+          {/* 兩個按鈕要有不同的 key：否則 React 會重用同一個 DOM 元素，在同一次點擊中把 type 改成 submit，按「下一步」就直接發佈。 */}
           {step < 4 ? (
-            <button type="button" onClick={next} disabled={busy}
+            <button key="next" type="button" onClick={next} disabled={busy}
               className="h-11 rounded-btn bg-ink px-6 font-semibold text-on-ink disabled:opacity-60">
               下一步
             </button>
           ) : (
-            <button type="submit" name="intent" value="publish" onClick={guard("publish")} disabled={busy}
+            <button key="publish" type="submit" name="intent" value="publish" onClick={guard("publish")} disabled={busy}
               className="h-11 rounded-btn bg-ink px-6 font-semibold text-on-ink disabled:opacity-60">
               {pending ? "處理中…" : isOpen ? "儲存變更" : "發佈"}
             </button>

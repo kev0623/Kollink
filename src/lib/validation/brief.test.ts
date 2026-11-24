@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  EMPTY_BRIEF_INPUT, firstErrorStep, hasBadChar, parseApplicationForm, parseBriefForm, toSaveBriefArgs,
+  EMPTY_BRIEF_INPUT, firstErrorStep, hasBadChar, normalizeBriefNumbers, parseApplicationForm, parseBriefForm, toSaveBriefArgs,
   validateApplication, validateBrief, validateBriefStep, type BriefInput,
 } from "./brief";
 
@@ -120,6 +120,15 @@ describe("validateBriefStep / firstErrorStep", () => {
     expect(firstErrorStep({ region: "x" })).toBe(2);
     expect(firstErrorStep({ reward: "x" })).toBe(3);
     expect(firstErrorStep({ formError: "x" })).toBe(4);
+  });
+});
+
+describe("normalizeBriefNumbers", () => {
+  it("前端檢查前去掉千分位逗號與空白，「5,000」不會被擋", () => {
+    const raw = { ...ok, minFollowers: "1,000", budgetMin: "5,000", budgetMax: "20,000" };
+    expect(validateBrief(raw, "publish", TODAY)).not.toBeNull();
+    expect(validateBrief(normalizeBriefNumbers(raw), "publish", TODAY)).toBeNull();
+    expect(normalizeBriefNumbers(raw)).toMatchObject({ minFollowers: "1000", budgetMin: "5000", budgetMax: "20000" });
   });
 });
 
