@@ -41,14 +41,14 @@ isOneToOne: false
                   ]
                 },"brand_profiles": {
                   Row: {
-                    "brand_name": string,"created_at": string,"industry": string | null,"logo_url": string | null,"user_id": string
+                    "brand_name": string,"created_at": string,"industry": string | null,"logo_path": string | null,"user_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "brand_name": string,"created_at"?: string,"industry"?: string | null,"logo_url"?: string | null,"user_id": string
+                    "brand_name": string,"created_at"?: string,"industry"?: string | null,"logo_path"?: string | null,"user_id": string
                   }
                   Update: {
-                    "brand_name"?: string,"created_at"?: string,"industry"?: string | null,"logo_url"?: string | null,"user_id"?: string
+                    "brand_name"?: string,"created_at"?: string,"industry"?: string | null,"logo_path"?: string | null,"user_id"?: string
                   }
                   Relationships: [
                     {
@@ -295,11 +295,17 @@ isOneToOne: false
             [_ in never]: never
           }
           Functions: {
-            "clean_text":
+            "check_categories":
+{ Args: { "p": (string)[] }; Returns: (string)[]
+                           },
+"check_logo_path":
+{ Args: { "p_path": string,"p_uid": string }; Returns: string
+                           },
+"clean_text":
 { Args: { "p": string }; Returns: string
                            },
 "create_brand_account":
-{ Args: { "p_brand_name": string,"p_industry": string,"p_logo_url"?: string }; Returns: undefined
+{ Args: { "p_brand_name": string,"p_industry": string,"p_logo_path"?: string }; Returns: undefined
                            },
 "create_creator_account":
 { Args: { "p_categories": (string)[],"p_display_name": string,"p_follower_count": number,"p_handle": string,"p_ig_username": string,"p_region": string }; Returns: string
@@ -321,6 +327,12 @@ isOneToOne: false
                            },
 "transition_collaboration":
 { Args: { "p_action": string,"p_collab_id": string,"p_note"?: string,"p_published_url"?: string }; Returns: Database["public"]['Enums']["collab_status"]
+                           },
+"update_brand_account":
+{ Args: { "p_brand_name": string,"p_industry": string,"p_logo_path"?: string }; Returns: undefined
+                           },
+"update_creator_account":
+{ Args: { "p_categories": (string)[],"p_display_name": string,"p_follower_count": number,"p_handle": string,"p_ig_username": string,"p_region": string }; Returns: undefined
                            }
           }
           Enums: {
