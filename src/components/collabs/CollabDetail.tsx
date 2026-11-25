@@ -1,0 +1,24 @@
+import type { CollabDetailData } from "@/lib/collabs/load";
+import type { CollabSide } from "@/lib/collabs/view";
+import { ActionCard } from "./ActionCard";
+import { CollabHeader } from "./CollabHeader";
+import { EventList } from "./EventList";
+import { Stepper } from "./Stepper";
+import { SubmissionList } from "./SubmissionList";
+
+type Props = { data: CollabDetailData; side: CollabSide; uid: string; nowMs: number; devPaymentEnabled: boolean };
+
+/** 合作案詳情：品牌與創作者共用，只差在視角。 */
+export function CollabDetail({ data, side, uid, nowMs, devPaymentEnabled }: Props) {
+  const { collab: c, submissions, events } = data;
+  const latest = submissions.length > 0 ? submissions[submissions.length - 1] : null;
+  return (
+    <div className="space-y-6">
+      <CollabHeader c={c} />
+      <Stepper status={c.status} />
+      <ActionCard c={c} side={side} uid={uid} latest={latest} nowMs={nowMs} devPaymentEnabled={devPaymentEnabled} />
+      <SubmissionList submissions={submissions} />
+      <EventList events={events} />
+    </div>
+  );
+}

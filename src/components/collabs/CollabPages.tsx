@@ -1,6 +1,10 @@
+import { notFound } from "next/navigation";
 import { requireRole } from "@/lib/auth/current-user";
-import { loadMyCollabs } from "@/lib/collabs/load";
-import { parseCollabTab, type CollabSide } from "@/lib/collabs/view";
+import { isDevLoginEnabled } from "@/lib/auth/dev-login";
+import { isUuid } from "@/lib/briefs/query";
+import { loadCollabDetail, loadMyCollabs } from "@/lib/collabs/load";
+import { nowMs, parseCollabTab, type CollabSide } from "@/lib/collabs/view";
+import { CollabDetail } from "./CollabDetail";
 import { CollabList, CollabTabs } from "./CollabList";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -16,6 +20,17 @@ export async function CollabListSection({ side, searchParams }: { side: CollabSi
       <CollabList side={side} tab={tab} items={items} />
     </div>
   );
+}
+
+/** 詳情頁的內容（在 <Suspense> 內）。不是參與者、不是這一區的視角、id 不是 UUID：一律 notFound()（soft 404）。 */
+export async function CollabDetailSection({ side, params }: { side: CollabSide; params: Promise<{ id: string }> }) {
+  const me = await requireRole(side);
+  const { id } = await params;
+  if (!isUuid(id)) notFound();
+  const data = await loadCollabDetail(id);
+  if (!data || data.collab.side !== side) notFound();
+  // requireRole 之後才能讀現在時間（getCurrentUser 已 await connection()）
+  return <CollabDetail data={data} side={side} uid={me.id} nowMs={nowMs()} devPaymentEnabled={isDevLoginEnabled()} />;
 }
 
 export function CollabListSkeleton() {
