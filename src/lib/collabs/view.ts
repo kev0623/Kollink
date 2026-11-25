@@ -396,7 +396,7 @@ export function eventText(e: CollabEvent): string {
     case "payment_requires_refund":
       return "收到付款，但合作案已不在待付款，需退款";
     default:
-      return `${who}：${e.action}`;
+      return who ? `${who}：狀態已更新` : "狀態已更新";
   }
 }
 

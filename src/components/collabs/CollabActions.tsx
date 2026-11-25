@@ -82,11 +82,12 @@ function BrandPayment({ collabId, status, devPaymentEnabled }: { collabId: strin
 
 /** 本機測試用：一般的 POST 表單，不需要 JS。只有伺服器判斷 isDevLoginEnabled() 為真時才會渲染。 */
 function DevMarkPaid({ collabId }: { collabId: string }) {
+  const [submitted, setSubmitted] = useState(false);
   return (
-    <form method="post" action="/api/dev/mark-paid">
+    <form method="post" action="/api/dev/mark-paid" onSubmit={() => setSubmitted(true)}>
       <input type="hidden" name="collabId" value={collabId} />
-      <button className="h-10 rounded-btn border border-dashed border-line px-4 text-sm font-semibold text-muted">
-        標記已付款（本機）
+      <button type="submit" disabled={submitted} className="h-10 rounded-btn border border-dashed border-line px-4 text-sm font-semibold text-muted disabled:opacity-50">
+        {submitted ? "送出中…" : "標記已付款（本機）"}
       </button>
     </form>
   );

@@ -123,7 +123,8 @@ describe("交稿與事件", () => {
     expect(eventText(ev({ action: "request_changes", actorName: "花粉", note: "亮一點" }))).toBe("花粉 要求修改：亮一點");
     expect(eventText(ev({ action: "mark_paid", actorKind: "system", actorName: "系統" }))).toBe("款項已託管");
     expect(eventText(ev({ action: "auto_approve" }))).toBe("審核期限已到，自動通過");
-    expect(eventText(ev({ action: "weird" }))).toBe("小美：weird");
+    expect(eventText(ev({ action: "weird" }))).toBe("小美：狀態已更新");
+    expect(eventText(ev({ action: "weird", actorName: "" }))).toBe("狀態已更新");
   });
   it("事件時間是台灣時間 MM/DD HH:mm", () => {
     expect(eventTime("2026-11-25T03:05:00Z")).toBe("11/25 11:05");
