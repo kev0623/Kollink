@@ -5,7 +5,9 @@ import { brandCollabAction } from "@/app/brand/collabs/actions";
 import { creatorCollabAction } from "@/app/creator/collabs/actions";
 import { ConfirmAction } from "@/components/briefs/ConfirmAction";
 import type { CollabSide, CollabStatus } from "@/lib/collabs/view";
+import { PublishForm } from "./PublishForm";
 import { RevisionForm } from "./RevisionForm";
+import { SubmitPanel } from "./SubmitPanel";
 import { useCollabAction } from "./useCollabAction";
 
 type Props = { collabId: string; status: CollabStatus; side: CollabSide; uid: string; devPaymentEnabled: boolean };
@@ -13,13 +15,15 @@ type Props = { collabId: string; status: CollabStatus; side: CollabSide; uid: st
 const primary = "h-11 w-full rounded-btn bg-ink px-6 font-semibold text-on-ink disabled:opacity-60 sm:w-auto";
 
 /** 「現在要做什麼」卡片裡的按鈕（依狀態與視角）。 */
-export function CollabActions({ collabId, status, side, devPaymentEnabled }: Props) {
+export function CollabActions({ collabId, status, side, uid, devPaymentEnabled }: Props) {
   if (side === "creator" && status === "invited") return <InviteReply collabId={collabId} />;
   if (side === "brand" && (status === "invited" || status === "awaiting_payment")) {
     return <BrandPayment collabId={collabId} status={status} devPaymentEnabled={devPaymentEnabled} />;
   }
   if (side === "creator" && status === "awaiting_payment" && devPaymentEnabled) return <DevMarkPaid collabId={collabId} />;
+  if (side === "creator" && status === "awaiting_submission") return <SubmitPanel collabId={collabId} uid={uid} />;
   if (side === "brand" && status === "in_review") return <Review collabId={collabId} />;
+  if (side === "creator" && status === "awaiting_publish") return <PublishForm collabId={collabId} />;
   return null;
 }
 
