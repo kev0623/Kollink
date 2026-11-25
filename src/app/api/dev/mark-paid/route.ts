@@ -13,8 +13,9 @@ import { createClient } from "@/lib/supabase/server";
 export async function POST(request: NextRequest) {
   if (!isDevLoginEnabled()) return new NextResponse(null, { status: 404 });
 
-  const form = await request.formData();
-  const collabId = form.get("collabId");
+  // 沒有表單內容（Content-Type 不對）時 formData() 會丟錯：一律當成 400，不是 500。
+  const form = await request.formData().catch(() => null);
+  const collabId = form?.get("collabId");
   if (!isUuid(collabId)) return new NextResponse(null, { status: 400 });
 
   // 先用登入者自己的 client 確認是參與者、狀態是待付款

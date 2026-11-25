@@ -31,6 +31,11 @@ describe("POST /api/dev/mark-paid", () => {
     expect((await POST(req(ID))).status).toBe(404);
     expect(userRpc).not.toHaveBeenCalled();
   });
+  it("沒有表單內容或 collabId 不是 uuid：400（不是 500）", async () => {
+    expect((await POST(new Request("http://localhost/api/dev/mark-paid", { method: "POST" }) as never)).status).toBe(400);
+    expect((await POST(req("x"))).status).toBe(400);
+    expect(userRpc).not.toHaveBeenCalled();
+  });
   it("不是參與者 404", async () => {
     userRpc.mockResolvedValue({ data: [], error: null });
     expect((await POST(req(ID))).status).toBe(404);
