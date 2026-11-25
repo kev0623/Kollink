@@ -367,6 +367,11 @@ isOneToOne: false
 "apply_to_brief":
 { Args: { "p_brief_id": string,"p_message"?: string,"p_proposed_price"?: number }; Returns: string
                            },
+"auto_approve_due":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "approved": number,"failed": (string)[]
+            }[]
+                           },
 "brief_application_counts":
 { Args: { "p_ids": (string)[] }; Returns: {
               "applicant_count": number,"brief_id": string,"pending_count": number
@@ -410,6 +415,9 @@ isOneToOne: false
 "close_brief":
 { Args: { "p_id": string }; Returns: undefined
                            },
+"collab_turn":
+{ Args: { "p_status": Database["public"]['Enums']["collab_status"] }; Returns: string
+                           },
 "create_brand_account":
 { Args: { "p_brand_name": string,"p_industry": string,"p_logo_path"?: string }; Returns: undefined
                            },
@@ -430,6 +438,11 @@ isOneToOne: false
                            },
 "gen_verification_code":
 { Args: Record<PropertyKey, never>; Returns: string
+                           },
+"get_collaboration":
+{ Args: { "p_id": string }; Returns: {
+              "amount_twd": number,"brand_id": string,"brand_logo_path": string,"brand_name": string,"brief_id": string,"brief_title": string,"created_at": string,"creator_avatar_path": string,"creator_handle": string,"creator_id": string,"creator_name": string,"deliverables": string,"id": string,"my_side": string,"published_url": string,"review_due_at": string,"status": string,"title": string,"updated_at": string
+            }[]
                            },
 "get_opportunity":
 { Args: { "p_id": string }; Returns: {
@@ -459,6 +472,16 @@ isOneToOne: false
 "list_brief_applicants":
 { Args: { "p_brief_id": string }; Returns: {
               "avatar_path": string,"collaboration_id": string,"created_at": string,"creator_id": string,"display_name": string,"engagement_rate": number,"follower_count": number,"handle": string,"id": string,"message": string,"proposed_price_twd": number,"region": string,"status": string
+            }[]
+                           },
+"list_collaboration_events":
+{ Args: { "p_id": string }; Returns: {
+              "action": string,"actor_kind": string,"actor_name": string,"created_at": string,"from_status": string,"id": number,"note": string,"to_status": string
+            }[]
+                           },
+"list_my_collaborations":
+{ Args: { "p_tab"?: string }; Returns: {
+              "amount_twd": number,"brief_id": string,"counterpart_handle": string,"counterpart_image_path": string,"counterpart_name": string,"id": string,"my_side": string,"my_turn": boolean,"status": string,"title": string,"updated_at": string
             }[]
                            },
 "list_opportunities":
