@@ -6,7 +6,7 @@ export type NavItem = { label: string; href: string | null; icon: NavIconName };
 export const BRAND_NAV: NavItem[] = [
   { label: "創作者廣場", href: "/brand", icon: "Compass" },
   { label: "我的招募", href: "/brand/briefs", icon: "FileText" },
-  { label: "合作案", href: null, icon: "Handshake" },
+  { label: "合作案", href: "/brand/collabs", icon: "Handshake" },
   { label: "訊息", href: null, icon: "MessageCircle" },
   { label: "付款與發票", href: null, icon: "Receipt" },
   { label: "設定", href: "/brand/settings", icon: "Settings" },
@@ -14,7 +14,7 @@ export const BRAND_NAV: NavItem[] = [
 
 export const CREATOR_NAV: NavItem[] = [
   { label: "機會", href: "/creator", icon: "Sparkles" },
-  { label: "合作", href: null, icon: "Handshake" },
+  { label: "合作", href: "/creator/collabs", icon: "Handshake" },
   { label: "訊息", href: null, icon: "MessageCircle" },
   { label: "收入", href: null, icon: "Wallet" },
   { label: "我的", href: "/creator/me", icon: "UserRound" },
