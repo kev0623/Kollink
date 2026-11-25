@@ -28,8 +28,13 @@
 | 招募狀態 | `draft → open → closed`；「已截止」由 `deadline < today_tw()` 算出，不寫進資料庫。截止日當天可以報名；截止或關閉後品牌仍可錄取／婉拒。只有草稿能刪除；不能重新開啟、不能改回草稿。 |
 | 未審核創作者 | 可以瀏覽機會與詳情，不能報名（`42501 creator not approved`）。 |
 | 招募可見性 | 招募主、管理員、創作者（開放中且未截止）、報名過的人（任何狀態）。品牌看不到其他品牌的招募。判斷寫在 definer helper `can_view_brief`（避免兩張表的 policy 互相遞迴）。 |
-| 錄取 | 這次只標記 `accepted`；建立對話與合作案留給計畫 6、7。錄取或婉拒後不能改；撤回後不能再報名同一則。 |
+| 錄取 | 計畫 6 起錄取 = 建立合作案：`accept_application_with_collab` 在同一個 transaction 把報名改成 accepted、取得或建立對話、建立合作案（`awaiting_payment`，案名 = 招募名稱）。`decide_application` 只剩婉拒。錄取或婉拒後不能改；撤回後不能再報名同一則。 |
 | 預算 0 | 視為沒填（存成 null）；「現金」篩選與「預算或產品至少一項」都依此判斷。 |
+| 建立合作案只走函式 | `collaborations`、`conversations` 收回所有 API 角色的寫入（只剩 SELECT）；建立只能經由 `accept_application_with_collab`、`invite_creator`。同一對品牌／創作者只有一個對話（取得或建立並鎖住），同一個品牌對同一位創作者同時只能有一個 invited。 |
+| 合作案讀取 | 列表 `list_my_collaborations`（只列自己參與的）、詳情 `get_collaboration` 與事件 `list_collaboration_events`（參與者與管理員）是 definer 函式；交稿紀錄用 RLS 直接讀。頁面另外要求視角等於該區。 |
+| 交稿 | 私密 bucket `deliverables`（50 MB、圖片／影片／PDF），路徑 `<合作案>/<創作者>/<uuid>.<副檔名>`；只有創作者在 awaiting_submission 能上傳到自己的資料夾；交出去的檔案不能刪、不能換。交稿紀錄只能經由 `submit_deliverables`（同時推進到 in_review；創作者的 `submit` 轉換也只能走這個函式）。原始檔名不保存。 |
+| 付款與撥款（計畫 8、9 前） | 不收錢。管理員用 README 的 SQL 標記：已付款一律「service_role 建付款單 → `record_payment_success`」；撥款以 service_role 呼叫 `transition_collaboration(..., 'payout')`。本機另有 `/api/dev/mark-paid`（開關同測試快速登入）。 |
+| 審核逾期自動通過 | Vercel Cron（`vercel.json`，每天 UTC 01:00）→ `/api/cron/auto-approve`（`CRON_SECRET`、常數時間比對）→ service_role 呼叫只授權給 service_role 的 `auto_approve_due()`；一件失敗不影響其他件。用 `vercel.json` 而不是 `vercel.ts`（後者要新增 `@vercel/config` 套件）。 |
 
 ## 各計畫需要處理的事項
 
@@ -86,8 +91,8 @@
     - OG 圖片下載 Google 字型沒有 timeout。
 
 ### 4. 創作者廣場、5. 招募與機會頁
-- 索引：`creator_profiles(status, created_at desc)`、`categories`／`style_tags`／`collab_types` 的 GIN、`creator_rates(creator_id, price_twd)`、`creator_favorites(brand_id, created_at desc)` → 已完成（計畫 4）。`briefs(status, deadline)`、`briefs(brand_id, created_at desc)`、`brief_applications(creator_id, created_at desc)`、`brief_applications(brief_id, status)` → 已完成（計畫 5）。還沒做：`conversations(creator_id)`、`collaborations(conversation_id)`、`collaborations(brief_id)`（計畫 6、7）。
-- 報名的狀態變更需要 definer 函式 → 已完成（計畫 5：`withdraw_application`、`decide_application`）。錄取時在同一個 transaction 建立對話和合作案 → 計畫 6、7 接上 `decide_application`。
+- 索引：`creator_profiles(status, created_at desc)`、`categories`／`style_tags`／`collab_types` 的 GIN、`creator_rates(creator_id, price_twd)`、`creator_favorites(brand_id, created_at desc)` → 已完成（計畫 4）。`briefs(status, deadline)`、`briefs(brand_id, created_at desc)`、`brief_applications(creator_id, created_at desc)`、`brief_applications(brief_id, status)` → 已完成（計畫 5）。`conversations(creator_id)`、`collaborations(conversation_id)`、`collaborations(brief_id, creator_id)`（唯一）→ 已完成（計畫 6）。
+- 報名的狀態變更需要 definer 函式 → 已完成（計畫 5：`withdraw_application`、`decide_application`）。錄取時在同一個 transaction 建立對話和合作案 → 已完成（計畫 6：`accept_application_with_collab`）。
 - ~~待決定：未審核能不能報名、截止後要不要擋、刪除招募時報名一起刪~~ → 已決定（計畫 5）：未審核不能報名；截止後不能報名；只有草稿能刪除（草稿沒有報名）。
 - 刪除 `public/*.svg` 這些 scaffold 留下的圖檔 → 已完成（計畫 4）。
 - 產業、地區、內容領域的白名單只在 UI 端強制，資料庫只檢查長度與數量。
@@ -115,7 +120,7 @@
   - 招募與機會頁不快取（每次請求以使用者 client 讀取）；截止日在台灣午夜跨日時，已開著的頁面要重新整理才會更新。
   - 404 在 `<Suspense>` 內觸發，回應碼是 200 + `noindex`（與 `/c/[handle]` 相同）。
   - 「適合我」的內容領域與地區比對是完全相等（清單外的值不會模糊比對）。
-  - 錄取或婉拒沒有通知（spec 不在範圍內）；錄取後建立對話、合作案在計畫 6、7。
+  - 錄取或婉拒沒有通知（spec 不在範圍內）；錄取後建立對話、合作案 → 已完成（計畫 6）。
   - 品牌刪除帳號時，招募與報名會 cascade 刪除（帳號刪除流程見計畫 8 的 soft delete 項目）。
   - 發佈、關閉、錄取後沒有 revalidate `/creator` 相關路徑（頁面本來就不快取，影響有限）；重複點擊關閉／錄取／撤回時顯示錯誤而不是靜默重新整理（`isStaleStateMessage` 以在地化文字比對，建議改用錯誤代碼）。
   - 已知小問題：分頁籤與篩選 chip 高度 36px 小於 44px 觸控目標、沒有 focus-visible；婉拒按鈕沒有進行中標示；空 handle 會連到 `/c/`；`briefs_select` 每列呼叫 definer（規模變大再看）；rows-guard 沒有 pgTAP 測試。
@@ -134,8 +139,21 @@
     - 開發備註：瀏覽器測試開發伺服器請用 `http://localhost`，不要用 `127.0.0.1`（`allowedDevOrigins`）。
 
 ### 6. 合作案詳情頁
-- 貼文連結在 app 端用 `new URL()` 再檢查一次（資料庫的 regex 會接受 `a..b.com`）。
-- server action 代替品牌或創作者操作時，必須用**使用者自己的 client**；用 service_role 呼叫會被判定為 system，品牌或創作者的動作會被拒絕。
+- 貼文連結在 app 端用 `new URL()` 再檢查一次（資料庫的 regex 會接受 `a..b.com`）。→ 已完成（計畫 6）
+- server action 代替品牌或創作者操作時，必須用**使用者自己的 client**；用 service_role 呼叫會被判定為 system，品牌或創作者的動作會被拒絕。→ 已完成（計畫 6）
+- 計畫 6 新增的後續事項：
+  - `deliverables` 孤兒物件（上傳後沒有交稿、離開頁面）與其他 bucket 共用同一個清理排程（尚未實作）。
+  - 交稿檔案不保存原始檔名，畫面顯示「圖片 1」「PDF 2」；需要原始檔名時另外存一欄。
+  - 上傳只檢查 MIME type 與大小（bucket 也擋一次），沒有檢查 magic bytes；檔案只給雙方看、用 signed URL 開新分頁。
+  - signed URL 在頁面渲染時產生、有效 1 小時；頁面開超過 1 小時後點檔案要重新整理。
+  - 列表最多 200 筆、沒有分頁；管理員的全部合作案列表在計畫 9。
+  - 沒有任何通知（spec 不在範圍內）；對方動作後要重新整理才看得到（即時更新在計畫 7）。
+  - Hobby 方案的 Cron 一天一次，實際是「到期後最晚隔天自動通過」；升級 Pro 後可改成每小時。Hobby 的 Cron 會在 UTC 01:00–01:59（台灣 09:00–09:59）內任何時間觸發；Vercel Production 沒設 `CRON_SECRET` 時 route 回 500、不會自動通過任何合作案。
+  - 錄取時案名固定是招募名稱（表單沒有案名欄）；修改金額、爭議處理、評價都不在範圍內。
+  - `auto_approve_due` 的失敗只寫 Postgres warning 與 Vercel log，沒有告警。
+  - 交稿的上傳在沒有交稿時不會被清掉（併入上面 `deliverables` 孤兒物件的清理排程）；交稿與刪除檔案之間有競態（submit／delete 同時發生）。
+  - `accept_application_with_collab` 沒有重新檢查創作者仍是 approved（`invite_creator` 有檢查）。
+  - `collabErrorMessage` 以完全比對轉中文，遇到動態訊息（例如 `collaboration <uuid> not found`）會落到預設訊息；建議改用錯誤代碼或前綴比對。
 
 ### 7. 站內訊息
 - `flagged_contact` 用 BEFORE INSERT trigger 計算，不要讓訊息改走 service_role（那樣 `sender_id` 的預設值 `auth.uid()` 會是 null）。
@@ -151,6 +169,7 @@
 - `provider_trade_no` 不接受只有空白的值；金額設定上限（綠界單筆限額）。
 - route 補單元測試（mock `createAdminClient`）；用真實的沙盒通知補一項簽章測試。
 - 帳號刪除改用 soft delete（`collaborations` 和 `payments` 的外鍵會擋住實體刪除）。
+- 「確認並付款」按鈕目前只顯示說明；接綠界時改成建單（create_payment_order）並導向付款頁。README 的人工標記 SQL 在金流上線後移除。
 
 ### 9. 管理後台
 - 管理員目前只能讀取。需要 `set_creator_status()`（definer 函式，檢查 `is_admin()`），以及取消或爭議處理的狀態轉換。
@@ -158,6 +177,7 @@
 
 ### 10. 審核逾期自動通過
 - `transition_collaboration` 的 system 身分要求「透過 PostgREST 以 service_role 呼叫」；**pg_cron 以 postgres 身分執行會被判定為「不是參與者」**。可以改用 Next route 搭配 Cron 和 secret，再以 service_role 呼叫 RPC；或另外寫一個只授權給 service_role 的 `auto_approve_due()` definer 函式。
+→ 已完成（計畫 6：Vercel Cron + auto_approve_due）。
 
 ## 部署
 
