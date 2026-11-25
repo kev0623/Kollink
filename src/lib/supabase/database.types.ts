@@ -341,7 +341,10 @@ isOneToOne: false
             [_ in never]: never
           }
           Functions: {
-            "apply_to_brief":
+            "accept_application_with_collab":
+{ Args: { "p_amount_twd": number,"p_application_id": string,"p_deliverables": string }; Returns: string
+                           },
+"apply_to_brief":
 { Args: { "p_brief_id": string,"p_message"?: string,"p_proposed_price"?: number }; Returns: string
                            },
 "brief_application_counts":
@@ -354,6 +357,11 @@ isOneToOne: false
                            },
 "check_categories":
 { Args: { "p": (string)[] }; Returns: (string)[]
+                           },
+"check_collab_offer":
+{ Args: { "p_amount_twd": number,"p_deliverables": string,"p_title": string }; Returns: {
+              "deliverables": string,"title": string
+            }[]
                            },
 "check_instagram_url":
 { Args: { "p": string }; Returns: string
@@ -385,6 +393,9 @@ isOneToOne: false
 "delete_brief":
 { Args: { "p_id": string }; Returns: string
                            },
+"ensure_conversation":
+{ Args: { "p_brand_id": string,"p_creator_id": string }; Returns: string
+                           },
 "gen_verification_code":
 { Args: Record<PropertyKey, never>; Returns: string
                            },
@@ -404,6 +415,9 @@ isOneToOne: false
 "hook_reject_password":
 { Args: { "event": Json }; Returns: Json
                            },
+"invite_creator":
+{ Args: { "p_amount_twd": number,"p_creator_id": string,"p_deliverables": string,"p_title": string }; Returns: string
+                           },
 "is_admin":
 { Args: Record<PropertyKey, never>; Returns: boolean
                            },
@@ -412,7 +426,7 @@ isOneToOne: false
                            },
 "list_brief_applicants":
 { Args: { "p_brief_id": string }; Returns: {
-              "avatar_path": string,"created_at": string,"creator_id": string,"display_name": string,"engagement_rate": number,"follower_count": number,"handle": string,"id": string,"message": string,"proposed_price_twd": number,"region": string,"status": string
+              "avatar_path": string,"collaboration_id": string,"created_at": string,"creator_id": string,"display_name": string,"engagement_rate": number,"follower_count": number,"handle": string,"id": string,"message": string,"proposed_price_twd": number,"region": string,"status": string
             }[]
                            },
 "list_opportunities":

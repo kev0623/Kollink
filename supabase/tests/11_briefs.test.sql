@@ -239,11 +239,11 @@ select throws_ok(
 -- ── F. 錄取與婉拒 ──
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-000000000602","role":"authenticated"}', true);
 select throws_ok(
-  $$select public.decide_application('00000000-0000-0000-0000-00000006a003', true)$$,
+  $$select public.accept_application_with_collab('00000000-0000-0000-0000-00000006a003', 5000, 'IG 貼文 1 篇')$$,
   'P0002', 'application not found', '別的品牌不能錄取');
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-000000000601","role":"authenticated"}', true);
 select lives_ok(
-  format('select public.decide_application(%L, true)',
+  format('select public.accept_application_with_collab(%L, 5000, ''IG 貼文 1 篇'')',
     (select id from public.brief_applications where brief_id = '00000000-0000-0000-0000-00000006f001' and creator_id = '00000000-0000-0000-0000-000000000611')),
   '招募主可以錄取');
 select is(
@@ -264,7 +264,7 @@ select throws_ok(
   '22023', 'invalid accept', '必須指定錄取或婉拒');
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-000000000611","role":"authenticated"}', true);
 select throws_ok(
-  $$select public.decide_application('00000000-0000-0000-0000-00000006a061', true)$$,
+  $$select public.accept_application_with_collab('00000000-0000-0000-0000-00000006a061', 5000, 'IG 貼文 1 篇')$$,
   'P0002', 'application not found', '創作者不能錄取');
 
 -- ── G. 報名人數 ──

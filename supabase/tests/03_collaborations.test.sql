@@ -67,14 +67,23 @@ set local role authenticated;
 select set_config('request.jwt.claims',
   '{"sub":"00000000-0000-0000-0000-0000000000b1","role":"authenticated"}', true);
 
-select lives_ok(
+select throws_ok(
   $$insert into public.collaborations
       (id, brand_id, creator_id, conversation_id, title, deliverables, amount_twd)
     values ('00000000-0000-0000-0000-00000000cc01',
             '00000000-0000-0000-0000-0000000000b1', '00000000-0000-0000-0000-0000000000c1',
             '00000000-0000-0000-0000-00000000a001',
             '春季新品開箱', 'IG 貼文 1 篇 + 限動 2 則', 4500)$$,
-  '品牌可以建立邀約');
+  '42501', null, '計畫 6 起品牌不能直接建立合作案（改走 invite_creator）');
+-- 之後的流程照舊：由擁有者建立同一筆邀約（JWT 仍是 b1，建立紀錄的身分是品牌）
+reset role;
+insert into public.collaborations
+  (id, brand_id, creator_id, conversation_id, title, deliverables, amount_twd)
+values ('00000000-0000-0000-0000-00000000cc01',
+        '00000000-0000-0000-0000-0000000000b1', '00000000-0000-0000-0000-0000000000c1',
+        '00000000-0000-0000-0000-00000000a001',
+        '春季新品開箱', 'IG 貼文 1 篇 + 限動 2 則', 4500);
+set local role authenticated;
 select is(
   (select count(*)::int from public.audit_logs
      where collaboration_id = '00000000-0000-0000-0000-00000000cc01' and action = 'create'),
