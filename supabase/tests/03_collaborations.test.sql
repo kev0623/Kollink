@@ -178,9 +178,12 @@ select is(
 set local role authenticated;
 select set_config('request.jwt.claims',
   '{"sub":"00000000-0000-0000-0000-0000000000c1","role":"authenticated"}', true);
+select set_config('kollink.submitting_deliverables', 'on', true); -- 模擬 submit_deliverables（submit 只能由它觸發，見 16 號測試）
 select is(
   public.transition_collaboration('00000000-0000-0000-0000-00000000cc01', 'submit'),
   'in_review'::public.collab_status, '創作者交稿');
+select set_config('kollink.submitting_deliverables', 'off', true);
+
 select ok(
   (select review_due_at > now() + interval '71 hours'
      from public.collaborations where id = '00000000-0000-0000-0000-00000000cc01'),
@@ -211,9 +214,12 @@ select results_eq(
 -- ===== 再次交稿、審核通過、發佈 =====
 select set_config('request.jwt.claims',
   '{"sub":"00000000-0000-0000-0000-0000000000c1","role":"authenticated"}', true);
+select set_config('kollink.submitting_deliverables', 'on', true); -- 模擬 submit_deliverables（submit 只能由它觸發，見 16 號測試）
 select is(
   public.transition_collaboration('00000000-0000-0000-0000-00000000cc01', 'submit'),
   'in_review'::public.collab_status, '創作者再次交稿');
+select set_config('kollink.submitting_deliverables', 'off', true);
+
 
 select set_config('request.jwt.claims',
   '{"sub":"00000000-0000-0000-0000-0000000000b1","role":"authenticated"}', true);
