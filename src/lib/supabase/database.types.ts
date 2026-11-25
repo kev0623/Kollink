@@ -105,6 +105,26 @@ isOneToOne: false
       referencedColumns: ["user_id"]
     }
                   ]
+                },"collaboration_submissions": {
+                  Row: {
+                    "collaboration_id": string,"created_at": string,"file_paths": (string)[],"id": string,"links": (string)[],"note": string | null,"round": number
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "collaboration_id": string,"created_at"?: string,"file_paths"?: (string)[],"id"?: string,"links"?: (string)[],"note"?: string | null,"round": number
+                  }
+                  Update: {
+                    "collaboration_id"?: string,"created_at"?: string,"file_paths"?: (string)[],"id"?: string,"links"?: (string)[],"note"?: string | null,"round"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "collaboration_submissions_collaboration_id_fkey"
+      columns: ["collaboration_id"]
+isOneToOne: false
+      referencedRelation: "collaborations"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"collaborations": {
                   Row: {
                     "amount_twd": number,"brand_id": string,"brief_id": string | null,"conversation_id": string,"created_at": string,"creator_id": string,"deliverables": string,"id": string,"published_url": string | null,"review_due_at": string | null,"status": Database["public"]['Enums']["collab_status"],"title": string,"updated_at": string
@@ -352,6 +372,15 @@ isOneToOne: false
               "applicant_count": number,"brief_id": string,"pending_count": number
             }[]
                            },
+"can_delete_deliverable":
+{ Args: { "p_name": string }; Returns: boolean
+                           },
+"can_read_deliverable":
+{ Args: { "p_name": string }; Returns: boolean
+                           },
+"can_upload_deliverable":
+{ Args: { "p_name": string }; Returns: boolean
+                           },
 "can_view_brief":
 { Args: { "p_brand_id": string,"p_deadline": string,"p_id": string,"p_status": string }; Returns: boolean
                            },
@@ -392,6 +421,9 @@ isOneToOne: false
                            },
 "delete_brief":
 { Args: { "p_id": string }; Returns: string
+                           },
+"deliverable_path_ok":
+{ Args: { "p_collab_id": string,"p_creator_id": string,"p_name": string }; Returns: boolean
                            },
 "ensure_conversation":
 { Args: { "p_brand_id": string,"p_creator_id": string }; Returns: string
@@ -466,6 +498,9 @@ isOneToOne: false
                            },
 "set_creator_rates":
 { Args: { "p_rates": Json }; Returns: undefined
+                           },
+"submit_deliverables":
+{ Args: { "p_collab_id": string,"p_file_paths"?: (string)[],"p_links"?: (string)[],"p_note"?: string }; Returns: number
                            },
 "text_items_within":
 { Args: { "p": (string)[],"p_max_len": number }; Returns: boolean
