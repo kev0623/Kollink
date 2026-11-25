@@ -8,6 +8,8 @@ import { BRIEF_COVER_BUCKET } from "@/lib/brief-cover";
 import { todayTw } from "@/lib/briefs/dates";
 import { briefErrorMessage, briefFieldError } from "@/lib/briefs/errors";
 import { isUuid, parseBriefStep } from "@/lib/briefs/query";
+import { collabErrorMessage, collabFieldError } from "@/lib/collabs/errors";
+import { parseAmount, parseOfferForm, validateOffer } from "@/lib/validation/collab";
 import { parseBriefForm, toSaveBriefArgs, validateBrief } from "@/lib/validation/brief";
 
 const BAD_INPUT = "資料格式不正確，請重新整理頁面";
@@ -82,12 +84,50 @@ export async function deleteBriefAction(id: unknown): Promise<ActionResult> {
   redirect("/brand/briefs?tab=draft");
 }
 
-/** 錄取（accept = true）或婉拒。招募關閉或截止後也可以。 */
-export async function decideApplicationAction(applicationId: unknown, briefId: unknown, accept: unknown): Promise<ActionResult> {
+export type AcceptFormState = { fieldErrors?: Record<string, string>; formError?: string; stale?: boolean };
+
+/**
+ * 錄取並建立合作案（同一個 transaction：報名 → 已錄取、建立對話、建立合作案 awaiting_payment）。
+ * 成功後導到合作案詳情。招募關閉或截止後也可以。
+ */
+export async function acceptApplicationAction(_prev: AcceptFormState, fd: FormData): Promise<AcceptFormState> {
   await requireRole("brand");
-  if (!isUuid(applicationId) || !isUuid(briefId) || typeof accept !== "boolean") return { ok: false, error: BAD_INPUT };
+  const applicationId = fd.get("applicationId");
+  const briefId = fd.get("briefId");
+  if (!isUuid(applicationId) || !isUuid(briefId)) return { formError: BAD_INPUT };
+  const input = parseOfferForm(fd);
+  const fieldErrors = validateOffer(input, false);
+  if (fieldErrors) return { fieldErrors };
+
   const supabase = await createClient();
-  const { error } = await supabase.rpc("decide_application", { p_id: applicationId, p_accept: accept });
+  const { data, error } = await supabase.rpc("accept_application_with_collab", {
+    p_application_id: applicationId,
+    p_amount_twd: parseAmount(input.amount)!,
+    p_deliverables: input.deliverables,
+  });
+  if (error) {
+    const fe = collabFieldError(error);
+    if (fe) return { fieldErrors: fe };
+    // 連點或另一個分頁已處理：讓畫面重新整理
+    if (error.message === "application not pending" || error.message === "collaboration exists") {
+      return { formError: collabErrorMessage(error), stale: true };
+    }
+    return { formError: collabErrorMessage(error) };
+  }
+  const collabId = data as unknown as string;
+  revalidatePath(`/brand/briefs/${briefId}`);
+  revalidatePath("/brand/briefs");
+  revalidatePath("/brand/collabs");
+  revalidatePath("/creator/collabs");
+  redirect(`/brand/collabs/${collabId}`);
+}
+
+/** 婉拒報名。招募關閉或截止後也可以。 */
+export async function rejectApplicationAction(applicationId: unknown, briefId: unknown): Promise<ActionResult> {
+  await requireRole("brand");
+  if (!isUuid(applicationId) || !isUuid(briefId)) return { ok: false, error: BAD_INPUT };
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("decide_application", { p_id: applicationId, p_accept: false });
   if (error) return { ok: false, error: briefErrorMessage(error) };
   revalidatePath(`/brand/briefs/${briefId}`);
   revalidatePath("/brand/briefs");

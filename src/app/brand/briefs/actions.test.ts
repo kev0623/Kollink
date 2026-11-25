@@ -12,7 +12,7 @@ vi.mock("@/lib/supabase/server", () => ({
   createClient: async () => ({ rpc, storage: { from: () => ({ remove }) } }),
 }));
 
-import { closeBriefAction, decideApplicationAction, deleteBriefAction, saveBriefAction } from "./actions";
+import { acceptApplicationAction, closeBriefAction, deleteBriefAction, rejectApplicationAction, saveBriefAction } from "./actions";
 import { todayTw } from "@/lib/briefs/dates";
 
 const ID = "00000000-0000-0000-0000-00000006f001";
@@ -119,20 +119,49 @@ describe("deleteBriefAction", () => {
   });
 });
 
-describe("decideApplicationAction", () => {
-  it("參數格式不對時不碰資料庫", async () => {
-    expect(await decideApplicationAction(APP, ID, "yes")).toMatchObject({ ok: false });
-    expect(await decideApplicationAction("x", ID, true)).toMatchObject({ ok: false });
+describe("acceptApplicationAction", () => {
+  function acceptForm(o: Record<string, string>) {
+    return form({ applicationId: APP, briefId: ID, ...o });
+  }
+  it("id 格式不對不碰資料庫", async () => {
+    expect(await acceptApplicationAction({}, form({ applicationId: "x", briefId: ID }))).toEqual({ formError: "資料格式不正確，請重新整理頁面" });
+    expect(requireRole).toHaveBeenCalledWith("brand");
     expect(rpc).not.toHaveBeenCalled();
   });
-  it("錄取並重新整理詳情", async () => {
+  it("金額與交付內容必填", async () => {
+    expect(await acceptApplicationAction({}, acceptForm({ amount: "", deliverables: " " })))
+      .toEqual({ fieldErrors: { deliverables: "請填寫交付內容", amount: "請填 1 到 10,000,000 的整數" } });
+    expect(rpc).not.toHaveBeenCalled();
+  });
+  it("錄取並導到合作案", async () => {
+    rpc.mockResolvedValue({ data: "00000000-0000-0000-0000-0000000007e1", error: null });
+    await expect(acceptApplicationAction({}, acceptForm({ amount: "6,000", deliverables: "IG 貼文 1 篇\r\n" })))
+      .rejects.toThrow("REDIRECT /brand/collabs/00000000-0000-0000-0000-0000000007e1");
+    expect(rpc).toHaveBeenCalledWith("accept_application_with_collab", {
+      p_application_id: APP, p_amount_twd: 6000, p_deliverables: "IG 貼文 1 篇",
+    });
+    expect(revalidatePath).toHaveBeenCalledWith(`/brand/briefs/${ID}`);
+  });
+  it("已處理過：標記 stale 讓畫面重新整理", async () => {
+    rpc.mockResolvedValue({ data: null, error: { code: "55000", message: "application not pending" } });
+    expect(await acceptApplicationAction({}, acceptForm({ amount: "1", deliverables: "x" })))
+      .toEqual({ formError: "這筆報名已經處理過了", stale: true });
+  });
+});
+
+describe("rejectApplicationAction", () => {
+  it("參數格式不對時不碰資料庫", async () => {
+    expect(await rejectApplicationAction("x", ID)).toMatchObject({ ok: false });
+    expect(rpc).not.toHaveBeenCalled();
+  });
+  it("婉拒並重新整理詳情", async () => {
     rpc.mockResolvedValue({ data: null, error: null });
-    expect(await decideApplicationAction(APP, ID, true)).toEqual({ ok: true });
-    expect(rpc).toHaveBeenCalledWith("decide_application", { p_id: APP, p_accept: true });
+    expect(await rejectApplicationAction(APP, ID)).toEqual({ ok: true });
+    expect(rpc).toHaveBeenCalledWith("decide_application", { p_id: APP, p_accept: false });
     expect(revalidatePath).toHaveBeenCalledWith(`/brand/briefs/${ID}`);
   });
   it("已處理過", async () => {
     rpc.mockResolvedValue({ data: null, error: { code: "55000", message: "application not pending" } });
-    expect(await decideApplicationAction(APP, ID, false)).toEqual({ ok: false, error: "這筆報名已經處理過了" });
+    expect(await rejectApplicationAction(APP, ID)).toEqual({ ok: false, error: "這筆報名已經處理過了" });
   });
 });

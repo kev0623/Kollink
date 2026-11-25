@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { MapPin } from "lucide-react";
-import { decideApplicationAction } from "@/app/brand/briefs/actions";
+import { rejectApplicationAction } from "@/app/brand/briefs/actions";
 import { Avatar } from "@/components/square/Avatar";
 import { isStaleStateMessage } from "@/lib/briefs/errors";
 import { APPLICANT_FILTERS, filterApplicants, proposedPriceLabel, type Applicant, type ApplicantFilter } from "@/lib/briefs/view";
@@ -50,7 +50,7 @@ function ApplicantItem({ a, briefId }: { a: Applicant; briefId: string }) {
     setNotice(null);
     startTransition(async () => {
       try {
-        const res = await decideApplicationAction(a.id, briefId, accept);
+        const res = accept ? { ok: false as const, error: "請重新整理頁面" } : await rejectApplicationAction(a.id, briefId);
         if (!res.ok) {
           if (isStaleStateMessage(res.error)) {
             // 連點或另一個分頁已處理：重新整理即可

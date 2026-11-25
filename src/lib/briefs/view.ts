@@ -408,6 +408,8 @@ export type Applicant = {
   proposedPrice: number | null;
   status: ApplicationStatus;
   createdAt: string;
+  /** 已錄取時的合作案 id（計畫 6） */
+  collaborationId: string | null;
 };
 
 export type ApplicantRow = {
@@ -423,6 +425,7 @@ export type ApplicantRow = {
   proposed_price_twd: number | null;
   status: string;
   created_at: string;
+  collaboration_id?: string | null;
 };
 
 export function toApplicant(r: ApplicantRow): Applicant {
@@ -439,6 +442,7 @@ export function toApplicant(r: ApplicantRow): Applicant {
     proposedPrice: r.proposed_price_twd ?? null,
     status: toApplicationStatus(r.status),
     createdAt: r.created_at,
+    collaborationId: r.collaboration_id ?? null,
   };
 }
 
