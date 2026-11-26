@@ -53,7 +53,11 @@ describe("parseBriefForm", () => {
 
 describe("validateBrief", () => {
   it("完整資料可以發佈", () => expect(validateBrief(ok, "publish", TODAY)).toBeNull());
-  it("草稿可以缺必填", () => expect(validateBrief(EMPTY_BRIEF_INPUT, "draft", TODAY)).toBeNull());
+  it("草稿可以缺案名以外的必填", () => expect(validateBrief({ ...EMPTY_BRIEF_INPUT, title: "夏季新品" }, "draft", TODAY)).toBeNull());
+  it("存成草稿至少要有案名（QA m15：不再產生空白草稿）", () => {
+    expect(validateBrief({ ...EMPTY_BRIEF_INPUT, title: "" }, "draft", TODAY)?.title).toBe("存成草稿前請先填寫案名");
+    expect(validateBrief({ ...EMPTY_BRIEF_INPUT, title: "夏季新品" }, "draft", TODAY)).toBeNull();
+  });
   it("發佈時檢查必填", () => {
     expect(validateBrief(EMPTY_BRIEF_INPUT, "publish", TODAY)).toEqual({
       title: "請填寫案名（60 字以內）", description: "請填寫合作說明", collabTypes: "請至少選一種合作形式",
@@ -62,9 +66,9 @@ describe("validateBrief", () => {
   });
   it("草稿也檢查格式", () => {
     expect(validateBrief({ ...EMPTY_BRIEF_INPUT, title: "字".repeat(61) }, "draft", TODAY)).toEqual({ title: "案名最多 60 字" });
-    expect(validateBrief({ ...EMPTY_BRIEF_INPUT, description: "字".repeat(2001) }, "draft", TODAY)).toEqual({ description: "說明最多 2000 字" });
+    expect(validateBrief({ ...EMPTY_BRIEF_INPUT, title: "夏季新品", description: "字".repeat(2001) }, "draft", TODAY)).toEqual({ description: "說明最多 2000 字" });
     expect(validateBrief({ ...EMPTY_BRIEF_INPUT, title: "a\u0000" }, "draft", TODAY)).toEqual({ title: "含有不允許的特殊字元" });
-    expect(validateBrief({ ...EMPTY_BRIEF_INPUT, deadline: "2026-02-30" }, "draft", TODAY)).toEqual({ deadline: "日期格式不正確" });
+    expect(validateBrief({ ...EMPTY_BRIEF_INPUT, title: "夏季新品", deadline: "2026-02-30" }, "draft", TODAY)).toEqual({ deadline: "日期格式不正確" });
   });
   it("案名 60 字邊界（以 code point 計算）", () => {
     expect(validateBrief({ ...ok, title: "😀".repeat(60) }, "publish", TODAY)).toBeNull();

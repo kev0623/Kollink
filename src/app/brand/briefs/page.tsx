@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import Link from "next/link";
-import { Plus } from "lucide-react";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { btn, chip, row, rows as rowsClass } from "@/components/ui/styles";
 import { BriefStatusBadge } from "@/components/briefs/StatusBadges";
 import { requireRole } from "@/lib/auth/current-user";
 import { loadMyBriefs } from "@/lib/briefs/brand";
@@ -18,13 +20,8 @@ export const metadata: Metadata = { title: "我的招募" };
 export default function BrandBriefsPage({ searchParams }: Props) {
   return (
     <div>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-[32px] font-bold text-ink">我的招募</h1>
-        <Link href="/brand/briefs/new" className="inline-flex h-11 items-center gap-1 rounded-btn bg-ink px-4 font-semibold text-on-ink">
-          <Plus size={18} strokeWidth={1.5} aria-hidden="true" />刊登招募
-        </Link>
-      </div>
-      <div className="mt-6">
+      <PageHeader title="我的招募" action={<Link href="/brand/briefs/new" className={btn.primary}>刊登招募</Link>} />
+      <div>
         <Suspense fallback={<ListSkeleton />}>
           <BriefList searchParams={searchParams} />
         </Suspense>
@@ -41,20 +38,13 @@ async function BriefList({ searchParams }: Props) {
   const all = (await loadMyBriefs(me.id)).map((b) => ({ ...b, display: displayStatusOf(b.status, b.deadline, today) }));
 
   if (all.length === 0) {
-    return (
-      <div className="rounded-card border border-line bg-surface p-8 text-center">
-        <p className="font-semibold text-ink">還沒有招募，刊登第一則吧</p>
-        <Link href="/brand/briefs/new" className="mt-4 inline-flex h-10 items-center rounded-btn bg-ink px-4 text-sm font-semibold text-on-ink">
-          刊登招募
-        </Link>
-      </div>
-    );
+    return <EmptyState text="還沒有招募。刊登第一個招募，讓創作者來報名。" action={{ href: "/brand/briefs/new", label: "刊登招募" }} />;
   }
 
-  const rows = all.filter((b) => brandTabOf(b.display) === tab);
+  const shown = all.filter((b) => brandTabOf(b.display) === tab);
   return (
     <div>
-      <nav aria-label="招募狀態" className="flex gap-2">
+      <nav aria-label="招募狀態" className="flex gap-2 overflow-x-auto pb-1">
         {BRAND_BRIEF_TABS.map((t) => {
           const count = all.filter((b) => brandTabOf(b.display) === t.value).length;
           const active = t.value === tab;
@@ -62,20 +52,22 @@ async function BriefList({ searchParams }: Props) {
             <Link
               key={t.value} href={t.value === "open" ? "/brand/briefs" : `/brand/briefs?tab=${t.value}`}
               aria-current={active ? "page" : undefined}
-              className={`h-9 rounded-full border px-4 text-sm font-semibold leading-9 ${active ? "border-ink bg-ink text-on-ink" : "border-line bg-surface text-ink"}`}
+              className={chip(active)}
             >
-              {t.label} {count}
+              {t.label} <span className="tabular-nums opacity-80">{count}</span>
             </Link>
           );
         })}
       </nav>
-      {rows.length === 0 ? (
-        <p className="mt-6 rounded-card border border-line bg-surface p-8 text-center text-sm text-muted">這裡還沒有招募</p>
+      {shown.length === 0 ? (
+        <div className="mt-4">
+          <EmptyState text="這裡還沒有招募" action={tab === "draft" ? { href: "/brand/briefs/new", label: "刊登招募" } : undefined} />
+        </div>
       ) : (
-        <ul className="mt-4 divide-y divide-line overflow-hidden rounded-card border border-line bg-surface">
-          {rows.map((b) => (
+        <ul className={`mt-4 ${rowsClass}`}>
+          {shown.map((b) => (
             <li key={b.id}>
-              <Link href={`/brand/briefs/${b.id}`} className="block p-4 hover:bg-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ink md:p-5">
+              <Link href={`/brand/briefs/${b.id}`} className={`${row} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-focus`}>
                 <div className="flex items-start justify-between gap-3">
                   <p className="min-w-0 break-words font-semibold text-ink">{b.title || UNTITLED_DRAFT}</p>
                   <BriefStatusBadge status={b.display} />

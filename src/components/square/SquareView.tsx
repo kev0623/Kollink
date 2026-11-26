@@ -3,6 +3,7 @@
 import { useOptimistic, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { LayoutGrid, List } from "lucide-react";
+import { input } from "@/components/ui/styles";
 import { formatNumber } from "@/lib/format";
 import {
   SORT_LABELS, SQUARE_SORTS, activeFilterCount, clearFilters, serializeSquareQuery, squareHref,
@@ -18,7 +19,7 @@ import { useViewMode } from "./useViewMode";
 type Props = { query: SquareQuery; initial: SquarePage; popularTags: string[] };
 
 /**
- * 廣場外框。篩選與排序只存在網址：改變時 router.replace 讓伺服器重新渲染（見計畫 4「設計決定」1）。
+ * 廣場外框。篩選與排序只存在網址：改變時 router.push 讓伺服器重新渲染（上一頁逐步退回篩選）（見計畫 4「設計決定」1）。
  * 篩選 UI 用 useOptimistic 立刻反映；結果在轉換期間保留舊的並降低透明度。
  */
 export function SquareView({ query, initial, popularTags }: Props) {
@@ -31,7 +32,7 @@ export function SquareView({ query, initial, popularTags }: Props) {
   function navigate(next: SquareQuery) {
     startTransition(() => {
       setShown(next);
-      router.replace(squareHref(next), { scroll: false });
+      router.push(squareHref(next), { scroll: false });
     });
   }
 
@@ -43,7 +44,7 @@ export function SquareView({ query, initial, popularTags }: Props) {
     <div className="lg:grid lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-8">
       <aside aria-label="篩選" className="hidden lg:block">{panel("side")}</aside>
       <section aria-label="搜尋結果" className="min-w-0">
-        <div className="mb-4 flex flex-wrap items-center gap-3">
+        <div className="sticky top-0 z-10 -mx-4 mb-4 flex flex-wrap items-center gap-3 border-b border-line bg-bg/95 px-4 py-2 backdrop-blur md:static md:mx-0 md:border-0 md:bg-transparent md:p-0">
           <FilterDrawer count={activeFilterCount(shown)} total={initial.total}>{panel("drawer")}</FilterDrawer>
           <p className="text-sm text-muted" aria-live="polite">共 {formatNumber(initial.total)} 位創作者</p>
           <div className="ml-auto flex items-center gap-2">
@@ -52,7 +53,7 @@ export function SquareView({ query, initial, popularTags }: Props) {
               id="square-sort"
               value={shown.sort}
               onChange={(e) => navigate({ ...shown, sort: e.target.value as SquareSort })}
-              className="h-10 rounded-input border border-line bg-surface px-3 text-sm text-ink"
+              className={input}
             >
               {SQUARE_SORTS.map((s) => <option key={s} value={s}>{SORT_LABELS[s]}</option>)}
             </select>
@@ -77,7 +78,7 @@ export function SquareView({ query, initial, popularTags }: Props) {
 
 function ViewToggle({ view, onChange }: { view: ViewMode; onChange: (v: ViewMode) => void }) {
   const btn = (on: boolean) =>
-    `flex h-9 w-9 items-center justify-center rounded-btn ${on ? "bg-ink text-on-ink" : "text-ink hover:bg-subtle"}`;
+    `flex h-11 w-11 items-center justify-center rounded-btn ${on ? "bg-ink text-on-ink" : "text-ink hover:bg-subtle"}`;
   return (
     <div role="group" aria-label="顯示方式" className="flex gap-0.5 rounded-btn border border-line bg-surface p-0.5">
       <button type="button" aria-pressed={view === "card"} onClick={() => onChange("card")} className={btn(view === "card")}>

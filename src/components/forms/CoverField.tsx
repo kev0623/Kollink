@@ -2,6 +2,8 @@
 
 import { useEffect, useId, useState } from "react";
 import { BriefCover } from "@/components/briefs/BriefCover";
+import { FilePicker } from "@/components/ui/FilePicker";
+import { btn } from "@/components/ui/styles";
 import { createClient } from "@/lib/supabase/client";
 import { uploadErrorMessage } from "@/lib/upload-limits";
 import { BRIEF_COVER_BUCKET, planCoverUpload } from "@/lib/brief-cover";
@@ -75,16 +77,13 @@ export function CoverField({ userId, value, onChange, brandName, brandLogoPath, 
         <BriefCover coverPath={value} brandName={brandName} brandLogoPath={brandLogoPath} />
       </div>
       <div className="mt-2 flex flex-wrap items-center gap-3">
-        <input
-          type="file" className="min-w-0 flex-1" accept="image/png,image/jpeg,image/webp" disabled={busy || disabled}
-          aria-label="上傳封面圖" aria-describedby={note ? noteId : undefined} aria-invalid={note ? true : undefined}
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            e.target.value = "";
-            void onFile(file);
-          }}
+        <FilePicker
+          label={value ? "更換封面" : "選擇封面"} ariaLabel="上傳封面" accept="image/png,image/jpeg,image/webp"
+          busy={busy} disabled={disabled} fileName={value ? "已上傳" : null}
+          describedBy={note ? noteId : undefined} invalid={note ? true : undefined}
+          onFiles={(files) => void onFile(files[0])}
         />
-        {value && <button type="button" disabled={busy || disabled} className="text-sm text-muted" onClick={remove}>移除封面</button>}
+        {value && <button type="button" disabled={busy || disabled} className={btn.ghost} onClick={remove}>移除封面</button>}
       </div>
       <input type="hidden" name="coverPath" value={value ?? ""} />
       {note && <span id={noteId} role={msg ? "status" : undefined} className="mt-1 block text-xs text-danger">{note}</span>}

@@ -4,6 +4,7 @@ import { requireRole } from "@/lib/auth/current-user";
 import { ThemeSelect } from "@/components/theme/ThemeSelect";
 import { HelpLink } from "@/components/shell/HelpLink";
 import { SignOutButton } from "@/components/shell/SignOutButton";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { BrandSettingsForm } from "./BrandSettingsForm";
 
 export const metadata: Metadata = { title: "品牌設定" };
@@ -11,7 +12,7 @@ export const metadata: Metadata = { title: "品牌設定" };
 export default function BrandSettingsPage() {
   return (
     <>
-      <h1 className="mb-6 text-[32px] font-bold text-ink">設定</h1>
+      <PageHeader title="品牌設定" />
       <Suspense fallback={null}>
         <Settings />
       </Suspense>

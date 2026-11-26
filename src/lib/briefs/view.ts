@@ -458,6 +458,16 @@ export function filterApplicants(list: Applicant[], f: ApplicantFilter): Applica
   return f === "all" ? list : list.filter((a) => a.status === f);
 }
 
+export function parseApplicantFilter(v: string | string[] | undefined): ApplicantFilter {
+  const x = Array.isArray(v) ? v[0] : v;
+  return APPLICANT_FILTERS.some((f) => f.value === x) ? (x as ApplicantFilter) : "all";
+}
+
+/** 新的在前；同一時間依 id，順序穩定（QA m16）。不改原陣列。 */
+export function sortApplicants<T extends { id: string; createdAt: string }>(list: T[]): T[] {
+  return [...list].sort((a, b) => (a.createdAt === b.createdAt ? a.id.localeCompare(b.id) : a.createdAt < b.createdAt ? 1 : -1));
+}
+
 export function proposedPriceLabel(p: number | null): string {
   return p === null ? "依招募預算" : formatTwd(p);
 }

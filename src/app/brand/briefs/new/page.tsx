@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import Link from "next/link";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { BriefForm } from "@/components/briefs/BriefForm";
 import { requireRole } from "@/lib/auth/current-user";
 import { todayTw } from "@/lib/briefs/dates";
@@ -14,13 +14,10 @@ export const metadata: Metadata = { title: "刊登招募" };
 export default function NewBriefPage({ searchParams }: Props) {
   return (
     <div className="max-w-3xl">
-      <Link href="/brand/briefs" className="text-sm text-muted">← 我的招募</Link>
-      <h1 className="mt-2 text-[32px] font-bold text-ink">刊登招募</h1>
-      <div className="mt-6">
-        <Suspense fallback={<p className="text-muted">載入中…</p>}>
-          <NewBrief searchParams={searchParams} />
-        </Suspense>
-      </div>
+      <PageHeader title="刊登招募" back={{ href: "/brand/briefs", label: "我的招募" }} />
+      <Suspense fallback={<p className="text-muted">載入中…</p>}>
+        <NewBrief searchParams={searchParams} />
+      </Suspense>
     </div>
   );
 }

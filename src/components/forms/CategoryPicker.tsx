@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { chip } from "@/components/ui/styles";
 import { CATEGORIES } from "@/lib/options";
 
 export function CategoryPicker({ name, initial, error }: { name: string; initial: string[]; error?: string }) {
@@ -16,7 +17,7 @@ export function CategoryPicker({ name, initial, error }: { name: string; initial
           return (
             <button
               key={c} type="button" onClick={() => toggle(c)} aria-pressed={on}
-              className={`rounded-full border min-h-9 px-3 py-1 text-sm font-medium ${on ? "border-ink bg-ink text-on-ink" : "border-line bg-surface"}`}
+              className={chip(on)}
             >
               {c}
             </button>

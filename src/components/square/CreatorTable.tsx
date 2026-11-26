@@ -36,7 +36,7 @@ export function CreatorTable({ items, sort, onSort }: Props) {
                     data-sort={col.sort}
                     onClick={() => onSort(active ? "newest" : col.sort)}
                     title={active ? "改回最新加入" : col.hint}
-                    className={`inline-flex items-center gap-1 rounded-btn hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink ${active ? "font-semibold text-ink" : ""}`}
+                    className={`inline-flex items-center gap-1 rounded-btn hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus ${active ? "font-semibold text-ink" : ""}`}
                   >
                     {col.label}
                     {active && (col.dir === "descending"
@@ -52,12 +52,12 @@ export function CreatorTable({ items, sort, onSort }: Props) {
         </thead>
         <tbody className="divide-y divide-line">
           {items.map((c) => (
-            <tr key={c.userId}>
+            <tr key={c.userId} className="hover:bg-subtle">
               <td className={td}>
                 <div className="flex items-center gap-3">
                   <Avatar path={c.avatarPath} name={c.displayName} size="sm" />
                   <div className="min-w-0">
-                    <Link href={`/c/${c.handle}`} className="font-semibold text-ink hover:underline">{c.displayName}</Link>
+                    <Link href={`/c/${c.handle}`} className="inline-flex min-h-11 items-center font-semibold text-ink hover:underline">{c.displayName}</Link>
                     <p className="text-xs text-muted">@{c.handle}</p>
                   </div>
                 </div>
@@ -71,7 +71,7 @@ export function CreatorTable({ items, sort, onSort }: Props) {
                   <FavoriteButton creatorId={c.userId} name={c.displayName} initial={c.isFavorite} />
                   <Link
                     href={`/c/${c.handle}`}
-                    className="inline-flex h-9 items-center rounded-btn border border-line px-3 text-xs font-semibold text-ink hover:bg-subtle"
+                    className="inline-flex min-h-11 items-center rounded-btn border border-line-strong px-3 text-xs font-semibold text-ink hover:bg-subtle"
                   >
                     查看<span className="sr-only"> {c.displayName}</span>
                   </Link>
