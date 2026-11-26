@@ -371,6 +371,10 @@ select count(*) as refund_required from public.payments where refund_required;  
 8. Google OAuth：Providers → Google 填入用戶端 ID／密鑰；Google Cloud Console 的重新導向 URI 加上 `https://<專案>.supabase.co/auth/v1/callback`。
 9. 排程清理沒被引用的 Storage 物件：`brand-logos`（沒被 `brand_profiles.logo_path` 引用）、`creator-media`（沒被 `creator_profiles.avatar_path`、`creator_portfolio_items.image_path` 引用）`brief-covers`（沒被 `briefs.cover_path` 引用）與 `deliverables`（沒被任何 `collaboration_submissions.file_paths` 引用的，例如上傳後沒有交稿），都只刪超過 24 小時的，見 `docs/superpowers/plans/2026-11-22-foundation-followups.md`。
 
+## 上線前檢查
+
+- [ ] `src/lib/site.ts` 的 `SUPPORT_EMAIL`（與 `SUPPORT_LINE_URL`）已改成真實客服聯絡方式（目前是 `support@example.com` 佔位；/help、停權橫幅、金額上限說明都會顯示它）。
+
 ## 資安修正（全系統體檢）上線
 
 這個版本含兩個 migration（`20261129000100_security_hardening.sql`、`20261129000200_admin_mfa.sql`）與網站程式，**必須一起上線**：
