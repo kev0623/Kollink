@@ -34,6 +34,12 @@ async function Settings() {
         >
           查看我的公開頁
         </Link>
+        <Link
+          href="/creator/me/payout"
+          className="inline-flex h-11 items-center rounded-btn border border-line bg-surface px-6 font-semibold text-ink hover:bg-primary-soft"
+        >
+          收款帳戶
+        </Link>
       </div>
       <CreatorSettingsForm
         displayName={me.profile.displayName} handle={c.handle} igUsername={c.igUsername}

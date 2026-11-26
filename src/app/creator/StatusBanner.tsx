@@ -1,4 +1,5 @@
 import type { CurrentUser } from "@/lib/auth/current-user";
+import { ResubmitButton } from "./ResubmitButton";
 
 export function StatusBanner({ me }: { me: CurrentUser }) {
   if (me.creator?.status === "pending") {
@@ -13,10 +14,25 @@ export function StatusBanner({ me }: { me: CurrentUser }) {
       </div>
     );
   }
+  if (me.creator?.status === "rejected") {
+    return (
+      <div role="status" className="mb-6 rounded-card border border-danger bg-surface p-5 text-sm">
+        <p className="font-bold">審核沒有通過，請修正後重新送審。</p>
+        {me.creator.reviewNote && <p className="mt-1 whitespace-pre-wrap break-words">原因：{me.creator.reviewNote}</p>}
+        {me.verificationCode && (
+          <p className="mt-1">
+            驗證碼 <b className="rounded-btn bg-ink px-2 py-0.5 tracking-widest text-on-ink">{me.verificationCode}</b> 要在 IG 自我介紹裡。
+          </p>
+        )}
+        <ResubmitButton />
+      </div>
+    );
+  }
   if (me.creator?.status === "suspended") {
     return (
-      <div className="mb-6 rounded-card border border-line bg-surface p-5 text-sm">
+      <div role="status" className="mb-6 rounded-card border border-line bg-surface p-5 text-sm">
         <p className="font-bold">帳號已暫停，請聯絡客服。</p>
+        {me.creator.reviewNote && <p className="mt-1 whitespace-pre-wrap break-words">原因：{me.creator.reviewNote}</p>}
       </div>
     );
   }
