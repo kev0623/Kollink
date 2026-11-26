@@ -41,3 +41,15 @@ export async function updateCreatorAction(_prev: FormState, fd: FormData): Promi
       : "你更換了 IG 帳號，需要重新審核；新的驗證碼已顯示在頁面上方",
   };
 }
+
+/** 被退回後重新送審（rejected → pending，計畫 9）。 */
+export async function requestReviewAction(): Promise<{ ok: true } | { ok: false; error: string }> {
+  await requireRole("creator");
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("request_creator_review");
+  if (error) {
+    return { ok: false, error: error.message === "creator status changed" ? "狀態已經更新，請重新整理" : "發生錯誤，請稍後再試" };
+  }
+  revalidatePath("/creator", "layout");
+  return { ok: true };
+}
