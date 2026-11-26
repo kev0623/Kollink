@@ -167,6 +167,29 @@ commit;
 
 本機開發另有「標記已付款（本機）」按鈕（開關與測試快速登入相同，正式環境不會出現、`/api/dev/mark-paid` 回 404），走的也是同一條路。
 
+## 站內訊息（管理後台完成前）
+
+- 品牌在創作者公開頁按「傳訊息」開啟對話；創作者不能主動開啟，只能在已有的對話裡回覆（由品牌傳訊息、錄取或邀請建立）。
+- 訊息含電話、Email、LINE ID 或外部連結時，送出前會提醒；仍可送出，資料庫會自動標記 `flagged_contact`。違規訊息列表是計畫 9 的後台，在那之前用 SQL 查（Supabase Studio 的 SQL Editor，直接複製整段）：
+
+```sql
+select m.created_at at time zone 'Asia/Taipei' as 台灣時間,
+       bp.brand_name as 品牌, cp.handle as 創作者,
+       case when m.sender_id = cv.brand_id then '品牌' else '創作者' end as 發送者,
+       m.body as 內容, m.conversation_id as 對話
+  from public.messages m
+  join public.conversations cv on cv.id = m.conversation_id
+  left join public.brand_profiles bp on bp.user_id = cv.brand_id
+  left join public.creator_profiles cp on cp.user_id = cv.creator_id
+ where m.flagged_contact
+ order by m.created_at desc
+ limit 100;
+```
+
+- 創作者停權（`creator_profiles.status = 'suspended'`，見上方「審核創作者」）時，他的所有對話自動暫停：雙方都看得到歷史訊息，但不能再送。改回 `approved` 就恢復。
+- 頻率限制：每人 1 分鐘最多 20 則訊息；每個品牌 24 小時最多開 30 個新對話。
+- 即時更新用 Supabase Realtime（migration 已把 `messages` 加進 `supabase_realtime` publication，不需要在 Dashboard 另外開）。
+
 ## 正式環境（Hosted Supabase）設定
 
 正式專案：`Kollink`（東京，project ref `gujmnohzmivnaxdxpdjn`）。
@@ -189,9 +212,11 @@ CLI 3.x 的 `db push` 預設推到本機，一定要加 `--remote`。**不要執
 
 交稿檔案的 Storage bucket `deliverables` 由 migration `20261125000200_deliverables.sql` 建立（**私密**、每個檔案 50 MB、只接受 JPG／PNG／WebP／MP4／MOV／PDF；只有該合作案的品牌、創作者與管理員讀得到，畫面用 1 小時的 signed URL），同樣隨 `db push --remote` 一起建好。Supabase 專案的全域檔案上限（Storage → Settings）必須至少 50 MB，否則大檔案會被擋。
 
+站內訊息的即時更新用 Supabase Realtime：migration `20261126000100_messaging_write.sql` 會把 `messages` 加進 `supabase_realtime` publication，隨 `db push --remote` 一起生效。推完後到 Dashboard → Database → Publications 確認 `supabase_realtime` 包含 `messages`。不需要新的環境變數。
+
 `20261124000500_briefs.sql` 會把 `briefs.cover_url` 改名為 `cover_path`。它開頭有保護檢查：**正式資料庫的 `briefs` 只要有任何一列，migration 就會停下來**（錯誤訊息 `briefs has rows …`）。目前沒有任何程式寫入招募，所以應該是 0 筆；如果真的停下來，先確認資料、手動搬移後再推。
 
-**部署順序：先推資料庫，再合併 PR。** Vercel 在 `main` 合併後立刻部署；新版程式會呼叫新 migration 建立的函式（例如計畫 4 的 `search_creators`、計畫 5 的 `save_brief`、`list_opportunities`，`20261124000500_briefs.sql`、`20261124000600_brief_covers.sql`，計畫 6 的 `20261125000100_collab_create.sql`、`20261125000200_deliverables.sql`、`20261125000300_collab_reads.sql`、`20261125000400_collab_review_fixes.sql`），資料庫還沒更新時 `/brand`、`/brand/briefs`、`/creator` 會出錯。所以每次 PR 有新 migration 時，先執行上面的 `npx supabase db push --remote`，確認成功後再合併。計畫 6 起還要在合併前把 CRON_SECRET 加到 Vercel（見「部署（Vercel）」）。
+**部署順序：先推資料庫，再合併 PR。** Vercel 在 `main` 合併後立刻部署；新版程式會呼叫新 migration 建立的函式（例如計畫 4 的 `search_creators`、計畫 5 的 `save_brief`、`list_opportunities`，`20261124000500_briefs.sql`、`20261124000600_brief_covers.sql`，計畫 6 的 `20261125000100_collab_create.sql`、`20261125000200_deliverables.sql`、`20261125000300_collab_reads.sql`、`20261125000400_collab_review_fixes.sql`，計畫 7 的 `20261126000100_messaging_write.sql`、`20261126000200_messaging_reads.sql`、`20261126000300_messaging_review_fixes.sql`），資料庫還沒更新時 `/brand`、`/brand/briefs`、`/creator` 會出錯。所以每次 PR 有新 migration 時，先執行上面的 `npx supabase db push --remote`，確認成功後再合併。計畫 6 起還要在合併前把 CRON_SECRET 加到 Vercel（見「部署（Vercel）」）。
 
 計畫 6 推資料庫前的檢查（只讀，在正式資料庫的 SQL Editor 執行）：
 
