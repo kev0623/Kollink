@@ -63,6 +63,14 @@ describe("VERCEL_ENV=production 防護", () => {
   it("production + prod + 正式商店 → 啟用", () => {
     expect(readEcpayConfig({ ...PROD_REAL, VERCEL_ENV: "production" })?.env).toBe("prod");
   });
+  it("VERCEL=1 且 VERCEL_ENV 為空 → 視為正式環境，stage 停用", () => {
+    expect(readEcpayConfig({ ...STAGE, VERCEL: "1" })).toBeNull();
+    expect(readEcpayConfig({ ...STAGE, VERCEL: "1", VERCEL_ENV: "" })).toBeNull();
+    expect(readEcpayConfig({ ...PROD_REAL, VERCEL: "1" })?.env).toBe("prod");
+  });
+  it("VERCEL=1 但 VERCEL_ENV 是 preview → 不受影響", () => {
+    expect(readEcpayConfig({ ...STAGE, VERCEL: "1", VERCEL_ENV: "preview" })?.env).toBe("stage");
+  });
   it("preview／本機 + stage → 啟用", () => {
     expect(readEcpayConfig({ ...STAGE, VERCEL_ENV: "preview" })?.env).toBe("stage");
     expect(readEcpayConfig({ ...STAGE, VERCEL_ENV: "development" })?.env).toBe("stage");

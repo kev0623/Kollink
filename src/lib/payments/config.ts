@@ -34,6 +34,8 @@ type Env = Record<string, string | undefined>;
 
 export function readEcpayConfig(env: Env = process.env): EcpayConfig | null {
   const mode = env.ECPAY_ENV;
+  // 在 Vercel 上 VERCEL_ENV 讀不到（空值）時保守視為正式環境
+  const isProduction = env.VERCEL_ENV === "production" || (env.VERCEL === "1" && !env.VERCEL_ENV);
   if (mode !== "stage" && mode !== "prod") return null;
   const merchantId = env.ECPAY_MERCHANT_ID ?? "";
   const hashKey = env.ECPAY_HASH_KEY ?? "";
@@ -42,10 +44,10 @@ export function readEcpayConfig(env: Env = process.env): EcpayConfig | null {
   // 正式模式不能用公開的測試商店（否則等於任何人都能偽造付款通知）
   if (mode === "prod" && merchantId === ECPAY_STAGE_MERCHANT_ID) return null;
   // 正式模式或 Vercel Production：公開的測試金鑰／測試商店一律不可用
-  if ((mode === "prod" || env.VERCEL_ENV === "production")
+  if ((mode === "prod" || isProduction)
       && (PUBLIC_TEST_HASH_KEYS.includes(hashKey) || PUBLIC_TEST_MERCHANT_IDS.includes(merchantId))) return null;
   // 使用者決定（2026-11-26）：Vercel Production 拿到綠界正式金鑰前不開付款；stage 或測試商店一律視為未設定
-  if (env.VERCEL_ENV === "production" && (mode !== "prod" || merchantId === ECPAY_STAGE_MERCHANT_ID)) return null;
+  if (isProduction && (mode !== "prod" || merchantId === ECPAY_STAGE_MERCHANT_ID)) return null;
 
   let url: URL;
   try {

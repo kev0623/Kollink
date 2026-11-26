@@ -118,7 +118,7 @@ commit;
 
 測試環境的值是綠界公開的（https://developers.ecpay.com.tw/2856/）。**正式環境的值不要寫進 repo、文件或對話。** 少任何一個變數時「確認並付款」會停用並顯示說明；`ECPAY_ENV=prod` 搭配測試商店 3002607 也會停用。
 
-**目前決定：正式站在拿到綠界正式金鑰前不開付款。** Vercel 的 Production 與 Preview 都**不要**設任何 `ECPAY_*`（測試金鑰只在本機驗證）。程式另有一道保險：在 Vercel 的正式環境（`VERCEL_ENV=production`）上，只要 `ECPAY_ENV` 不是 `prod`、或用到公開的測試商店，一律視為「未設定」（付款按鈕停用、通知 route 不接受測試環境的簽章）。這道保險靠 Vercel 的系統環境變數 `VERCEL_ENV`，所以專案設定的「Enable access to System Environment Variables」必須保持開啟（預設就是開）。
+**目前決定：正式站在拿到綠界正式金鑰前不開付款。** Vercel 的 Production 與 Preview 都**不要**設任何 `ECPAY_*`（測試金鑰只在本機驗證）。程式另有一道保險：在 Vercel 的正式環境（`VERCEL_ENV=production`，或在 Vercel 上 `VERCEL=1` 且 `VERCEL_ENV` 為空）上，只要 `ECPAY_ENV` 不是 `prod`、或用到公開的測試商店，一律視為「未設定」（付款按鈕停用、通知 route 不接受測試環境的簽章）。這道保險靠 Vercel 的系統環境變數 `VERCEL_ENV`，所以專案設定的「Enable access to System Environment Variables」必須保持開啟（預設就是開）；即使 `VERCEL_ENV` 讀不到，只要 `VERCEL=1` 也會當成正式環境。
 
 **絕對不要把測試金鑰放在任何連到正式 Supabase 專案的部署上**：測試金鑰是公開的，任何人都能偽造付款通知。
 
@@ -134,7 +134,7 @@ commit;
 
 SQL 都要**整段一起執行**（`begin` 到 `commit`），只改 `填入…` 的地方，直接複製、不要手打。案號格式不對或找不到剛好一個合作案時會報錯，整段不會生效。
 
-**標記已付款**（`awaiting_payment` → `awaiting_submission`）。和綠界走同一條路：先建付款單，再呼叫 `record_payment_success`（不要直接改狀態，資料庫也不允許）：
+**標記已付款：超過線上付款上限／線下付款專用**（`awaiting_payment` → `awaiting_submission`）。為這個合作案建一張 `MAN` 開頭的付款單再呼叫 `record_payment_success`（不要直接改狀態，資料庫也不允許）：先建付款單，再呼叫 `record_payment_success`（不要直接改狀態，資料庫也不允許）：
 ```sql
 begin;
 set local role service_role;
@@ -169,6 +169,22 @@ select c.status from public.collaborations c where c.id::text like current_setti
 commit;
 ```
 `result` 是 `paid`、最後的 `status` 是 `awaiting_submission` 就完成了。沒有任何列：合作案已經不是「等待付款」。
+
+**標記已付款：綠界已扣款、但我們沒收到通知**（已在綠界後台確認該筆交易成功）。付款單本來就存在，直接用它的單號（`KL` 開頭，見合作案詳情的付款單或 `payments` 表）。替換三個 `填入…` 的值，整段直接複製、不要手打：
+```sql
+begin;
+set local role service_role;
+select set_config('request.jwt.claims', '{"role":"service_role"}', true);
+select public.record_payment_success(
+  '填入KL開頭的付款單號',
+  填入金額,
+  '填入綠界交易編號',
+  '{"source":"manual"}'::jsonb,
+  'prod'
+) as result;
+commit;
+```
+`result` 是 `paid` 就完成了；金額與付款單不符時函式會記錄異常而不是標記已付款。
 
 ### 撥款
 
@@ -303,7 +319,7 @@ CLI 3.x 的 `db push` 預設推到本機，一定要加 `--remote`。**不要執
 
 `20261124000500_briefs.sql` 會把 `briefs.cover_url` 改名為 `cover_path`。它開頭有保護檢查：**正式資料庫的 `briefs` 只要有任何一列，migration 就會停下來**（錯誤訊息 `briefs has rows …`）。目前沒有任何程式寫入招募，所以應該是 0 筆；如果真的停下來，先確認資料、手動搬移後再推。
 
-**部署順序：先推資料庫，再合併 PR。** Vercel 在 `main` 合併後立刻部署；新版程式會呼叫新 migration 建立的函式（例如計畫 4 的 `search_creators`、計畫 5 的 `save_brief`、`list_opportunities`，`20261124000500_briefs.sql`、`20261124000600_brief_covers.sql`，計畫 6 的 `20261125000100_collab_create.sql`、`20261125000200_deliverables.sql`、`20261125000300_collab_reads.sql`、`20261125000400_collab_review_fixes.sql`，計畫 7 的 `20261126000100_messaging_write.sql`、`20261126000200_messaging_reads.sql`、`20261126000300_messaging_review_fixes.sql`、`20261126000400_messaging_creator_first_message.sql`，計畫 8 的 `20261127000100_payment_orders.sql`），資料庫還沒更新時 `/brand`、`/brand/briefs`、`/creator` 會出錯。所以每次 PR 有新 migration 時，先執行上面的 `npx supabase db push --remote`，確認成功後再合併。計畫 6 起還要在合併前把 CRON_SECRET 加到 Vercel（見「部署（Vercel）」）。計畫 8 的付款在拿到綠界正式金鑰前不在正式站開啟：Vercel 不設 `ECPAY_*`，付款按鈕會停用（見「合作案的付款與撥款」）。
+**部署順序：先推資料庫，再合併 PR。** Vercel 在 `main` 合併後立刻部署；新版程式會呼叫新 migration 建立的函式（例如計畫 4 的 `search_creators`、計畫 5 的 `save_brief`、`list_opportunities`，`20261124000500_briefs.sql`、`20261124000600_brief_covers.sql`，計畫 6 的 `20261125000100_collab_create.sql`、`20261125000200_deliverables.sql`、`20261125000300_collab_reads.sql`、`20261125000400_collab_review_fixes.sql`，計畫 7 的 `20261126000100_messaging_write.sql`、`20261126000200_messaging_reads.sql`、`20261126000300_messaging_review_fixes.sql`、`20261126000400_messaging_creator_first_message.sql`，計畫 8 的 `20261127000100_payment_orders.sql`、`20261127000200_payment_review_fixes.sql`），資料庫還沒更新時 `/brand`、`/brand/briefs`、`/creator` 會出錯。所以每次 PR 有新 migration 時，先執行上面的 `npx supabase db push --remote`，確認成功後再合併。計畫 6 起還要在合併前把 CRON_SECRET 加到 Vercel（見「部署（Vercel）」）。計畫 8 的付款在拿到綠界正式金鑰前不在正式站開啟：Vercel 不設 `ECPAY_*`，付款按鈕會停用（見「合作案的付款與撥款」）。
 
 計畫 6 推資料庫前的檢查（只讀，在正式資料庫的 SQL Editor 執行）：
 

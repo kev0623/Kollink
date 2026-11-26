@@ -219,7 +219,7 @@
 - 金額不符等異常：記錄並警示，不讓綠界一直重送。→ 已完成（計畫 8：`payment_anomalies`、audit `payment_anomaly`、Vercel log）
 - 退款：`resolve_payment_refund` 清除 `refund_required`；`failed → paid` 允許（以綠界最後的成功通知為準）。→ 已完成（計畫 8）
 - `raw_notify` 白名單；`provider_trade_no` 不接受空白；金額上限。→ 已完成（計畫 8）
-- route 單元測試（mock `createAdminClient`）；真實沙盒通知的簽章測試。→ 已完成（計畫 8；真實樣本來自 E2E 的 OrderResultURL，見 `src/lib/payments/stage-sample.test.ts`；E2E 沒攔到時改在正式站煙霧測試取得）
+- route 單元測試（mock `createAdminClient`）→ 已完成（計畫 8）。真實沙盒通知的簽章測試 → **未完成**：`src/lib/payments/stage-sample.test.ts` 不存在；E2E 用自行簽章的內容，因為綠界測試環境結帳頁出現「測試環境」提示視窗，沒走完。
 - 「確認並付款」建單並導向綠界。→ 已完成（計畫 8）
 - 帳號刪除改用 soft delete → 移到計畫 9（目前沒有刪除帳號功能）。
 - README 的人工標記已付款 SQL：保留為備用，計畫 9 後台完成後移除。
@@ -230,15 +230,17 @@
   - 放棄的付款單永遠是 `pending`，沒有清理；一小時 10 張的頻率限制也把放棄的單算進去。
   - 退款只記錄，沒有串綠界的退款 API；ATM 付款的退款要另外轉帳。
   - `failed` 狀態目前沒有程式寫入（付款失敗的通知只留 log）。
-  - `payment_anomaly` 的 audit note 是英文技術字串，畫面不顯示，但 `list_collaboration_events` 會回傳給參與者。
-  - ATM 轉帳資訊只顯示在品牌端；RLS 允許創作者讀付款單的 ATM 欄位（不是敏感資料）。
+  - ATM 轉帳資訊只顯示在品牌端畫面；創作者可透過 PostgREST 的欄位授權直接讀到 `payments` 的 ATM 欄位（UI 有去除，但 API 讀得到）。若要完全不給創作者，需改成不授權這些欄位。
   - 沒有付款完成的 Email 通知；品牌與創作者要重新整理才看到狀態改變。
   - 超過上限時只顯示「請聯絡平台」，沒有站內的聯絡管道。
   - 正式站不開付款（使用者決定）：上線時才設 Production 的 `ECPAY_*` 與 `SITE_URL`；程式保險靠 `VERCEL_ENV`，需保持 Vercel 系統環境變數開啟。
-  - `merchant_trade_no` 若撞號（`23505`）目前沒有重試，使用者會看到錯誤、再按一次即可。
-  - 正式環境保險應該也擋掉其他綠界公開測試金鑰組（3365120、3002599）與開頭為 0 的特店編號（合併前可能就會修）。
-  - `buildCheckoutForm` 的輸入驗證（防禦性檢查）。
   - 本機 http 收不到綠界的 ReturnURL（綠界只送 80／443 埠）：之後用通道或預覽部署驗證真實通知。
+  - 取得真實綠界簽章的樣本：在 Preview 部署（只連本機或非正式的 Supabase）取得真實簽章的 ReturnURL／PaymentInfoURL 樣本，或從第一筆正式金鑰的小額正式付款取得，加成 fixture 測試（`stage-sample.test.ts`）。
+  - 付款方式的 radio 觸控目標偏小，需放大。
+  - `provider_env` 可能被後續通知覆寫；建單時就應記錄該單的環境。
+  - bfcache（上一頁還原）後的按鈕狀態重置沒有 E2E 測試。
+  - E2E 沒有走完綠界測試環境的信用卡結帳（只用簽好的通知驗證）。
+  - 上線前向綠界確認單筆 NT$200,000 上限。
 
 ### 9. 管理後台
 - 管理員目前只能讀取。需要 `set_creator_status()`（definer 函式，檢查 `is_admin()`），以及取消或爭議處理的狀態轉換。
