@@ -1,4 +1,5 @@
 import { actionCardCopy, reviewCountdown, type Collab, type CollabSide } from "@/lib/collabs/view";
+import { textLink } from "@/components/ui/styles";
 import type { SubmissionView } from "@/lib/collabs/load";
 import type { PaymentAvailability } from "@/lib/payments/config";
 import type { PaymentSummary } from "@/lib/payments/view";
@@ -29,7 +30,7 @@ export function ActionCard({ c, side, uid, latest, nowMs, devPaymentEnabled, pay
   const base = actionCardCopy(c.status, side, adminCancelled, fromApplication, payoutPrompt === true && side === "creator");
   // 超過線上付款上限：不能選信用卡或 ATM，卡片文字改成線下付款
   const copy = offlineOnly && c.status === "awaiting_payment" && side === "brand"
-    ? { ...base, title: "輪到你：安排線下付款", body: "這筆金額超過線上付款上限，請依下方說明聯絡平台。款項由平台保管，創作者交稿並發佈後才撥款。" }
+    ? { ...base, title: "輪到你：安排線下付款", body: "款項由平台保管，創作者交稿並發佈後才撥款。" }
     : base;
   const countdown = c.status === "in_review" ? reviewCountdown(c.reviewDueAt, nowMs) : null;
   return (
@@ -39,7 +40,7 @@ export function ActionCard({ c, side, uid, latest, nowMs, devPaymentEnabled, pay
       {countdown && <p className="mt-2 text-sm font-semibold text-ink">{countdown}</p>}
       {c.status === "awaiting_payout" && c.publishedUrl && (
         <p className="mt-2 min-w-0 break-all text-sm">
-          貼文：<a href={c.publishedUrl} target="_blank" rel="noopener noreferrer" className="font-semibold text-ink underline underline-offset-4 hover:text-accent">{c.publishedUrl}</a>
+          貼文：<a href={c.publishedUrl} target="_blank" rel="noopener noreferrer" className={`${textLink} break-all`}>{c.publishedUrl}</a>
         </p>
       )}
       {side === "brand" && c.status === "in_review" && latest && latest.files.length > 0 && (

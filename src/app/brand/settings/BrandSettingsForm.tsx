@@ -1,10 +1,10 @@
 "use client";
 import { useActionState, useState } from "react";
-import { Field, inputClass } from "@/components/forms/Field";
+import { Field } from "@/components/forms/Field";
 import { LogoField } from "@/components/forms/LogoField";
 import { ErrorText } from "@/components/ui/ErrorText";
 import { Notice } from "@/components/ui/Notice";
-import { btn, cardPad } from "@/components/ui/styles";
+import { btn, cardPad, input } from "@/components/ui/styles";
 import { INDUSTRIES } from "@/lib/options";
 import type { FormState } from "@/lib/auth/account-errors";
 import { updateBrandAction } from "./actions";
@@ -29,12 +29,12 @@ export function BrandSettingsForm({ userId, brandName, industry, logoPath }: Pro
   const k = JSON.stringify(state.values ?? [brandName, industry]);
   return (
     <form action={action} noValidate onChange={() => setHideOk(true)} className={`max-w-xl space-y-4 ${cardPad}`}>
-      <Field label="品牌名稱" error={fe.brandName}>
-        {(c) => <input key={k} {...c} name="brandName" maxLength={60} defaultValue={val("brandName", brandName)} className={inputClass} />}
+      <Field label="品牌名稱" mark="required" error={fe.brandName}>
+        {(c) => <input key={k} {...c} name="brandName" maxLength={60} defaultValue={val("brandName", brandName)} className={input} />}
       </Field>
-      <Field label="產業" error={fe.industry}>
+      <Field label="產業" mark="required" error={fe.industry}>
         {(c) => (
-          <select key={k} {...c} name="industry" defaultValue={val("industry", industry ?? "")} className={inputClass}>
+          <select key={k} {...c} name="industry" defaultValue={val("industry", industry ?? "")} className={input}>
             <option value="" disabled>請選擇</option>
             {INDUSTRIES.map((i) => <option key={i} value={i}>{i}</option>)}
           </select>

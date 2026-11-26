@@ -91,14 +91,15 @@ export function MfaForm({ mode, factorId, next }: Props) {
       )}
       <label htmlFor="mfa-code" className="sr-only">驗證碼</label>
       <input
-        id="mfa-code" ref={codeRef} inputMode="numeric" autoComplete="one-time-code" pattern="\d{6}" maxLength={TOTP_LENGTH} required
+        id="mfa-code" ref={codeRef} inputMode="numeric" autoComplete="one-time-code" maxLength={TOTP_LENGTH} aria-required="true"
+        aria-invalid={error ? true : undefined} aria-describedby={error ? "mfa-error" : undefined}
         value={code} onChange={(e) => setCode(toOtpCode(e.target.value, TOTP_LENGTH))} placeholder="6 位數驗證碼"
         disabled={!activeFactorId} className={`${input} tracking-widest`}
       />
       <button type="submit" disabled={pending || !activeFactorId} className={`${btn.primary} w-full`}>
         {mode === "enroll" ? "完成綁定" : "驗證"}
       </button>
-      <ErrorText message={error} />
+      <ErrorText id="mfa-error" message={error} />
     </form>
   );
 }

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { FormSkeleton } from "@/components/ui/Skeleton";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { BriefForm } from "@/components/briefs/BriefForm";
 import { requireRole } from "@/lib/auth/current-user";
@@ -15,7 +16,7 @@ export default function NewBriefPage({ searchParams }: Props) {
   return (
     <div className="max-w-3xl">
       <PageHeader title="刊登招募" back={{ href: "/brand/briefs", label: "我的招募" }} />
-      <Suspense fallback={<p className="text-muted">載入中…</p>}>
+      <Suspense fallback={<FormSkeleton fields={3} steps />}>
         <NewBrief searchParams={searchParams} />
       </Suspense>
     </div>

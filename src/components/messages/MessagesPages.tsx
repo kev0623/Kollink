@@ -3,6 +3,7 @@ import { requireRole } from "@/lib/auth/current-user";
 import { todayTw } from "@/lib/briefs/dates";
 import { isUuid } from "@/lib/briefs/query";
 import { loadMyConversations, loadThread } from "@/lib/messages/load";
+import type { CollabStatus } from "@/lib/collabs/view";
 import type { MessageSide } from "@/lib/messages/view";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { ConversationList } from "./ConversationList";
@@ -10,7 +11,7 @@ import { LiveRefresh } from "./LiveRefresh";
 import { ThreadHeader } from "./ThreadHeader";
 import { ThreadView } from "./ThreadView";
 
-const ENDED: readonly string[] = ["completed", "declined", "cancelled"];
+const ENDED: readonly CollabStatus[] = ["completed", "declined", "cancelled"];
 
 /**
  * 桌面左邊列表、右邊內容；手機只顯示其中一邊（列表頁顯示列表，對話頁顯示對話）。

@@ -95,9 +95,11 @@ function BrandPayment({ collabId, status, fromApplication, devPaymentEnabled, pa
     : "取消後這個合作案就結束了，不能復原。確定要取消嗎？";
   return (
     <div className="space-y-3">
-      {status === "awaiting_payment" && offlineOnly && (
+      {offlineOnly && (
         <Notice tone="warning" title="這筆要線下付款">
-          金額超過線上付款上限 {formatTwd(PAYMENT_MAX_TWD)}，請聯絡平台安排匯款；平台確認入帳後會自動進入交稿。
+          {status === "invited"
+            ? `金額超過線上付款上限 ${formatTwd(PAYMENT_MAX_TWD)}。創作者接受後無法線上付款，需要聯絡平台安排匯款；不想線下付款的話，可以先撤回、改低金額後重新發出。`
+            : `金額超過線上付款上限 ${formatTwd(PAYMENT_MAX_TWD)}，請聯絡平台安排匯款；平台確認入帳後會自動進入交稿。`}
           <div><SupportLink subject="線下付款" /></div>
         </Notice>
       )}

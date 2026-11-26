@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { ApplicantList } from "@/components/briefs/ApplicantList";
 import { BriefDetailView } from "@/components/briefs/BriefDetailView";
 import { BriefOwnerActions } from "@/components/briefs/BriefOwnerActions";
+import { DetailSkeleton } from "@/components/ui/Skeleton";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { BriefStatusBadge } from "@/components/briefs/StatusBadges";
@@ -22,7 +23,7 @@ export const metadata: Metadata = { title: "招募詳情" };
 
 export default function BrandBriefPage({ params, searchParams }: Props) {
   return (
-    <Suspense fallback={<p className="text-muted">載入中…</p>}>
+    <Suspense fallback={<DetailSkeleton />}>
       <BriefDetail params={params} searchParams={searchParams} />
     </Suspense>
   );
@@ -42,23 +43,22 @@ async function BriefDetail({ params, searchParams }: Props) {
 
   return (
     <div className="space-y-6">
-      <header>
+      <div>
         <PageHeader
+          tight
           title={brief.title || UNTITLED_DRAFT}
           back={{ href: "/brand/briefs", label: "我的招募" }}
           description={
-            <div className="space-y-2">
-              <p className="flex flex-wrap items-center gap-x-4 gap-y-1">
-                <BriefStatusBadge status={display} />
-                <span className="font-semibold text-accent">{rewardLabel(brief)}</span>
-                <span>{brief.deadline ? `截止 ${deadlineText(brief.status, brief.deadline, today)}` : "未設定截止日"}</span>
-                {brief.status !== "draft" && <span>報名 {counted} 人</span>}
-              </p>
-            </div>
+            <p className="flex flex-wrap items-center gap-x-4 gap-y-1">
+              <BriefStatusBadge status={display} />
+              <span className="font-semibold text-accent">{rewardLabel(brief)}</span>
+              <span>{brief.deadline ? `截止 ${deadlineText(brief.status, brief.deadline, today)}` : "未設定截止日"}</span>
+              {brief.status !== "draft" && <span>報名 {counted} 人</span>}
+            </p>
           }
         />
-        <div className="-mt-2"><BriefOwnerActions briefId={brief.id} display={display} /></div>
-      </header>
+        <BriefOwnerActions briefId={brief.id} display={display} />
+      </div>
 
       <details className="rounded-card border border-line bg-surface">
         <summary className="cursor-pointer p-4 text-sm font-semibold text-ink">查看招募內容（創作者看到的樣子）</summary>

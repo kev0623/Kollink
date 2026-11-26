@@ -18,7 +18,9 @@ export function ThreadHeader({ side, c, collabs }: { side: MessageSide; c: Conve
           <span className="sr-only">回到訊息列表</span>
         </Link>
         <Counterpart side={side} name={other.name} imagePath={other.imagePath} />
-        <h2 className="min-w-0 flex-1 truncate font-semibold text-ink">{other.name}</h2>
+        {/* 手機的對話頁沒有「訊息」標題（MessagesLayout 把它藏起來），所以這裡是 h1；桌面版頁面已有 h1，這裡用 h2 */}
+        <h1 className="min-w-0 flex-1 truncate font-semibold text-ink md:hidden">{other.name}</h1>
+        <h2 className="hidden min-w-0 flex-1 truncate font-semibold text-ink md:block">{other.name}</h2>
         {other.handle && !c.closed && (
           <Link href={`/c/${other.handle}`} className="inline-flex min-h-11 shrink-0 items-center text-xs text-muted underline-offset-2 hover:underline">查看公開頁</Link>
         )}
@@ -27,7 +29,7 @@ export function ThreadHeader({ side, c, collabs }: { side: MessageSide; c: Conve
         <ul aria-label="這個對話的合作案" className="relative mt-1 flex gap-2 overflow-x-auto">
           {collabs.map((k) => (
             <li key={k.id} className="shrink-0">
-              <Link href={`${collabBase}/${k.id}`} className="inline-flex min-h-11 max-w-60 items-center truncate rounded-btn bg-subtle px-3 text-xs text-ink hover:bg-line">
+              <Link href={`${collabBase}/${k.id}`} className="inline-flex min-h-11 max-w-60 items-center truncate rounded-btn bg-subtle px-3 text-xs text-ink hover:bg-subtle-hover">
                 <span className="truncate">{k.title}・{COLLAB_STATUS_LABEL[k.status]}</span>
               </Link>
             </li>

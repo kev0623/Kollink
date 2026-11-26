@@ -8,6 +8,7 @@ import { adminNextPath } from "@/lib/auth/admin-next";
 import { createClient } from "@/lib/supabase/server";
 import { SignOutButton } from "@/components/shell/SignOutButton";
 import { SITE_NAME } from "@/lib/site";
+import { FormSkeleton } from "@/components/ui/Skeleton";
 import { cardPad, h1 } from "@/components/ui/styles";
 
 type SP = Promise<Record<string, string | string[] | undefined>>;
@@ -21,7 +22,7 @@ export default function AdminMfaPage({ searchParams }: { searchParams: SP }) {
     <main className="mx-auto max-w-md px-4 py-8 md:py-16">
       <div className={cardPad}>
         <h1 className={h1}>{SITE_NAME} 管理後台</h1>
-        <Suspense fallback={<p className="mt-6 text-muted">載入中…</p>}>
+        <Suspense fallback={<div className="mt-6"><FormSkeleton fields={1} /></div>}>
           <Content searchParams={searchParams} />
         </Suspense>
         <div className="mt-6 text-center"><SignOutButton /></div>

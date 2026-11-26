@@ -11,6 +11,7 @@
   --color-panel: #131C31;
   --color-surface: #1A2540;
   --color-subtle: #24304F;
+  --color-subtle-hover: #33426A;
   --color-line: #2A3654;
   --color-line-strong: #62739A;
   --color-ink: #EEF1F7;
@@ -45,6 +46,7 @@
   --color-panel: #E9EDF4;
   --color-surface: #FFFFFF;
   --color-subtle: #EEF1F6;
+  --color-subtle-hover: #DDE3EE;
   --color-line: #D5DBE7;
   --color-line-strong: #7D88A0;
   --color-ink: #0D1424;
@@ -74,6 +76,7 @@
     --color-panel: #E9EDF4;
     --color-surface: #FFFFFF;
     --color-subtle: #EEF1F6;
+    --color-subtle-hover: #DDE3EE;
     --color-line: #D5DBE7;
     --color-line-strong: #7D88A0;
     --color-ink: #0D1424;

@@ -10,7 +10,7 @@ import { Pagination } from "@/components/admin/Pagination";
 import { ReviewButton } from "@/components/admin/ReviewButton";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { PageHeader } from "@/components/ui/PageHeader";
-import { rows } from "@/components/ui/styles";
+import { rows, textLink } from "@/components/ui/styles";
 
 type Props = { searchParams: Promise<SearchParams> };
 
@@ -54,7 +54,7 @@ async function Section({ searchParams }: Props) {
                 <span className="font-semibold">{m.brandName}</span>
                 <span className="text-muted"> ↔ </span>
                 {m.creatorHandle ? (
-                  <Link href={adminHref("/admin/creators", { status: "all", q: m.creatorHandle })} className="font-semibold text-ink underline underline-offset-4 hover:text-accent">
+                  <Link href={adminHref("/admin/creators", { status: "all", q: m.creatorHandle })} className={textLink}>
                     @{m.creatorHandle}
                   </Link>
                 ) : <span className="font-semibold">{m.creatorName}</span>}

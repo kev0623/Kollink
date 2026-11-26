@@ -108,7 +108,6 @@ export function ThreadView({ conversationId, meId, side, initialMessages, initia
           </div>
         )}
         {error && <p role="alert" className="mb-3 text-center text-sm text-danger">{error}</p>}
-        {collabsEnded && <Notice tone="info" className="mb-3">合作已結束，訊息仍會保留。</Notice>}
         {messages.length === 0 ? (
           <EmptyState text="還沒有訊息，打聲招呼吧。" />
         ) : (
@@ -127,7 +126,10 @@ export function ThreadView({ conversationId, meId, side, initialMessages, initia
       {closed ? (
         <Notice tone="warning" className="shrink-0">{closedNotice(side)}</Notice>
       ) : (
-        <Composer conversationId={conversationId} onSent={(m) => setMessages((cur) => mergeMessages(cur, [m]))} />
+        <>
+          {collabsEnded && <p className="-mb-1 shrink-0 px-1 text-sm text-muted">合作已結束，訊息仍會保留。</p>}
+          <Composer conversationId={conversationId} onSent={(m) => setMessages((cur) => mergeMessages(cur, [m]))} />
+        </>
       )}
     </div>
   );

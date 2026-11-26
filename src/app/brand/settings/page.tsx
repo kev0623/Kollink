@@ -4,6 +4,7 @@ import { requireRole } from "@/lib/auth/current-user";
 import { ThemeSelect } from "@/components/theme/ThemeSelect";
 import { HelpLink } from "@/components/shell/HelpLink";
 import { SignOutButton } from "@/components/shell/SignOutButton";
+import { FormSkeleton } from "@/components/ui/Skeleton";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { BrandSettingsForm } from "./BrandSettingsForm";
 
@@ -13,13 +14,13 @@ export default function BrandSettingsPage() {
   return (
     <>
       <PageHeader title="品牌設定" />
-      <Suspense fallback={null}>
+      <Suspense fallback={<FormSkeleton fields={2} />}>
         <Settings />
       </Suspense>
       <section aria-labelledby="account-title" className="mt-10 max-w-xl space-y-3 border-t border-line pt-6">
         <h2 id="account-title" className="text-lg font-bold text-ink">外觀與帳號</h2>
         <ThemeSelect />
-        <div className="flex flex-wrap gap-2"><HelpLink /><SignOutButton /></div>
+        <div className="-ml-3 flex flex-wrap gap-2"><HelpLink /><SignOutButton /></div>
       </section>
     </>
   );

@@ -7,6 +7,7 @@ import { CREATOR_MEDIA_BUCKET, creatorMediaUrl, planMediaUpload } from "@/lib/cr
 import { MAX_PORTFOLIO } from "@/lib/validation/creator-profile";
 import { SavedMark, UnsavedBadge } from "@/components/forms/UnsavedBadge";
 import { useUnsavedChanges } from "@/components/forms/useUnsavedChanges";
+import { LeaveDialog } from "@/components/forms/LeaveDialog";
 import { ErrorText } from "@/components/ui/ErrorText";
 import { FilePicker } from "@/components/ui/FilePicker";
 import { btn, cardPad, input } from "@/components/ui/styles";
@@ -41,7 +42,7 @@ export function PortfolioForm({ userId, initial }: { userId: string; initial: Po
   }, {});
   const headingId = useId();
   const dirty = JSON.stringify(rows) !== saved;
-  useUnsavedChanges(dirty);
+  const leaveGuard = useUnsavedChanges(dirty);
 
   async function onFile(file: File | undefined) {
     if (!file) return;
@@ -109,57 +110,60 @@ export function PortfolioForm({ userId, initial }: { userId: string; initial: Po
   const error = state.fieldErrors?.portfolio ?? state.formError;
   const noteId = useId();
   return (
-    <form action={action} noValidate className={`${cardPad} max-w-2xl space-y-5`}>
-      <div>
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h3 id={headingId} className="text-lg font-bold text-ink">作品（最多 {MAX_PORTFOLIO} 張）</h3>
-          <UnsavedBadge show={dirty} />
+    <>
+      <form action={action} noValidate className={`${cardPad} max-w-2xl space-y-5`}>
+        <div>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h3 id={headingId} className="text-lg font-bold text-ink">作品（最多 {MAX_PORTFOLIO} 張）</h3>
+            <UnsavedBadge show={dirty} />
+          </div>
+          <p className="mt-1 text-sm text-muted">第一張排在最前面。每張可以附一個 IG 貼文連結（選填）。沒有作品時公開頁不顯示這個區塊。</p>
         </div>
-        <p className="mt-1 text-sm text-muted">第一張排在最前面。每張可以附一個 IG 貼文連結（選填）。沒有作品時公開頁不顯示這個區塊。</p>
-      </div>
-      {rows.length > 0 && (
-        <ol aria-labelledby={headingId} className="space-y-3">
-          {rows.map((row, i) => (
-            <li key={row.imagePath} className="flex gap-3 rounded-input border border-line p-3">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={creatorMediaUrl(row.imagePath) ?? undefined} alt={`作品 ${i + 1}`} className="h-20 w-20 shrink-0 rounded-input object-cover" />
-              <div className="min-w-0 flex-1 space-y-2">
-                <input
-                  aria-label={`作品 ${i + 1} 的 IG 貼文連結（選填）`} placeholder="https://instagram.com/p/…"
-                  inputMode="url" value={row.linkUrl} onChange={(e) => setLink(i, e.target.value)} className={input}
-                />
-                <div className="flex flex-wrap gap-1">
-                  <button type="button" className={btn.icon} disabled={i === 0 || pending} onClick={() => move(i, -1)}>
-                    <ArrowUp size={18} strokeWidth={1.5} aria-hidden="true" /><span className="sr-only">上移第 {i + 1} 個作品</span>
-                  </button>
-                  <button type="button" className={btn.icon} disabled={i === rows.length - 1 || pending} onClick={() => move(i, 1)}>
-                    <ArrowDown size={18} strokeWidth={1.5} aria-hidden="true" /><span className="sr-only">下移第 {i + 1} 個作品</span>
-                  </button>
-                  <button type="button" className={`${btn.icon} text-danger hover:bg-danger-soft`} disabled={pending} onClick={() => removeRow(i)}>
-                    <Trash2 size={18} strokeWidth={1.5} aria-hidden="true" /><span className="sr-only">刪除第 {i + 1} 個作品</span>
-                  </button>
+        {rows.length > 0 && (
+          <ol aria-labelledby={headingId} className="space-y-3">
+            {rows.map((row, i) => (
+              <li key={row.imagePath} className="flex gap-3 rounded-input border border-line p-3">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={creatorMediaUrl(row.imagePath) ?? undefined} alt={`作品 ${i + 1}`} className="h-20 w-20 shrink-0 rounded-input object-cover" />
+                <div className="min-w-0 flex-1 space-y-2">
+                  <input
+                    aria-label={`作品 ${i + 1} 的 IG 貼文連結（選填）`} placeholder="https://instagram.com/p/…"
+                    inputMode="url" value={row.linkUrl} onChange={(e) => setLink(i, e.target.value)} className={input}
+                  />
+                  <div className="flex flex-wrap gap-1">
+                    <button type="button" className={btn.icon} disabled={i === 0 || pending} onClick={() => move(i, -1)}>
+                      <ArrowUp size={18} strokeWidth={1.5} aria-hidden="true" /><span className="sr-only">上移第 {i + 1} 個作品</span>
+                    </button>
+                    <button type="button" className={btn.icon} disabled={i === rows.length - 1 || pending} onClick={() => move(i, 1)}>
+                      <ArrowDown size={18} strokeWidth={1.5} aria-hidden="true" /><span className="sr-only">下移第 {i + 1} 個作品</span>
+                    </button>
+                    <button type="button" className={`${btn.icon} text-danger hover:bg-danger-soft`} disabled={pending} onClick={() => removeRow(i)}>
+                      <Trash2 size={18} strokeWidth={1.5} aria-hidden="true" /><span className="sr-only">刪除第 {i + 1} 個作品</span>
+                    </button>
+                  </div>
                 </div>
-              </div>
-            </li>
-          ))}
-        </ol>
-      )}
-      <div>
-        <FilePicker
-          label="新增作品圖片" ariaLabel="上傳作品圖片" accept="image/png,image/jpeg,image/webp"
-          busy={busy} disabled={pending || imgSaving || rows.length >= MAX_PORTFOLIO} fileName={null}
-          describedBy={msg ? noteId : undefined} invalid={msg ? true : undefined}
-          onFiles={(files) => void onFile(files[0])}
-        />
-        <span className="mt-1.5 block text-xs text-muted">JPG、PNG、WebP，5MB 以內。圖片上傳後會直接儲存；其他還沒儲存的修改（連結、順序、刪除）不受影響。</span>
-        {msg && <span id={noteId} role="status" className="mt-1.5 block text-xs text-danger">{msg}</span>}
-      </div>
-      <input type="hidden" name="items" value={JSON.stringify(rows)} />
-      <ErrorText message={error} />
-      <div className="flex flex-wrap items-center gap-4">
-        <button disabled={pending || busy || imgSaving} className={btn.primary}>{pending ? "儲存中…" : "儲存作品"}</button>
-        <SavedMark show={showSaved && !dirty && state.ok === true} />
-      </div>
-    </form>
+              </li>
+            ))}
+          </ol>
+        )}
+        <div>
+          <FilePicker
+            label="新增作品圖片" ariaLabel="上傳作品圖片" accept="image/png,image/jpeg,image/webp"
+            busy={busy} disabled={pending || imgSaving || rows.length >= MAX_PORTFOLIO} fileName={null}
+            describedBy={msg ? noteId : undefined} invalid={msg ? true : undefined}
+            onFiles={(files) => void onFile(files[0])}
+          />
+          <span className="mt-1.5 block text-xs text-muted">JPG、PNG、WebP，5MB 以內。圖片上傳後會直接儲存；其他還沒儲存的修改（連結、順序、刪除）不受影響。</span>
+          {msg && <span id={noteId} role="status" className="mt-1.5 block text-xs text-danger">{msg}</span>}
+        </div>
+        <input type="hidden" name="items" value={JSON.stringify(rows)} />
+        <ErrorText message={error} />
+        <div className="flex flex-wrap items-center gap-4">
+          <button disabled={pending || busy || imgSaving} className={btn.primary}>{pending ? "儲存中…" : "儲存作品"}</button>
+          <SavedMark show={showSaved && !dirty && state.ok === true} />
+        </div>
+      </form>
+      <LeaveDialog guard={leaveGuard} />
+    </>
   );
 }

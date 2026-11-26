@@ -3,6 +3,7 @@ import { useActionState, useEffect, useRef, useState } from "react";
 import { Field } from "@/components/forms/Field";
 import { SavedMark, UnsavedBadge } from "@/components/forms/UnsavedBadge";
 import { useUnsavedChanges } from "@/components/forms/useUnsavedChanges";
+import { LeaveDialog } from "@/components/forms/LeaveDialog";
 import { Notice } from "@/components/ui/Notice";
 import { ErrorText } from "@/components/ui/ErrorText";
 import { btn, cardPad, input } from "@/components/ui/styles";
@@ -32,47 +33,50 @@ export function RatesForm({ collabTypes, savedCollabTypes, initial }: {
   }, {});
   const fe = state.fieldErrors ?? {};
   const dirty = JSON.stringify(prices) !== saved;
-  useUnsavedChanges(dirty);
+  const leaveGuard = useUnsavedChanges(dirty);
   const error = fe.rates ?? state.formError;
   const hasUnsavedTypes = collabTypes.some((t) => !savedCollabTypes.includes(t));
   return (
-    <form action={action} noValidate className={`${cardPad} max-w-2xl space-y-5`}>
-      <div>
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h3 className="text-lg font-bold text-ink">報價</h3>
-          <UnsavedBadge show={dirty} />
-        </div>
-        <p className="mt-1 text-sm text-muted">只有登入的品牌看得到。留空代表不提供這個合作形式的報價。</p>
-      </div>
-      {collabTypes.length === 0 ? (
-        <p className="text-sm text-muted">先在上方勾選想接的合作形式。</p>
-      ) : (
-        <>
-          {hasUnsavedTypes && (
-            <Notice tone="info">報價要先儲存合作形式才能填：請先按上方的「儲存基本資料」，新勾選的形式才會開放填寫。</Notice>
-          )}
-          {collabTypes.map((t) => {
-            const can = savedCollabTypes.includes(t);
-            return (
-              <Field key={t} label={`${t}（NT$）`} error={fe[`price:${t}`]} hint={can ? undefined : "按上方「儲存基本資料」後就能填這個報價"}>
-                {(c) => (
-                  <input
-                    {...c} name={`price:${t}`} inputMode="numeric" placeholder="例如 4500" disabled={!can}
-                    value={can ? (prices[t] ?? "") : ""}
-                    onChange={(e) => { setPrices((p) => ({ ...p, [t]: e.target.value })); setShowSaved(false); }}
-                    className={input}
-                  />
-                )}
-              </Field>
-            );
-          })}
-          <ErrorText message={error} />
-          <div className="flex flex-wrap items-center gap-4">
-            <button disabled={pending} className={btn.primary}>{pending ? "儲存中…" : "儲存報價"}</button>
-            <SavedMark show={showSaved && !dirty && state.ok === true} />
+    <>
+      <form action={action} noValidate className={`${cardPad} max-w-2xl space-y-5`}>
+        <div>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h3 className="text-lg font-bold text-ink">報價</h3>
+            <UnsavedBadge show={dirty} />
           </div>
-        </>
-      )}
-    </form>
+          <p className="mt-1 text-sm text-muted">只有登入的品牌看得到。留空代表不提供這個合作形式的報價。</p>
+        </div>
+        {collabTypes.length === 0 ? (
+          <p className="text-sm text-muted">先在上方勾選想接的合作形式。</p>
+        ) : (
+          <>
+            {hasUnsavedTypes && (
+              <Notice tone="info">報價要先儲存合作形式才能填：請先按上方的「儲存基本資料」，新勾選的形式才會開放填寫。</Notice>
+            )}
+            {collabTypes.map((t) => {
+              const can = savedCollabTypes.includes(t);
+              return (
+                <Field key={t} label={`${t}（NT$）`} error={fe[`price:${t}`]} hint={can ? undefined : "按上方「儲存基本資料」後就能填這個報價"}>
+                  {(c) => (
+                    <input
+                      {...c} name={`price:${t}`} inputMode="numeric" placeholder="例如 4500" disabled={!can}
+                      value={can ? (prices[t] ?? "") : ""}
+                      onChange={(e) => { setPrices((p) => ({ ...p, [t]: e.target.value })); setShowSaved(false); }}
+                      className={input}
+                    />
+                  )}
+                </Field>
+              );
+            })}
+            <ErrorText message={error} />
+            <div className="flex flex-wrap items-center gap-4">
+              <button disabled={pending} className={btn.primary}>{pending ? "儲存中…" : "儲存報價"}</button>
+              <SavedMark show={showSaved && !dirty && state.ok === true} />
+            </div>
+          </>
+        )}
+      </form>
+      <LeaveDialog guard={leaveGuard} />
+    </>
   );
 }

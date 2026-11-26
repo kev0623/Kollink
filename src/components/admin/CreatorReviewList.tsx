@@ -4,7 +4,7 @@ import { CREATOR_STATUS_LABEL, creatorActions, igUrl, type AdminCreator } from "
 import { CreatorReviewActions } from "./CreatorReviewActions";
 import { CopyButton } from "@/components/ui/CopyButton";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { rows } from "@/components/ui/styles";
+import { rows, textLink } from "@/components/ui/styles";
 
 /** 審核列表：一列一位創作者（手機也是直式卡片，不用表格）。 */
 export function CreatorReviewList({ items }: { items: AdminCreator[] }) {
@@ -22,7 +22,7 @@ export function CreatorReviewList({ items }: { items: AdminCreator[] }) {
             <dt className="text-muted">IG</dt>
             <dd className="min-w-0 break-all">
               {c.igUsername ? (
-                <a href={igUrl(c.igUsername)} target="_blank" rel="noopener noreferrer" className="font-semibold text-ink underline underline-offset-4 hover:text-accent">
+                <a href={igUrl(c.igUsername)} target="_blank" rel="noopener noreferrer" className={textLink}>
                   {c.igUsername}
                 </a>
               ) : "—"}

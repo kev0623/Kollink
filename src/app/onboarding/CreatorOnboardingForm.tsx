@@ -1,8 +1,8 @@
 "use client";
 import { useActionState, useState } from "react";
-import { Field, inputClass } from "@/components/forms/Field";
+import { Field } from "@/components/forms/Field";
 import { ErrorText } from "@/components/ui/ErrorText";
-import { btn, cardPad } from "@/components/ui/styles";
+import { btn, cardPad, input } from "@/components/ui/styles";
 import { CategoryPicker } from "@/components/forms/CategoryPicker";
 import { REGIONS } from "@/lib/options";
 import { suggestHandle } from "@/lib/validation/onboarding";
@@ -20,13 +20,13 @@ export function CreatorOnboardingForm() {
   const k = JSON.stringify(state.values ?? null);
   return (
     <form noValidate action={action} className={`space-y-4 ${cardPad}`}>
-      <Field label="顯示名稱" error={fe.displayName}>
-        {(c) => <input key={k} {...c} name="displayName" maxLength={40} defaultValue={str(v.displayName)} className={inputClass} />}
+      <Field label="顯示名稱" mark="required" error={fe.displayName}>
+        {(c) => <input key={k} {...c} name="displayName" maxLength={40} defaultValue={str(v.displayName)} className={input} />}
       </Field>
-      <Field label="IG 帳號" error={fe.igUsername}>
+      <Field label="IG 帳號" mark="required" error={fe.igUsername}>
         {(c) => (
           <input
-            {...c} name="igUsername" value={ig} placeholder="@your.ig" className={inputClass}
+            {...c} name="igUsername" value={ig} placeholder="@your.ig" className={input}
             onChange={(e) => {
               setIg(e.target.value);
               if (!handleTouched) {
@@ -37,12 +37,12 @@ export function CreatorOnboardingForm() {
           />
         )}
       </Field>
-      <Field label="公開頁網址" error={fe.handle} hint="審核通過後就不能修改">
+      <Field label="公開頁網址" mark="required" error={fe.handle} hint="審核通過後就不能修改">
         {(c) => (
           <div className="flex items-center gap-1">
             <span className="text-sm text-muted" aria-hidden="true">/c/</span>
             <input
-              {...c} name="handle" value={handle} className={inputClass}
+              {...c} name="handle" value={handle} className={input}
               onChange={(e) => {
                 const next = e.target.value.toLowerCase().replace(/[^a-z0-9_.]/g, "");
                 setHandle(next);
@@ -52,17 +52,17 @@ export function CreatorOnboardingForm() {
           </div>
         )}
       </Field>
-      <Field label="IG 粉絲數" error={fe.followerCount}>
+      <Field label="IG 粉絲數" mark="required" error={fe.followerCount}>
         {(c) => (
           <input
             key={k} {...c} name="followerCount" inputMode="numeric"
-            defaultValue={str(v.followerCount)} className={inputClass}
+            defaultValue={str(v.followerCount)} className={input}
           />
         )}
       </Field>
-      <Field label="地區" error={fe.region}>
+      <Field label="地區" mark="required" error={fe.region}>
         {(c) => (
-          <select key={k} {...c} name="region" defaultValue={str(v.region)} className={inputClass}>
+          <select key={k} {...c} name="region" defaultValue={str(v.region)} className={input}>
             <option value="" disabled>請選擇</option>
             {REGIONS.map((r) => <option key={r} value={r}>{r}</option>)}
           </select>

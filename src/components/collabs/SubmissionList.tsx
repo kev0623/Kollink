@@ -1,4 +1,5 @@
 import type { SubmissionView } from "@/lib/collabs/load";
+import { textLink } from "@/components/ui/styles";
 import { cardPad, h2 } from "@/components/ui/styles";
 import { eventTime } from "@/lib/collabs/view";
 import { FileTile } from "./FileTile";
@@ -27,7 +28,7 @@ export function SubmissionList({ submissions }: { submissions: SubmissionView[] 
                 <ul className="mt-3 space-y-1 text-sm">
                   {s.links.map((l) => (
                     <li key={l} className="min-w-0 break-all">
-                      <a href={l} target="_blank" rel="noopener noreferrer" className="text-ink underline underline-offset-4 hover:text-accent">{l}</a>
+                      <a href={l} target="_blank" rel="noopener noreferrer" className={`${textLink} break-all`}>{l}</a>
                     </li>
                   ))}
                 </ul>

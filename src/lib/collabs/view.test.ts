@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  actionCardCopy, caseCode, COLLAB_STEPS, escrowLabel, isRefunding, eventText, eventTime, listBadge, parseCollabTab,
+  actionCardCopy, caseCode, refundState, COLLAB_STEPS, escrowLabel, isRefunding, eventText, eventTime, listBadge, parseCollabTab,
   reviewCountdown, revisionNotesByRound, stepNumber, stepStates, toCollab, toCollabEvent, toCollabListItem,
   toCollabStatus, toSubmission, turnOf, type CollabEvent, type CollabStatus, type Submission,
 } from "./view";
@@ -61,10 +61,14 @@ describe("金額與案號", () => {
     expect(escrowLabel("in_review", 4500, true)).toBe("NT$4,500 平台保管中");
     expect(escrowLabel("completed", 4500)).toBe("NT$4,500 已撥款");
     expect(escrowLabel("cancelled", 4500)).toBe("NT$4,500 未成立");
-    expect(escrowLabel("cancelled", 4500, false, true)).toBe("NT$4,500 已取消・退款處理中");
-    expect(escrowLabel("declined", 4500, false, true)).toBe("NT$4,500 未成立");
+    expect(escrowLabel("cancelled", 4500, false, "pending")).toBe("NT$4,500 已取消・退款處理中");
+    expect(escrowLabel("cancelled", 4500, false, "refunded")).toBe("NT$4,500 已取消・款項已退回");
+    expect(escrowLabel("declined", 4500, false, "pending")).toBe("NT$4,500 未成立");
     expect(isRefunding([{ action: "admin_cancel" }, { action: "refund_scheduled" }])).toBe(true);
     expect(isRefunding([{ action: "cancel" }])).toBe(false);
+    expect(refundState([{ action: "refund_scheduled" }], true)).toBe("pending");
+    expect(refundState([{ action: "refund_scheduled" }], false)).toBe("refunded");
+    expect(refundState([{ action: "cancel" }], true)).toBeNull();
   });
   it("案號是 id 前 8 碼", () => {
     expect(caseCode("1a2b3c4d-0000-0000-0000-000000000000")).toBe("1a2b3c4d");

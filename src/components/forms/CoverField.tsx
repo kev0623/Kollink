@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useState } from "react";
 import { BriefCover } from "@/components/briefs/BriefCover";
-import { FilePicker } from "@/components/ui/FilePicker";
+import { FilePicker, uploadedCaption } from "@/components/ui/FilePicker";
 import { btn } from "@/components/ui/styles";
 import { createClient } from "@/lib/supabase/client";
 import { uploadErrorMessage } from "@/lib/upload-limits";
@@ -29,6 +29,7 @@ type Props = {
 export function CoverField({ userId, value, onChange, brandName, brandLogoPath, error, onBusyChange, disabled, savedMark }: Props) {
   const [msg, setMsg] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [picked, setPicked] = useState<string | null>(null);
   const [ownership] = useState(() => createCoverOwnership((p) => {
     void Promise.resolve(createClient().storage.from(BRIEF_COVER_BUCKET).remove([p])).catch(() => {});
   }));
@@ -55,6 +56,7 @@ export function CoverField({ userId, value, onChange, brandName, brandLogoPath, 
       if (e) return setMsg(uploadErrorMessage(e, "brief-covers"));
       ownership.adopt(plan.path);
       onChange(plan.path);
+      setPicked(file.name);
     } catch {
       setMsg("上傳失敗，請再試一次");
     } finally {
@@ -66,6 +68,7 @@ export function CoverField({ userId, value, onChange, brandName, brandLogoPath, 
     if (disabled) return;
     ownership.discard(value);
     onChange(null);
+    setPicked(null);
     setMsg(null);
   }
 
@@ -79,7 +82,7 @@ export function CoverField({ userId, value, onChange, brandName, brandLogoPath, 
       <div className="mt-2 flex flex-wrap items-center gap-3">
         <FilePicker
           label={value ? "更換封面" : "選擇封面"} ariaLabel="上傳封面" accept="image/png,image/jpeg,image/webp"
-          busy={busy} disabled={disabled} fileName={value ? "已上傳" : null}
+          busy={busy} disabled={disabled} fileName={uploadedCaption(!!value, picked)}
           describedBy={note ? noteId : undefined} invalid={note ? true : undefined}
           onFiles={(files) => void onFile(files[0])}
         />

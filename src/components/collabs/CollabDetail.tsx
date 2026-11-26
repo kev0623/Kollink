@@ -1,5 +1,5 @@
 import type { CollabDetailData } from "@/lib/collabs/load";
-import { isRefunding, type CollabSide } from "@/lib/collabs/view";
+import { refundState, type CollabSide } from "@/lib/collabs/view";
 import { messagesHref } from "@/lib/messages/view";
 import type { PaymentAvailability } from "@/lib/payments/config";
 import { summarizePayments, summaryForSide } from "@/lib/payments/view";
@@ -25,7 +25,7 @@ export function CollabDetail({ data, side, uid, nowMs, devPaymentEnabled, paymen
   const latest = submissions.length > 0 ? submissions[submissions.length - 1] : null;
   return (
     <div className="space-y-6">
-      <CollabHeader c={c} testPayment={fullSummary.testPaid} refunding={isRefunding(events)} />
+      <CollabHeader c={c} testPayment={fullSummary.testPaid} refund={refundState(events, fullSummary.refundPending)} />
       <Stepper status={c.status} />
       {payoutPrompt && <PayoutPrompt />}
       {side === "brand" && c.status === "awaiting_payment" && summary.recentCreditPending && <PaymentStatusPoller />}

@@ -2,7 +2,7 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { AlertCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { FilePicker } from "@/components/ui/FilePicker";
+import { FilePicker, uploadedCaption } from "@/components/ui/FilePicker";
 import { btn } from "@/components/ui/styles";
 import { uploadErrorMessage } from "@/lib/upload-limits";
 import { CREATOR_MEDIA_BUCKET, creatorMediaUrl, planMediaUpload } from "@/lib/creator-media";
@@ -32,6 +32,7 @@ export function AvatarField({ userId, name, initialPath, error, onBusyChange, di
   const [path, setPath] = useState<string | null>(initialPath);
   const [msg, setMsg] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [picked, setPicked] = useState<string | null>(null);
   const ownedRef = useRef<string | null>(null);
   const noteId = useId();
   const url = creatorMediaUrl(path);
@@ -64,6 +65,7 @@ export function AvatarField({ userId, name, initialPath, error, onBusyChange, di
       discard(ownedRef.current);
       ownedRef.current = plan.path;
       setPath(plan.path);
+      setPicked(file.name);
       onPathChange?.(plan.path);
       onUploaded?.(plan.path);
     } catch {
@@ -77,6 +79,7 @@ export function AvatarField({ userId, name, initialPath, error, onBusyChange, di
     if (disabled) return;
     discard(path);
     setPath(null);
+    setPicked(null);
     setMsg(null);
     onPathChange?.(null);
     onTouch?.();
@@ -97,7 +100,7 @@ export function AvatarField({ userId, name, initialPath, error, onBusyChange, di
         )}
         <FilePicker
           label={path ? "更換圖片" : "選擇圖片"} ariaLabel="上傳頭像" accept="image/png,image/jpeg,image/webp"
-          busy={busy} disabled={disabled} fileName={path ? "已上傳" : null}
+          busy={busy} disabled={disabled} fileName={uploadedCaption(!!path, picked)}
           describedBy={note ? noteId : undefined} invalid={note ? true : undefined}
           onFiles={(files) => void onFile(files[0])}
         />

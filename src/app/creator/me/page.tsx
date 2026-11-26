@@ -37,7 +37,7 @@ export default function CreatorMePage() {
       <section aria-labelledby="look-title" className="mt-10 max-w-xl space-y-3 border-t border-line pt-6">
         <h2 id="look-title" className="text-lg font-bold text-ink">外觀與帳號</h2>
         <ThemeSelect />
-        <div className="flex flex-wrap gap-2"><HelpLink /><SignOutButton /></div>
+        <div className="-ml-3 flex flex-wrap gap-2"><HelpLink /><SignOutButton /></div>
       </section>
     </>
   );

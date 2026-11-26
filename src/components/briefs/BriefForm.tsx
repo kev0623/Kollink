@@ -4,10 +4,12 @@ import { useActionState, useEffect, useState } from "react";
 import { saveBriefAction, type BriefFormState } from "@/app/brand/briefs/actions";
 import { ChipMultiSelect } from "@/components/forms/ChipMultiSelect";
 import { CoverField } from "@/components/forms/CoverField";
-import { Field, inputClass } from "@/components/forms/Field";
+import { Field } from "@/components/forms/Field";
+import { LeaveDialog } from "@/components/forms/LeaveDialog";
+import { useUnsavedChanges } from "@/components/forms/useUnsavedChanges";
 import { ErrorText } from "@/components/ui/ErrorText";
 import { Notice } from "@/components/ui/Notice";
-import { btn, cardPad, textarea } from "@/components/ui/styles";
+import { btn, cardPad, textarea, input } from "@/components/ui/styles";
 import { addDays, MAX_DEADLINE_DAYS } from "@/lib/briefs/dates";
 import { previewFromInput } from "@/lib/briefs/view";
 import { canJumpToStep, isBlankBrief } from "@/lib/briefs/wizard";
@@ -78,14 +80,9 @@ export function BriefForm({ briefId, isOpen, initial, initialStep, saved, userId
     document.querySelector('ol[aria-label="步驟"] [aria-current="step"]')?.scrollIntoView({ inline: "center", block: "nearest" });
   }, [step]);
 
-  // 有改動還沒儲存時，關閉分頁或重新整理會先提示
+  // 有改動還沒儲存時：關閉分頁或重新整理由瀏覽器提示；站內點連結改顯示頁面內的確認（Task 13）
   const dirty = JSON.stringify(values) !== JSON.stringify(baseline);
-  useEffect(() => {
-    if (!dirty || pending) return;
-    const warn = (e: BeforeUnloadEvent) => { e.preventDefault(); };
-    window.addEventListener("beforeunload", warn);
-    return () => window.removeEventListener("beforeunload", warn);
-  }, [dirty, pending]);
+  const leaveGuard = useUnsavedChanges(dirty && !pending);
 
   const errors: Record<string, string> = { ...(state.fieldErrors ?? {}), ...clientErrors };
   const set = <K extends keyof BriefInput>(key: K, v: BriefInput[K]) => {
@@ -113,6 +110,22 @@ export function BriefForm({ briefId, isOpen, initial, initialStep, saved, userId
     goTo((step + 1) as BriefStep);
   }
 
+  /** 點步驟頁籤往後跳：中間每一步都要先通過驗證，有錯就停在有錯的那一步。往前回到到過的步驟不檢查。 */
+  function jumpTo(target: BriefStep) {
+    if (target > step) {
+      const normalized = normalizeBriefNumbers(values);
+      for (let s = step; s < target; s++) {
+        const e = validateBriefStep(s as BriefStep, normalized, today);
+        if (e) {
+          setClientErrors(e);
+          if (s !== step) { setStep(s as BriefStep); window.scrollTo({ top: 0 }); }
+          return;
+        }
+      }
+    }
+    goTo(target);
+  }
+
   /** 送出前在前端先檢查；有錯就不送，跳到有錯的那一步。 */
   function guard(mode: "draft" | "publish") {
     return (ev: React.MouseEvent<HTMLButtonElement>) => {
@@ -131,6 +144,7 @@ export function BriefForm({ briefId, isOpen, initial, initialStep, saved, userId
 
   return (
     <form action={formAction} noValidate className="space-y-6">
+      <LeaveDialog guard={leaveGuard} />
       <input type="hidden" name="id" value={briefId ?? ""} />
       <input type="hidden" name="step" value={step} />
 
@@ -142,7 +156,7 @@ export function BriefForm({ briefId, isOpen, initial, initialStep, saved, userId
             <li key={s.step} className="shrink-0 md:shrink">
               <button
                 type="button" disabled={!reachable && !current} aria-current={current ? "step" : undefined}
-                onClick={() => reachable && goTo(s.step)}
+                onClick={() => reachable && jumpTo(s.step)}
                 className={`flex h-11 w-full items-center gap-2 whitespace-nowrap rounded-btn border px-4 text-sm font-bold ${
                   current ? "border-ink bg-ink text-on-ink" : s.step <= maxStep ? "border-line-strong bg-surface text-ink hover:bg-subtle" : "border-line text-muted"
                 }`}
@@ -159,7 +173,7 @@ export function BriefForm({ briefId, isOpen, initial, initialStep, saved, userId
       <section hidden={step !== 1} className={`space-y-4 ${cardPad}`}>
         <h2 className="text-lg font-bold text-ink">合作內容</h2>
         <Field label="案名" error={errors.title} hint="1–60 字">
-          {(c) => <input {...c} name="title" value={values.title} onChange={(e) => set("title", e.target.value)} className={inputClass} />}
+          {(c) => <input {...c} name="title" value={values.title} onChange={(e) => set("title", e.target.value)} className={input} />}
         </Field>
         <Field label="合作說明" error={errors.description} hint={`${descLen}/2000 字`}>
           {(c) => (
@@ -191,13 +205,13 @@ export function BriefForm({ briefId, isOpen, initial, initialStep, saved, userId
           {(c) => (
             <input
               {...c} name="minFollowers" inputMode="numeric" placeholder="例如 1000" value={values.minFollowers}
-              onChange={(e) => set("minFollowers", e.target.value)} className={inputClass}
+              onChange={(e) => set("minFollowers", e.target.value)} className={input}
             />
           )}
         </Field>
         <Field label="地區" error={errors.region}>
           {(c) => (
-            <select {...c} name="region" value={values.region} onChange={(e) => set("region", e.target.value)} className={inputClass}>
+            <select {...c} name="region" value={values.region} onChange={(e) => set("region", e.target.value)} className={input}>
               <option value="">不限</option>
               {regionOptions.map((r) => <option key={r} value={r}>{r}</option>)}
             </select>
@@ -212,7 +226,7 @@ export function BriefForm({ briefId, isOpen, initial, initialStep, saved, userId
             {(c) => (
               <input
                 {...c} name="budgetMin" inputMode="numeric" placeholder="例如 5000" value={values.budgetMin}
-                onChange={(e) => set("budgetMin", e.target.value)} className={inputClass}
+                onChange={(e) => set("budgetMin", e.target.value)} className={input}
               />
             )}
           </Field>
@@ -220,7 +234,7 @@ export function BriefForm({ briefId, isOpen, initial, initialStep, saved, userId
             {(c) => (
               <input
                 {...c} name="budgetMax" inputMode="numeric" placeholder="例如 20000" value={values.budgetMax}
-                onChange={(e) => set("budgetMax", e.target.value)} className={inputClass}
+                onChange={(e) => set("budgetMax", e.target.value)} className={input}
               />
             )}
           </Field>
@@ -237,7 +251,7 @@ export function BriefForm({ briefId, isOpen, initial, initialStep, saved, userId
           {(c) => (
             <input
               {...c} type="date" name="deadline" min={today} max={addDays(today, MAX_DEADLINE_DAYS)}
-              value={values.deadline} onChange={(e) => set("deadline", e.target.value)} className={inputClass}
+              value={values.deadline} onChange={(e) => set("deadline", e.target.value)} className={input}
             />
           )}
         </Field>

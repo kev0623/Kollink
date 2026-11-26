@@ -8,7 +8,7 @@ import { accountChangedRecently, adminCollabActions, lostPaymentCandidates, payo
 import { formatDateTimeTw } from "@/lib/briefs/dates";
 import { isUuid } from "@/lib/briefs/query";
 import { loadCollabDetail } from "@/lib/collabs/load";
-import { isRefunding, nowMs } from "@/lib/collabs/view";
+import { nowMs, refundState } from "@/lib/collabs/view";
 import { formatTwd } from "@/lib/format";
 import { maskAccount } from "@/lib/payout-account";
 import { summarizePayments } from "@/lib/payments/view";
@@ -75,7 +75,7 @@ async function Section({ params }: Props) {
     : [];
   return (
     <div className="space-y-6">
-      <CollabHeader c={c} testPayment={summary.testPaid} refunding={isRefunding(data.events)} />
+      <CollabHeader c={c} testPayment={summary.testPaid} refund={refundState(data.events, summary.refundPending)} />
       <p className="text-sm text-muted">
         {c.creatorHandle && <Link href={`/c/${c.creatorHandle}`} className={`${textLink} min-h-11`}>@{c.creatorHandle}</Link>}
         <span>{c.creatorHandle ? "・" : ""}{c.brandName}</span>

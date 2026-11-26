@@ -5,7 +5,7 @@ export function SearchForm({ action, q, placeholder, hidden }: {
   action: string; q: string; placeholder: string; hidden: Record<string, string>;
 }) {
   return (
-    <form action={action} method="get" role="search" className="flex w-full max-w-md gap-2">
+    <form action={action} method="get" noValidate role="search" className="flex w-full max-w-md gap-2">
       {Object.entries(hidden).map(([k, v]) => <input key={k} type="hidden" name={k} value={v} />)}
       <label className="sr-only" htmlFor="admin-q">搜尋</label>
       <input id="admin-q" name="q" defaultValue={q} maxLength={50} placeholder={placeholder} className={input} />

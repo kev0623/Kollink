@@ -9,7 +9,7 @@ import { startConversationAction, type StartState } from "@/app/brand/messages/a
 export function MessageButton({ creatorId }: { creatorId: string }) {
   const [state, action, pending] = useActionState<StartState, FormData>(startConversationAction, {});
   return (
-    <form action={action} className="contents">
+    <form action={action} noValidate className="contents">
       <input type="hidden" name="creatorId" value={creatorId} />
       <button type="submit" disabled={pending}
         className={`${btn.secondary} w-full min-w-0`}>

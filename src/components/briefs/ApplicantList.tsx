@@ -64,7 +64,7 @@ function ApplicantItem({ a, briefId, brief }: { a: Applicant; briefId: string; b
         <Avatar path={a.avatarPath} name={a.displayName} size="md" />
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <Link href={`/c/${a.handle}`} className="min-w-0 break-words font-bold text-ink underline-offset-2 hover:underline">
+            <Link href={`/c/${a.handle}`} className="inline-flex min-h-11 min-w-0 items-center break-words font-bold text-ink underline-offset-2 hover:underline">
               {a.displayName}
             </Link>
             <ApplicationStatusBadge status={a.status} viewer="brand" />

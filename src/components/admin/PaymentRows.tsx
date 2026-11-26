@@ -5,7 +5,7 @@ import { formatTwd } from "@/lib/format";
 import { PAYMENT_STATUS_LABEL, paymentSourceLabel, type AdminPayment } from "@/lib/admin/view";
 import { RefundAction } from "./RefundAction";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { rows } from "@/components/ui/styles";
+import { rows, textLink } from "@/components/ui/styles";
 
 /** 付款單列表（合作案詳情與「款項」頁共用）。withCollab：顯示合作案連結（款項頁）。 */
 export function PaymentRows({ items, withCollab, empty, participant = false }: { items: AdminPayment[]; withCollab: boolean; empty: string; participant?: boolean }) {
@@ -30,7 +30,7 @@ export function PaymentRows({ items, withCollab, empty, participant = false }: {
               <>
                 <dt className="text-muted">合作案</dt>
                 <dd className="min-w-0 break-words">
-                  <Link href={`/admin/collabs/${p.collabId}`} className="font-semibold text-ink underline underline-offset-4 hover:text-accent">
+                  <Link href={`/admin/collabs/${p.collabId}`} className={textLink}>
                     {caseCode(p.collabId)} {p.collabTitle}
                   </Link>
                   <span className="text-muted">（{COLLAB_STATUS_LABEL[p.collabStatus] ?? ""}・{p.brandName} × @{p.creatorHandle}）</span>

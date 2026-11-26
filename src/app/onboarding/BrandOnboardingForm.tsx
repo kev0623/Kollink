@@ -1,8 +1,8 @@
 "use client";
 import { useActionState, useState } from "react";
-import { Field, inputClass } from "@/components/forms/Field";
+import { Field } from "@/components/forms/Field";
 import { ErrorText } from "@/components/ui/ErrorText";
-import { btn, cardPad } from "@/components/ui/styles";
+import { btn, cardPad, input } from "@/components/ui/styles";
 import { LogoField } from "@/components/forms/LogoField";
 import { INDUSTRIES } from "@/lib/options";
 import type { FormState } from "@/lib/auth/account-errors";
@@ -17,12 +17,12 @@ export function BrandOnboardingForm({ userId }: { userId: string }) {
   const k = JSON.stringify(state.values ?? null);
   return (
     <form noValidate action={action} className={`space-y-4 ${cardPad}`}>
-      <Field label="品牌名稱" error={fe.brandName}>
-        {(c) => <input key={k} {...c} name="brandName" maxLength={60} defaultValue={str(v.brandName)} className={inputClass} />}
+      <Field label="品牌名稱" mark="required" error={fe.brandName}>
+        {(c) => <input key={k} {...c} name="brandName" maxLength={60} defaultValue={str(v.brandName)} className={input} />}
       </Field>
-      <Field label="產業" error={fe.industry}>
+      <Field label="產業" mark="required" error={fe.industry}>
         {(c) => (
-          <select key={k} {...c} name="industry" defaultValue={str(v.industry)} className={inputClass}>
+          <select key={k} {...c} name="industry" defaultValue={str(v.industry)} className={input}>
             <option value="" disabled>請選擇</option>
             {INDUSTRIES.map((i) => <option key={i} value={i}>{i}</option>)}
           </select>

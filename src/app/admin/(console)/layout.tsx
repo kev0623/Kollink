@@ -36,7 +36,7 @@ async function Gate({ children }: { children: React.ReactNode }) {
   return (
     <>
       <MobileTopBar title={`${SITE_NAME} 管理員`} accountHref={null}>
-        <ThemeSelect compact />
+        <ThemeSelect bar />
         <SignOutButton />
       </MobileTopBar>
       {children}

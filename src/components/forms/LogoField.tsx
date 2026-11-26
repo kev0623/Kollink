@@ -2,7 +2,7 @@
 import { useId, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { brandLogoUrl } from "@/lib/brand-logo";
-import { FilePicker } from "@/components/ui/FilePicker";
+import { FilePicker, uploadedCaption } from "@/components/ui/FilePicker";
 import { btn } from "@/components/ui/styles";
 import { uploadErrorMessage } from "@/lib/upload-limits";
 
@@ -24,6 +24,7 @@ export function LogoField({ userId, initialPath, error, onBusyChange, disabled }
   const url = brandLogoUrl(logoPath);
   const [msg, setMsg] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [picked, setPicked] = useState<string | null>(null);
   // 這個元件本次上傳、尚未被表單儲存的檔案；initialPath 是資料庫還在引用的，永遠不刪。
   const ownedRef = useRef<string | null>(null);
   const noteId = useId();
@@ -54,6 +55,7 @@ export function LogoField({ userId, initialPath, error, onBusyChange, disabled }
       discard(ownedRef.current);
       ownedRef.current = path;
       setLogoPath(path);
+      setPicked(file.name);
     } catch {
       setMsg("上傳失敗，請再試一次");
     } finally {
@@ -65,6 +67,7 @@ export function LogoField({ userId, initialPath, error, onBusyChange, disabled }
     if (disabled) return;
     discard(logoPath);
     setLogoPath(null);
+    setPicked(null);
     setMsg(null);
   }
 
@@ -81,7 +84,7 @@ export function LogoField({ userId, initialPath, error, onBusyChange, disabled }
         )}
         <FilePicker
           label={logoPath ? "更換圖片" : "選擇圖片"} ariaLabel="上傳 Logo" accept="image/png,image/jpeg,image/webp"
-          busy={busy} disabled={disabled} fileName={logoPath ? "已上傳" : null}
+          busy={busy} disabled={disabled} fileName={uploadedCaption(!!logoPath, picked)}
           describedBy={note ? noteId : undefined} invalid={note ? true : undefined}
           onFiles={(files) => void onFile(files[0])}
         />

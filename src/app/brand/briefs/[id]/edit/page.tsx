@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { FormSkeleton } from "@/components/ui/Skeleton";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { notFound, redirect } from "next/navigation";
 import { BriefForm } from "@/components/briefs/BriefForm";
@@ -21,7 +22,7 @@ export default function EditBriefPage({ params, searchParams }: Props) {
   return (
     <div className="max-w-3xl">
       <PageHeader title="編輯招募" back={{ href: "/brand/briefs", label: "我的招募" }} />
-      <Suspense fallback={<p className="text-muted">載入中…</p>}>
+      <Suspense fallback={<FormSkeleton fields={3} steps />}>
         <EditBrief params={params} searchParams={searchParams} />
       </Suspense>
     </div>

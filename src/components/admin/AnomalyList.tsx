@@ -5,7 +5,7 @@ import { formatTwd } from "@/lib/format";
 import type { Anomaly } from "@/lib/admin/view";
 import { AnomalyAction } from "./RefundAction";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { rows } from "@/components/ui/styles";
+import { rows, textLink } from "@/components/ui/styles";
 
 export function AnomalyList({ items, open }: { items: Anomaly[]; open: boolean }) {
   if (items.length === 0) return <EmptyState text={open ? "沒有未處理的付款異常" : "沒有已處理的付款異常"} />;
@@ -22,7 +22,7 @@ export function AnomalyList({ items, open }: { items: Anomaly[]; open: boolean }
             {a.collabId && (
               <>
                 <dt className="text-muted">合作案</dt>
-                <dd><Link href={`/admin/collabs/${a.collabId}`} className="font-semibold text-ink underline underline-offset-4 hover:text-accent">{caseCode(a.collabId)}</Link></dd>
+                <dd><Link href={`/admin/collabs/${a.collabId}`} className={textLink}>{caseCode(a.collabId)}</Link></dd>
               </>
             )}
             {a.resolvedNote && (<><dt className="text-muted">處理說明</dt><dd className="min-w-0 whitespace-pre-wrap break-words">{a.resolvedNote}</dd></>)}

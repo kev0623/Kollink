@@ -65,7 +65,7 @@ function tuningFor(variant: ThreadVariant, mobile: boolean): Tuning {
       : { points: 48, tubular: 160, radial: 8, radiusPx: 2.3, knotPx: 11, slack: 1.08, dprCap: 2, glowAlpha: 0.42 };
   }
   if (variant === "quiet") {
-    return { points: 28, tubular: mobile ? 80 : 112, radial: 6, radiusPx: 1.6, knotPx: 8, slack: mobile ? 1.05 : 1.1, dprCap: 1.5, glowAlpha: 0.24 };
+    return { points: 28, tubular: mobile ? 80 : 112, radial: 6, radiusPx: 1.6, knotPx: 8, slack: mobile ? 1.05 : 1.1, dprCap: 1.5, glowAlpha: 0.16 };
   }
   return { points: 20, tubular: mobile ? 72 : 120, radial: 6, radiusPx: 1.2, knotPx: 6, slack: 1.025, dprCap: 1.5, glowAlpha: 0.22 };
 }
@@ -76,7 +76,7 @@ type Anchors = { a: [number, number, number]; b: [number, number, number] };
 function anchorsFor(variant: ThreadVariant, aspect: number): Anchors {
   if (variant === "ribbon") return { a: [-0.86, 0.2, 0], b: [0.86, -0.05, 0] };
   if (variant === "quiet") {
-    if (aspect > 1.6) return { a: [-0.86, 0.18, 0.2], b: [0.86, -0.1, -0.3] }; // 手機上方的橫帶
+    if (aspect > 1.6) return { a: [-0.78, 0.18, 0.2], b: [0.78, -0.1, -0.3] }; // 手機上方的橫帶：兩端縮進約 40px，結與光暈不被切到
     return { a: [-0.62, 0.62, 0.3], b: [0.58, -0.42, -0.4] };
   }
   if (aspect < 1) return { a: [-0.76, 0.6, 0.3], b: [0.76, 0.2, -0.4] }; // 手機直式：線在上方 55%

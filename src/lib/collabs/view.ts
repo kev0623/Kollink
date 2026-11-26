@@ -80,8 +80,17 @@ export function stepNumber(s: CollabStatus): number | null {
   return Math.min(i + 1, COLLAB_STEPS.length);
 }
 
-/** 金額與付款狀態：「NT$4,500 待付款」「NT$4,500 已付款，由平台保管」「NT$4,500 已撥款」「NT$4,500 未成立」「NT$4,500 已取消・退款處理中」。 */
-export function escrowLabel(s: CollabStatus, amount: number, short = false, refunding = false): string {
+/** 已付款後被平台取消的款項：還沒退（退款處理中）、已記錄退款（款項已退回）、沒有這回事（null）。 */
+export type RefundState = "pending" | "refunded" | null;
+
+/** 事件有 refund_scheduled 才有退款；款項列的 refund_required 在管理員記錄退款後變 false（resolve_payment_refund），所以不再顯示「處理中」。 */
+export function refundState(events: { action: string | null }[], refundPending: boolean): RefundState {
+  if (!isRefunding(events)) return null;
+  return refundPending ? "pending" : "refunded";
+}
+
+/** 金額與付款狀態：「NT$4,500 待付款」「NT$4,500 已付款，由平台保管」「NT$4,500 已撥款」「NT$4,500 未成立」「NT$4,500 已取消・退款處理中」「NT$4,500 已取消・款項已退回」。 */
+export function escrowLabel(s: CollabStatus, amount: number, short = false, refund: RefundState = null): string {
   const money = formatTwd(amount);
   switch (s) {
     case "invited":
@@ -92,7 +101,7 @@ export function escrowLabel(s: CollabStatus, amount: number, short = false, refu
     case "declined":
       return `${money} 未成立`;
     case "cancelled":
-      return refunding ? `${money} 已取消・退款處理中` : `${money} 未成立`;
+      return refund === "pending" ? `${money} 已取消・退款處理中` : refund === "refunded" ? `${money} 已取消・款項已退回` : `${money} 未成立`;
     default:
       return `${money} ${short ? "平台保管中" : "已付款，由平台保管"}`;
   }

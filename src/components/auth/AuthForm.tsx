@@ -10,6 +10,7 @@ import { ErrorText } from "@/components/ui/ErrorText";
 type Props = { role: "brand" | "creator" | null; next: string | null; googleEnabled: boolean };
 
 const RESEND_SECONDS = 60;
+const ERROR_ID = "auth-error";
 
 export function AuthForm({ role, next, googleEnabled }: Props) {
   const supabase = useMemo(() => createClient(), []);
@@ -108,7 +109,7 @@ export function AuthForm({ role, next, googleEnabled }: Props) {
           <input
             id="auth-email" type="email" autoComplete="email" inputMode="email" value={email}
             onChange={(e) => { setEmail(e.target.value); setError(null); }} placeholder="you@example.com"
-            aria-invalid={error ? true : undefined} className={input}
+            aria-invalid={error ? true : undefined} aria-describedby={error ? ERROR_ID : undefined} className={input}
           />
           <button type="submit" disabled={pending} className={`${btn.primary} w-full`}>
             {pending ? "寄送中…" : "寄驗證碼"}
@@ -121,7 +122,7 @@ export function AuthForm({ role, next, googleEnabled }: Props) {
           <input
             id="auth-code" ref={codeRef} inputMode="numeric" autoComplete="one-time-code" maxLength={OTP_MAX_LENGTH}
             value={code} onChange={(e) => { setCode(toOtpCode(e.target.value)); setError(null); }} placeholder="6 到 8 碼"
-            aria-invalid={error ? true : undefined} className={`${input} tracking-[0.3em]`}
+            aria-invalid={error ? true : undefined} aria-describedby={error ? ERROR_ID : undefined} className={`${input} tracking-[0.3em]`}
           />
           <button type="submit" disabled={pending || done} className={`${btn.primary} w-full`}>
             {done ? "登入成功，正在帶你進去…" : pending ? "登入中…" : "登入"}
@@ -137,7 +138,7 @@ export function AuthForm({ role, next, googleEnabled }: Props) {
         </form>
       )}
 
-      <div key={attempt} className="mt-3"><ErrorText message={error} /></div>
+      <div key={attempt} className="mt-3"><ErrorText id={ERROR_ID} message={error} /></div>
     </div>
   );
 }

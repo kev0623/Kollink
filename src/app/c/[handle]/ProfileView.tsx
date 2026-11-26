@@ -179,7 +179,7 @@ function RatesSection({ viewer, handle, rates }: { viewer: ViewerKind; handle: s
       <Section title="報價方案" card>
         <Link
           href={`/login?next=${encodeURIComponent(`/c/${handle}`)}`}
-          className="flex items-center gap-2 rounded-input bg-subtle p-4 text-sm font-semibold text-ink hover:bg-line"
+          className="flex items-center gap-2 rounded-input bg-subtle p-4 text-sm font-semibold text-ink hover:bg-subtle-hover"
         >
           <Lock size={16} strokeWidth={1.5} aria-hidden="true" />品牌登入後可查看報價
         </Link>

@@ -29,6 +29,7 @@ export function Composer({ conversationId, onSent }: { conversationId: string; o
   const finePointer = useSyncExternalStore(subscribeFine, () => window.matchMedia(FINE).matches, () => true);
   const count = composerCount(body);
   const over = count > MESSAGE_BODY_MAX;
+  const empty = count === 0;
 
   function send(force: boolean) {
     if (pending) return;
@@ -62,6 +63,7 @@ export function Composer({ conversationId, onSent }: { conversationId: string; o
 
   return (
     <form
+      noValidate
       onSubmit={(e) => {
         e.preventDefault();
         send(false);
@@ -88,6 +90,8 @@ export function Composer({ conversationId, onSent }: { conversationId: string; o
           const a = composerKeyAction({ key: e.key, shift: e.shiftKey, composing, finePointer, mod: e.metaKey || e.ctrlKey });
           if (a === "send") {
             e.preventDefault();
+            // 空白、超過字數、正在顯示聯絡方式提醒時：Enter 什麼都不做（要送出請明確按按鈕）
+            if (empty || over || warning !== null) return;
             send(false);
           }
         }}

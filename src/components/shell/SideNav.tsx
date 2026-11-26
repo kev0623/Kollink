@@ -36,7 +36,7 @@ export function SideNav({ items, footer }: { items: NavItem[]; footer?: React.Re
                   <span>{it.label}</span>
                 </Link>
               ) : (
-                <span className={`${itemBase} text-muted opacity-50`}>
+                <span className={`${itemBase} text-muted opacity-75`}>
                   <NavIcon name={it.icon} size={22} />
                   <span>{it.label}</span>
                   <span className="sr-only">（即將推出）</span>

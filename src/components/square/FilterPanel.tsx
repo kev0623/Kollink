@@ -22,6 +22,7 @@ export function FilterPanel({ idPrefix, query, popularTags, onChange }: Props) {
   return (
     <div className="space-y-6">
       <form
+        noValidate
         role="search"
         onSubmit={(e) => {
           e.preventDefault();
