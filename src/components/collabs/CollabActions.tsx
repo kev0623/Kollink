@@ -83,7 +83,9 @@ function BrandPayment({ collabId, status, devPaymentEnabled, payment, summary }:
         </p>
       )}
       {atm && <AtmCard atm={atm} />}
-      {status === "awaiting_payment" && (!atm || changeMethod) && <PayForm collabId={collabId} payment={payment} />}
+      {status === "awaiting_payment" && (!atm || changeMethod) && (
+        <PayForm collabId={collabId} payment={payment} onCancel={atm ? () => setChangeMethod(false) : undefined} />
+      )}
       {status === "awaiting_payment" && summary.recentCreditPending && (
         <p role="status" className="text-sm text-muted">剛完成付款？綠界確認款項可能需要幾分鐘，請稍後重新整理頁面。</p>
       )}
@@ -131,7 +133,7 @@ const METHODS: { value: PaymentMethod; label: string; hint: string }[] = [
  * 選付款方式 →「前往付款」：Server Action 建單並回傳綠界表單（含 CheckMacValue），
  * 這裡渲染成隱藏表單後立刻 submit（整頁 POST 到綠界）。
  */
-function PayForm({ collabId, payment }: { collabId: string; payment: PaymentAvailability }) {
+function PayForm({ collabId, payment, onCancel }: { collabId: string; payment: PaymentAvailability; onCancel?: () => void }) {
   const [method, setMethod] = useState<PaymentMethod>("credit");
   const [form, setForm] = useState<CheckoutForm | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -142,6 +144,15 @@ function PayForm({ collabId, payment }: { collabId: string; payment: PaymentAvai
   useEffect(() => {
     if (form) formRef.current?.submit();
   }, [form]);
+
+  // 從綠界按瀏覽器「上一頁」回來時，頁面可能來自 bfcache：把「前往中」狀態清掉，按鈕才能再用
+  useEffect(() => {
+    function onShow(e: PageTransitionEvent) {
+      if (e.persisted) setForm(null);
+    }
+    window.addEventListener("pageshow", onShow);
+    return () => window.removeEventListener("pageshow", onShow);
+  }, []);
 
   if (!payment.enabled) {
     return (
@@ -188,6 +199,11 @@ function PayForm({ collabId, payment }: { collabId: string; payment: PaymentAvai
       <button type="button" disabled={busy} onClick={start} className={primary}>
         {busy ? "前往綠界付款頁…" : "確認並付款"}
       </button>
+      {onCancel && (
+        <button type="button" disabled={busy} onClick={onCancel} className="h-11 rounded-btn border border-line px-4 text-sm font-semibold text-ink">
+          取消
+        </button>
+      )}
       {error && <p role="alert" className="text-sm text-danger">{error}</p>}
       {form && (
         <form ref={formRef} method="post" action={form.action} acceptCharset="UTF-8" className="hidden">

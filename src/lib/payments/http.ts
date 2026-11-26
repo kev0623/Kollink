@@ -1,7 +1,14 @@
 // 綠界 server-to-server 通知的共用小工具：讀表單、回純文字。
 
+/** 通知內容上限（bytes）：綠界通知遠小於此值。 */
+export const MAX_NOTIFY_BYTES = 65_536;
+
 /** 讀 x-www-form-urlencoded 表單成字串物件；不是表單（或壞掉）回傳 null。 */
 export async function readEcpayForm(request: Request): Promise<Record<string, string> | null> {
+  const type = (request.headers.get("content-type") ?? "").split(";")[0].trim().toLowerCase();
+  if (type !== "application/x-www-form-urlencoded") return null;
+  const length = request.headers.get("content-length");
+  if (!length || !/^[0-9]+$/.test(length) || Number(length) > MAX_NOTIFY_BYTES) return null;
   try {
     const form = await request.formData();
     const params: Record<string, string> = {};

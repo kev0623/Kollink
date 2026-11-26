@@ -69,3 +69,28 @@ describe("VERCEL_ENV=production 防護", () => {
     expect(readEcpayConfig(STAGE)?.env).toBe("stage");
   });
 });
+
+describe("readEcpayConfig 公開測試金鑰與商店代號", () => {
+  const PROD = { ...STAGE, ECPAY_ENV: "prod", ECPAY_MERCHANT_ID: "1234567", ECPAY_HASH_KEY: "realKey", ECPAY_HASH_IV: "realIV" };
+  it("prod 或 Vercel Production 用公開測試 HashKey 視為未設定", () => {
+    for (const key of ["5294y06JbISpM5x9", "pwFHCqoQZGmho4w6", "oyQPlLVKop9xuwxw", "spPjZn66i0OhqJsQ"]) {
+      expect(readEcpayConfig({ ...PROD, ECPAY_HASH_KEY: key })).toBeNull();
+      expect(readEcpayConfig({ ...PROD, ECPAY_HASH_KEY: key, VERCEL_ENV: "production" })).toBeNull();
+    }
+    expect(readEcpayConfig(PROD)).not.toBeNull();
+  });
+  it("prod 用公開測試商店代號視為未設定", () => {
+    for (const id of ["3002607", "3365120", "3002599"]) {
+      expect(readEcpayConfig({ ...PROD, ECPAY_MERCHANT_ID: id })).toBeNull();
+    }
+  });
+  it("stage（非 Production）仍可用測試金鑰", () => {
+    expect(readEcpayConfig({ ...STAGE, ECPAY_HASH_KEY: "pwFHCqoQZGmho4w6" })).not.toBeNull();
+    expect(readEcpayConfig({ ...STAGE, ECPAY_MERCHANT_ID: "3365120", VERCEL_ENV: "preview" })).not.toBeNull();
+  });
+  it("商店代號不可有前導 0 或超過 10 碼", () => {
+    expect(readEcpayConfig({ ...STAGE, ECPAY_MERCHANT_ID: "03002607" })).toBeNull();
+    expect(readEcpayConfig({ ...PROD, ECPAY_MERCHANT_ID: "01234567" })).toBeNull();
+    expect(readEcpayConfig({ ...PROD, ECPAY_MERCHANT_ID: "12345678901" })).toBeNull();
+  });
+});

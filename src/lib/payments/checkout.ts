@@ -1,9 +1,13 @@
+import "server-only";
 // 綠界 AioCheckOut 的表單參數（伺服器組好、含 CheckMacValue；瀏覽器只負責 POST 過去）。
 // 參數說明：https://developers.ecpay.com.tw/?p=2862（產生訂單）、https://developers.ecpay.com.tw/?p=2872（ATM）
 import { caseCode } from "@/lib/collabs/view";
 import { SITE_NAME } from "@/lib/site";
 import { computeCheckMacValue } from "./ecpay";
-import { ATM_EXPIRE_DAYS } from "./limits";
+import { ATM_EXPIRE_DAYS, PAYMENT_MAX_TWD } from "./limits";
+
+const TRADE_NO = /^[A-Za-z0-9]{20}$/;
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export type PaymentMethod = "credit" | "atm";
 
@@ -34,6 +38,9 @@ type Input = {
 };
 
 export function buildCheckoutForm({ config, merchantTradeNo, amountTwd, method, collabId, createdAt }: Input): CheckoutForm {
+  if (!Number.isSafeInteger(amountTwd) || amountTwd <= 0 || amountTwd > PAYMENT_MAX_TWD) throw new Error("invalid amount");
+  if (typeof merchantTradeNo !== "string" || !TRADE_NO.test(merchantTradeNo)) throw new Error("invalid merchant trade no");
+  if (typeof collabId !== "string" || !UUID.test(collabId)) throw new Error("invalid collab id");
   const site = config.siteUrl;
   const fields: Record<string, string> = {
     MerchantID: config.merchantId,

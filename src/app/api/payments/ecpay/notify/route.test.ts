@@ -20,7 +20,8 @@ function notify(overrides: Record<string, string> = {}, key = KEY): Request {
   };
   const body = new URLSearchParams({ ...params, CheckMacValue: computeCheckMacValue(params, key, IV) });
   return new Request("https://kollink.vercel.app/api/payments/ecpay/notify", {
-    method: "POST", body, headers: { "content-type": "application/x-www-form-urlencoded" },
+    method: "POST", body,
+    headers: { "content-type": "application/x-www-form-urlencoded", "content-length": String(body.toString().length) },
   });
 }
 
@@ -57,6 +58,26 @@ describe("POST /api/payments/ecpay/notify", () => {
     expect(res.status).toBe(500);
     expect(rpc).not.toHaveBeenCalled();
   });
+  it("content-type 不是表單：400，不碰資料庫", async () => {
+    const body = "MerchantID=3002607";
+    const res = await POST(new Request("https://kollink.vercel.app/x", {
+      method: "POST", body, headers: { "content-type": "application/json", "content-length": String(body.length) },
+    }));
+    expect(res.status).toBe(400);
+    expect(rpc).not.toHaveBeenCalled();
+  });
+  it("缺 content-length 或超過 64 KB：400，不碰資料庫", async () => {
+    const body = "MerchantID=3002607";
+    const noLength = await POST(new Request("https://kollink.vercel.app/x", {
+      method: "POST", body, headers: { "content-type": "application/x-www-form-urlencoded" },
+    }));
+    expect(noLength.status).toBe(400);
+    const tooBig = await POST(new Request("https://kollink.vercel.app/x", {
+      method: "POST", body, headers: { "content-type": "application/x-www-form-urlencoded", "content-length": "65537" },
+    }));
+    expect(tooBig.status).toBe(400);
+    expect(rpc).not.toHaveBeenCalled();
+  });
   it("簽章錯誤：400", async () => {
     const res = await POST(notify({}, "wrongkey12345678"));
     expect(res.status).toBe(400);
@@ -85,7 +106,8 @@ describe("POST /api/payments/ecpay/notify", () => {
   it("正式環境的模擬付款：1|OK 但不記錄", async () => {
     vi.stubEnv("ECPAY_ENV", "prod");
     vi.stubEnv("ECPAY_MERCHANT_ID", "1234567");
-    const res = await POST(notify({ MerchantID: "1234567", SimulatePaid: "1" }));
+    vi.stubEnv("ECPAY_HASH_KEY", "realProdKey12345");
+    const res = await POST(notify({ MerchantID: "1234567", SimulatePaid: "1" }, "realProdKey12345"));
     expect(await res.text()).toBe("1|OK");
     expect(rpc).not.toHaveBeenCalled();
   });

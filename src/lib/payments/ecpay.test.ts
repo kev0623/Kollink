@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+vi.mock("server-only", () => ({}));
 import { computeCheckMacValue, ecpayUrlEncode, verifyCheckMacValue } from "./ecpay";
 
 // 綠界技術文件「檢查碼機制」中的官方範例（測試商店 3002607）

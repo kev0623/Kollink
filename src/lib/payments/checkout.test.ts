@@ -1,4 +1,5 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+vi.mock("server-only", () => ({}));
 import { buildCheckoutForm, ecpayTradeDate, isPaymentMethod } from "./checkout";
 import { verifyCheckMacValue } from "./ecpay";
 
@@ -55,5 +56,22 @@ describe("buildCheckoutForm", () => {
   it("回呼網址彼此不同（綠界要求 ReturnURL ≠ OrderResultURL）", () => {
     const f = buildCheckoutForm({ ...BASE, method: "credit" });
     expect(f.fields.ReturnURL).not.toBe(f.fields.OrderResultURL);
+  });
+});
+
+describe("buildCheckoutForm 輸入檢查", () => {
+  it("金額不是正安全整數或超過上限就丟錯", () => {
+    for (const amountTwd of [0, -1, 1.5, NaN, Infinity, 200_001, Number.MAX_SAFE_INTEGER + 1]) {
+      expect(() => buildCheckoutForm({ ...BASE, amountTwd, method: "credit" })).toThrow();
+    }
+    expect(() => buildCheckoutForm({ ...BASE, amountTwd: 200_000, method: "credit" })).not.toThrow();
+  });
+  it("單號不是 20 碼英數字就丟錯", () => {
+    for (const merchantTradeNo of ["", "KL123", "KL2611270123456789A_", "KL2611270123456789ABC"]) {
+      expect(() => buildCheckoutForm({ ...BASE, merchantTradeNo, method: "atm" })).toThrow();
+    }
+  });
+  it("collabId 不是 UUID 就丟錯", () => {
+    expect(() => buildCheckoutForm({ ...BASE, collabId: "../x?y=1", method: "credit" })).toThrow();
   });
 });

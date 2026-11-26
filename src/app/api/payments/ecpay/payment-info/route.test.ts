@@ -19,7 +19,8 @@ function info(overrides: Record<string, string> = {}): Request {
   };
   const body = new URLSearchParams({ ...params, CheckMacValue: computeCheckMacValue(params, KEY, IV) });
   return new Request("https://kollink.vercel.app/api/payments/ecpay/payment-info", {
-    method: "POST", body, headers: { "content-type": "application/x-www-form-urlencoded" },
+    method: "POST", body,
+    headers: { "content-type": "application/x-www-form-urlencoded", "content-length": String(body.toString().length) },
   });
 }
 
@@ -49,6 +50,26 @@ describe("POST /api/payments/ecpay/payment-info", () => {
   it("取號失敗（RtnCode 不是 2）：1|OK、不記錄", async () => {
     const res = await POST(info({ RtnCode: "0" }));
     expect(await res.text()).toBe("1|OK");
+    expect(rpc).not.toHaveBeenCalled();
+  });
+  it("content-type 不是表單：400，不碰資料庫", async () => {
+    const body = "MerchantID=3002607";
+    const res = await POST(new Request("https://kollink.vercel.app/x", {
+      method: "POST", body, headers: { "content-type": "application/json", "content-length": String(body.length) },
+    }));
+    expect(res.status).toBe(400);
+    expect(rpc).not.toHaveBeenCalled();
+  });
+  it("缺 content-length 或超過 64 KB：400，不碰資料庫", async () => {
+    const body = "MerchantID=3002607";
+    const noLength = await POST(new Request("https://kollink.vercel.app/x", {
+      method: "POST", body, headers: { "content-type": "application/x-www-form-urlencoded" },
+    }));
+    expect(noLength.status).toBe(400);
+    const tooBig = await POST(new Request("https://kollink.vercel.app/x", {
+      method: "POST", body, headers: { "content-type": "application/x-www-form-urlencoded", "content-length": "65537" },
+    }));
+    expect(tooBig.status).toBe(400);
     expect(rpc).not.toHaveBeenCalled();
   });
   it("沒設定：500", async () => {

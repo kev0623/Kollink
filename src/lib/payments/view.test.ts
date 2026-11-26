@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { atmDeadlineLabel, formatVAccount, summarizePayments, type PaymentRow } from "./view";
+import { atmDeadlineLabel, formatVAccount, summarizePayments, summaryForSide, type PaymentRow } from "./view";
 
 const NOW = Date.parse("2026-11-27T04:00:00Z"); // 台灣 11/27 12:00
 const row = (o: Partial<PaymentRow>): PaymentRow => ({
@@ -42,4 +42,19 @@ describe("格式", () => {
     expect(formatVAccount("9103522850")).toBe("9103 5228 50");
   });
   it("到期日", () => expect(atmDeadlineLabel("2026-11-30")).toBe("2026/11/30 23:59 前"));
+});
+
+describe("summaryForSide", () => {
+  const withAtm = { testPaid: true, recentCreditPending: false, refundPending: true,
+    atm: { bankCode: "812", vAccount: "9103522850123456", expireDate: "2026-11-30", amount: 4500 } };
+  it("創作者端拿不到 ATM 資料，其他欄位保留", () => {
+    const s = summaryForSide(withAtm, "creator");
+    expect(s.atm).toBeNull();
+    expect(JSON.stringify(s)).not.toContain("9103522850123456");
+    expect(s.testPaid).toBe(true);
+    expect(s.refundPending).toBe(true);
+  });
+  it("品牌端保留 ATM", () => {
+    expect(summaryForSide(withAtm, "brand").atm).toEqual(withAtm.atm);
+  });
 });

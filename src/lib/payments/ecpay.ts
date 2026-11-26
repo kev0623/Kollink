@@ -1,3 +1,4 @@
+import "server-only";
 import { createHash, timingSafeEqual } from "node:crypto";
 
 export type EcpayParams = Record<string, string>;

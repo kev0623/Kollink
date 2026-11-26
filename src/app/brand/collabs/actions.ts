@@ -96,6 +96,7 @@ export async function startPaymentAction(collabId: unknown, method: unknown): Pr
   if (!row?.merchant_trade_no || !row.amount_twd || !createdAt || Number.isNaN(createdAt.getTime())) {
     return { ok: false, error: "發生錯誤，請稍後再試" };
   }
+  revalidateCollab(collabId);
   return {
     ok: true,
     form: buildCheckoutForm({

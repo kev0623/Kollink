@@ -24,6 +24,12 @@ export const ECPAY_CHECKOUT_URL: Record<EcpayEnv, string> = {
 /** 綠界公開的測試商店（https://developers.ecpay.com.tw/2856/）：金鑰是公開的，只能用在 stage。 */
 export const ECPAY_STAGE_MERCHANT_ID = "3002607";
 
+/** 綠界文件公開的測試商店與金鑰：正式模式或 Vercel Production 不可使用。 */
+const PUBLIC_TEST_MERCHANT_IDS: readonly string[] = ["2000132", "3002607", "3365120", "3002599"];
+const PUBLIC_TEST_HASH_KEYS: readonly string[] = [
+  "5294y06JbISpM5x9", "pwFHCqoQZGmho4w6", "oyQPlLVKop9xuwxw", "spPjZn66i0OhqJsQ",
+];
+
 type Env = Record<string, string | undefined>;
 
 export function readEcpayConfig(env: Env = process.env): EcpayConfig | null {
@@ -32,9 +38,12 @@ export function readEcpayConfig(env: Env = process.env): EcpayConfig | null {
   const merchantId = env.ECPAY_MERCHANT_ID ?? "";
   const hashKey = env.ECPAY_HASH_KEY ?? "";
   const hashIV = env.ECPAY_HASH_IV ?? "";
-  if (!/^[0-9]{1,10}$/.test(merchantId) || !hashKey || !hashIV) return null;
+  if (!/^[1-9][0-9]{0,9}$/.test(merchantId) || !hashKey || !hashIV) return null;
   // 正式模式不能用公開的測試商店（否則等於任何人都能偽造付款通知）
   if (mode === "prod" && merchantId === ECPAY_STAGE_MERCHANT_ID) return null;
+  // 正式模式或 Vercel Production：公開的測試金鑰／測試商店一律不可用
+  if ((mode === "prod" || env.VERCEL_ENV === "production")
+      && (PUBLIC_TEST_HASH_KEYS.includes(hashKey) || PUBLIC_TEST_MERCHANT_IDS.includes(merchantId))) return null;
   // 使用者決定（2026-11-26）：Vercel Production 拿到綠界正式金鑰前不開付款；stage 或測試商店一律視為未設定
   if (env.VERCEL_ENV === "production" && (mode !== "prod" || merchantId === ECPAY_STAGE_MERCHANT_ID)) return null;
 

@@ -55,6 +55,11 @@ export function summarizePayments(rows: PaymentRow[], nowMs: number): PaymentSum
   };
 }
 
+/** 創作者不能收到品牌的 ATM 轉帳資訊（RSC payload 會帶到瀏覽器）：只有品牌端保留 atm。 */
+export function summaryForSide(summary: PaymentSummary, side: "brand" | "creator"): PaymentSummary {
+  return side === "brand" ? summary : { ...summary, atm: null };
+}
+
 /** 虛擬帳號每 4 碼空一格，方便抄寫。 */
 export function formatVAccount(v: string): string {
   return v.replace(/(\d{4})(?=\d)/g, "$1 ");
