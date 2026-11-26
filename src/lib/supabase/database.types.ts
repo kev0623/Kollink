@@ -361,6 +361,20 @@ isOneToOne: true
       referencedColumns: ["user_id"]
     }
                   ]
+                },"line_identities": {
+                  Row: {
+                    "line_sub": string,"linked_at": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "line_sub": string,"linked_at"?: string,"user_id": string
+                  }
+                  Update: {
+                    "line_sub"?: string,"linked_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
                 },"message_reviews": {
                   Row: {
                     "message_id": string,"reviewed_at": string,"reviewed_by": string | null
@@ -679,6 +693,14 @@ isOneToOne: false
                            },
 "is_conversation_participant":
 { Args: { "p_conversation_id": string }; Returns: boolean
+                           },
+"line_link_identity":
+{ Args: { "p_line_sub": string,"p_user_id": string }; Returns: string
+                           },
+"line_login_lookup":
+{ Args: { "p_email": string,"p_line_sub": string }; Returns: {
+              "email_user_id": string,"linked_user_id": string
+            }[]
                            },
 "list_brief_applicants":
 { Args: { "p_brief_id": string }; Returns: {
