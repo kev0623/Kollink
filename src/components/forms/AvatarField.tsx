@@ -1,6 +1,8 @@
 "use client";
 import { useId, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { FilePicker } from "@/components/ui/FilePicker";
+import { btn } from "@/components/ui/styles";
 import { uploadErrorMessage } from "@/lib/upload-limits";
 import { CREATOR_MEDIA_BUCKET, creatorMediaUrl, planMediaUpload } from "@/lib/creator-media";
 import { initialOf } from "@/lib/format";
@@ -73,20 +75,17 @@ export function AvatarField({ userId, name, initialPath, error, onBusyChange, di
           // eslint-disable-next-line @next/next/no-img-element
           <img src={url} alt="頭像預覽" className="h-16 w-16 rounded-full border border-line object-cover" />
         ) : (
-          <div aria-hidden="true" className="flex h-16 w-16 items-center justify-center rounded-full bg-ink text-2xl font-semibold text-on-ink">
+          <div aria-hidden="true" className="flex h-16 w-16 items-center justify-center rounded-full bg-subtle text-2xl font-semibold text-ink">
             {initialOf(name)}
           </div>
         )}
-        <input
-          type="file" className="min-w-0 flex-1" accept="image/png,image/jpeg,image/webp" disabled={busy || disabled}
-          aria-label="上傳頭像" aria-describedby={note ? noteId : undefined} aria-invalid={note ? true : undefined}
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            e.target.value = ""; // 讓同一個檔案可以再選一次
-            void onFile(file);
-          }}
+        <FilePicker
+          label={path ? "更換圖片" : "選擇圖片"} ariaLabel="上傳頭像" accept="image/png,image/jpeg,image/webp"
+          busy={busy} disabled={disabled} fileName={path ? "已上傳" : null}
+          describedBy={note ? noteId : undefined} invalid={note ? true : undefined}
+          onFiles={(files) => void onFile(files[0])}
         />
-        {path && <button type="button" disabled={busy || disabled} className="text-sm text-muted" onClick={remove}>移除頭像</button>}
+        {path && <button type="button" disabled={busy || disabled} className={btn.ghost} onClick={remove}>移除頭像</button>}
       </div>
       <input type="hidden" name="avatarPath" value={path ?? ""} />
       {note && <span id={noteId} role={msg ? "status" : undefined} className="mt-1 block text-xs text-danger">{note}</span>}

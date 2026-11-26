@@ -3,6 +3,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { isValidOtpCode, OTP_MAX_LENGTH, toOtpCode } from "@/lib/auth/otp-code";
+import { isEmail } from "@/lib/validation/onboarding";
+import { btn, input } from "@/components/ui/styles";
+import { ErrorText } from "@/components/ui/ErrorText";
 
 type Props = { role: "brand" | "creator" | null; next: string | null; googleEnabled: boolean };
 
@@ -17,6 +20,7 @@ export function AuthForm({ role, next, googleEnabled }: Props) {
   const [pending, setPending] = useState(false);
   const [cooldown, setCooldown] = useState(0);
   const [attempt, setAttempt] = useState(0);
+  const [done, setDone] = useState(false);
   const codeRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -36,6 +40,11 @@ export function AuthForm({ role, next, googleEnabled }: Props) {
 
   async function sendCode() {
     setError(null);
+    if (!isEmail(email.trim())) {
+      setAttempt((n) => n + 1);
+      setError("請輸入正確的 Email，例如 you@example.com");
+      return;
+    }
     setPending(true);
     const { error: e } = await supabase.auth.signInWithOtp({ email: email.trim(), options: { shouldCreateUser: true } });
     setPending(false);
@@ -64,6 +73,7 @@ export function AuthForm({ role, next, googleEnabled }: Props) {
       setError("驗證碼錯誤或已過期，請重新取得");
       return;
     }
+    setDone(true);
     // /auth/continue 是 route handler，需要整頁導覽（不是 Next 頁面）。
     // eslint-disable-next-line @next/next/no-location-assign-relative-destination
     window.location.assign(`/auth/continue${qs}`);
@@ -85,58 +95,49 @@ export function AuthForm({ role, next, googleEnabled }: Props) {
 
   return (
     <div>
-      <button
-        type="button"
-        onClick={google}
-        disabled={!googleEnabled || pending}
-        className="h-11 w-full rounded-btn border border-line bg-surface px-4 font-semibold text-ink disabled:cursor-not-allowed disabled:text-muted"
-      >
-        {googleEnabled ? "用 Google 繼續" : "Google 登入（尚未設定）"}
-      </button>
-
-      <div className="my-4 text-center text-sm text-muted">或用 Email 收驗證碼</div>
+      {googleEnabled && (
+        <>
+          <button type="button" onClick={google} disabled={pending} className={`${btn.secondary} w-full`}>用 Google 繼續</button>
+          <div className="my-5 flex items-center gap-3 text-xs text-muted"><span className="h-px flex-1 bg-line" />或用 Email<span className="h-px flex-1 bg-line" /></div>
+        </>
+      )}
 
       {step === "email" ? (
-        <form onSubmit={(e) => { e.preventDefault(); void sendCode(); }} className="space-y-3">
-          <label htmlFor="auth-email" className="sr-only">Email</label>
+        <form noValidate onSubmit={(e) => { e.preventDefault(); void sendCode(); }} className="space-y-3">
+          <label htmlFor="auth-email" className="text-sm font-bold text-ink">Email</label>
           <input
-            id="auth-email" type="email" required autoComplete="email" value={email}
-            onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com"
-            className="w-full rounded-input border border-line bg-surface px-3 py-2 outline-none focus:ring-2 focus:ring-ink"
+            id="auth-email" type="email" autoComplete="email" inputMode="email" value={email}
+            onChange={(e) => { setEmail(e.target.value); setError(null); }} placeholder="you@example.com"
+            aria-invalid={error ? true : undefined} className={input}
           />
-          <button type="submit" disabled={pending} className="h-11 w-full rounded-btn bg-ink px-4 font-semibold text-on-ink disabled:opacity-60">
-            寄驗證碼
+          <button type="submit" disabled={pending} className={`${btn.primary} w-full`}>
+            {pending ? "寄送中…" : "寄驗證碼"}
           </button>
         </form>
       ) : (
-        <form onSubmit={(e) => { e.preventDefault(); void verify(); }} className="space-y-3">
-          <p className="text-sm text-muted">驗證碼已寄到 {email}，請在 10 分鐘內輸入</p>
-          <label htmlFor="auth-code" className="sr-only">驗證碼</label>
+        <form noValidate onSubmit={(e) => { e.preventDefault(); void verify(); }} className="space-y-3">
+          <p className="break-words text-sm text-muted">驗證碼已寄到 <span className="font-bold text-ink">{email}</span>，請在 10 分鐘內輸入。</p>
+          <label htmlFor="auth-code" className="text-sm font-bold text-ink">驗證碼</label>
           <input
-            id="auth-code" ref={codeRef} inputMode="numeric" autoComplete="one-time-code" pattern="\d{6,8}" minLength={6} maxLength={OTP_MAX_LENGTH} required
-            value={code} onChange={(e) => setCode(toOtpCode(e.target.value))} placeholder="驗證碼（6 到 8 碼）"
-            className="w-full rounded-input border border-line bg-surface px-3 py-2 outline-none focus:ring-2 focus:ring-ink tracking-widest"
+            id="auth-code" ref={codeRef} inputMode="numeric" autoComplete="one-time-code" maxLength={OTP_MAX_LENGTH}
+            value={code} onChange={(e) => { setCode(toOtpCode(e.target.value)); setError(null); }} placeholder="6 到 8 碼"
+            aria-invalid={error ? true : undefined} className={`${input} tracking-[0.3em]`}
           />
-          <button type="submit" disabled={pending} className="h-11 w-full rounded-btn bg-ink px-4 font-semibold text-on-ink disabled:opacity-60">
-            登入
+          <button type="submit" disabled={pending || done} className={`${btn.primary} w-full`}>
+            {done ? "登入成功，正在帶你進去…" : pending ? "登入中…" : "登入"}
           </button>
-          <button
-            type="button" disabled={cooldown > 0 || pending} onClick={() => void sendCode()}
-            className="w-full text-sm text-muted disabled:opacity-60"
-          >
-            {cooldown > 0 ? `${cooldown} 秒後可以重寄` : "重寄驗證碼"}
-          </button>
-          <button
-            type="button" disabled={pending}
-            onClick={() => { setStep("email"); setCode(""); setError(null); }}
-            className="w-full text-sm text-muted disabled:opacity-60"
-          >
-            更改 Email
-          </button>
+          <div className="flex flex-wrap justify-between gap-2">
+            <button type="button" disabled={cooldown > 0 || pending} onClick={() => void sendCode()} className={btn.ghost}>
+              {cooldown > 0 ? `${cooldown} 秒後可以重寄` : "重寄驗證碼"}
+            </button>
+            <button type="button" disabled={pending} onClick={() => { setStep("email"); setCode(""); setError(null); }} className={btn.ghost}>
+              更改 Email
+            </button>
+          </div>
         </form>
       )}
 
-      {error && <p key={attempt} role="alert" className="mt-3 text-sm text-danger">{error}</p>}
+      <div key={attempt} className="mt-3"><ErrorText message={error} /></div>
     </div>
   );
 }
