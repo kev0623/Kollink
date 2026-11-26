@@ -21,14 +21,14 @@ export type Database = {
                   ]
                 },"audit_logs": {
                   Row: {
-                    "action": string,"actor_id": string | null,"actor_kind": string,"collaboration_id": string | null,"created_at": string,"from_status": Database["public"]['Enums']["collab_status"] | null,"id": number,"note": string | null,"to_status": Database["public"]['Enums']["collab_status"] | null
+                    "action": string,"actor_id": string | null,"actor_kind": string,"collaboration_id": string | null,"created_at": string,"from_status": Database["public"]['Enums']["collab_status"] | null,"id": number,"note": string | null,"subject_id": string | null,"to_status": Database["public"]['Enums']["collab_status"] | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "action": string,"actor_id"?: string | null,"actor_kind": string,"collaboration_id"?: string | null,"created_at"?: string,"from_status"?: Database["public"]['Enums']["collab_status"] | null,"id"?: never,"note"?: string | null,"to_status"?: Database["public"]['Enums']["collab_status"] | null
+                    "action": string,"actor_id"?: string | null,"actor_kind": string,"collaboration_id"?: string | null,"created_at"?: string,"from_status"?: Database["public"]['Enums']["collab_status"] | null,"id"?: never,"note"?: string | null,"subject_id"?: string | null,"to_status"?: Database["public"]['Enums']["collab_status"] | null
                   }
                   Update: {
-                    "action"?: string,"actor_id"?: string | null,"actor_kind"?: string,"collaboration_id"?: string | null,"created_at"?: string,"from_status"?: Database["public"]['Enums']["collab_status"] | null,"id"?: never,"note"?: string | null,"to_status"?: Database["public"]['Enums']["collab_status"] | null
+                    "action"?: string,"actor_id"?: string | null,"actor_kind"?: string,"collaboration_id"?: string | null,"created_at"?: string,"from_status"?: Database["public"]['Enums']["collab_status"] | null,"id"?: never,"note"?: string | null,"subject_id"?: string | null,"to_status"?: Database["public"]['Enums']["collab_status"] | null
                   }
                   Relationships: [
                     {
@@ -263,14 +263,14 @@ isOneToOne: false
                   ]
                 },"creator_profiles": {
                   Row: {
-                    "audience_age": string | null,"avatar_path": string | null,"bio": string | null,"categories": (string)[],"collab_types": (string)[],"created_at": string,"engagement_rate": number | null,"follower_count": number,"handle": string,"handle_locked_at": string | null,"ig_username": string,"region": string | null,"status": string,"style_tags": (string)[],"user_id": string
+                    "audience_age": string | null,"avatar_path": string | null,"bio": string | null,"categories": (string)[],"collab_types": (string)[],"created_at": string,"engagement_rate": number | null,"follower_count": number,"handle": string,"handle_locked_at": string | null,"ig_username": string,"region": string | null,"review_note": string | null,"status": string,"style_tags": (string)[],"user_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "audience_age"?: string | null,"avatar_path"?: string | null,"bio"?: string | null,"categories"?: (string)[],"collab_types"?: (string)[],"created_at"?: string,"engagement_rate"?: number | null,"follower_count"?: number,"handle": string,"handle_locked_at"?: string | null,"ig_username": string,"region"?: string | null,"status"?: string,"style_tags"?: (string)[],"user_id": string
+                    "audience_age"?: string | null,"avatar_path"?: string | null,"bio"?: string | null,"categories"?: (string)[],"collab_types"?: (string)[],"created_at"?: string,"engagement_rate"?: number | null,"follower_count"?: number,"handle": string,"handle_locked_at"?: string | null,"ig_username": string,"region"?: string | null,"review_note"?: string | null,"status"?: string,"style_tags"?: (string)[],"user_id": string
                   }
                   Update: {
-                    "audience_age"?: string | null,"avatar_path"?: string | null,"bio"?: string | null,"categories"?: (string)[],"collab_types"?: (string)[],"created_at"?: string,"engagement_rate"?: number | null,"follower_count"?: number,"handle"?: string,"handle_locked_at"?: string | null,"ig_username"?: string,"region"?: string | null,"status"?: string,"style_tags"?: (string)[],"user_id"?: string
+                    "audience_age"?: string | null,"avatar_path"?: string | null,"bio"?: string | null,"categories"?: (string)[],"collab_types"?: (string)[],"created_at"?: string,"engagement_rate"?: number | null,"follower_count"?: number,"handle"?: string,"handle_locked_at"?: string | null,"ig_username"?: string,"region"?: string | null,"review_note"?: string | null,"status"?: string,"style_tags"?: (string)[],"user_id"?: string
                   }
                   Relationships: [
                     {
@@ -319,6 +319,26 @@ isOneToOne: false
 isOneToOne: true
       referencedRelation: "creator_profiles"
       referencedColumns: ["user_id"]
+    }
+                  ]
+                },"message_reviews": {
+                  Row: {
+                    "message_id": string,"reviewed_at": string,"reviewed_by": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "message_id": string,"reviewed_at"?: string,"reviewed_by"?: string | null
+                  }
+                  Update: {
+                    "message_id"?: string,"reviewed_at"?: string,"reviewed_by"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "message_reviews_message_id_fkey"
+      columns: ["message_id"]
+isOneToOne: true
+      referencedRelation: "messages"
+      referencedColumns: ["id"]
     }
                   ]
                 },"messages": {
@@ -415,6 +435,22 @@ isOneToOne: false
           Functions: {
             "accept_application_with_collab":
 { Args: { "p_amount_twd": number,"p_application_id": string,"p_deliverables": string }; Returns: string
+                           },
+"admin_actor":
+{ Args: Record<PropertyKey, never>; Returns: string
+                           },
+"admin_clean_note":
+{ Args: { "p": string,"p_field": string }; Returns: string
+                           },
+"admin_list_creators":
+{ Args: { "p_limit": number,"p_offset": number,"p_query": string,"p_status": string }; Returns: {
+              "categories": (string)[],"created_at": string,"display_name": string,"follower_count": number,"handle": string,"ig_username": string,"region": string,"review_note": string,"status": string,"total_count": number,"user_id": string,"verification_code": string
+            }[]
+                           },
+"admin_list_flagged_messages":
+{ Args: { "p_limit": number,"p_offset": number,"p_view": string }; Returns: {
+              "body": string,"brand_id": string,"brand_name": string,"conversation_id": string,"created_at": string,"creator_handle": string,"creator_id": string,"creator_name": string,"id": string,"reviewed_at": string,"sender_side": string,"total_count": number
+            }[]
                            },
 "apply_to_brief":
 { Args: { "p_brief_id": string,"p_message"?: string,"p_proposed_price"?: number }; Returns: string
@@ -567,6 +603,9 @@ isOneToOne: false
 "mark_conversation_read":
 { Args: { "p_conversation_id": string }; Returns: undefined
                            },
+"mark_message_reviewed":
+{ Args: { "p_message_id": string }; Returns: boolean
+                           },
 "match_brief":
 { Args: { "p_brief": Omit<Database["public"]['Tables']["briefs"]['Row'], Database["public"]['Tables']["briefs"]['ComputedFields']>,"p_creator": Omit<Database["public"]['Tables']["creator_profiles"]['Row'], Database["public"]['Tables']["creator_profiles"]['ComputedFields']> }; Returns: Database["public"]['CompositeTypes']["brief_match"]
                           SetofOptions: {
@@ -595,6 +634,9 @@ isOneToOne: false
 "record_payment_success":
 { Args: { "p_amount_twd": number,"p_env"?: string,"p_merchant_trade_no": string,"p_provider_trade_no": string,"p_raw": Json }; Returns: string
                            },
+"request_creator_review":
+{ Args: Record<PropertyKey, never>; Returns: undefined
+                           },
 "resolve_payment_anomaly":
 { Args: { "p_id": number,"p_note": string }; Returns: undefined
                            },
@@ -619,6 +661,9 @@ isOneToOne: false
                            },
 "set_creator_rates":
 { Args: { "p_rates": Json }; Returns: undefined
+                           },
+"set_creator_status":
+{ Args: { "p_action": string,"p_reason"?: string,"p_user_id": string }; Returns: string
                            },
 "start_conversation":
 { Args: { "p_creator_id": string }; Returns: string
