@@ -133,3 +133,19 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* 首頁「怎麼運作」的捲動紅線（規格 §5.3）：支援 scroll-driven animation 且沒有 reduced motion 時才動，否則直接畫滿 */
+@keyframes thread-draw {
+  from { stroke-dashoffset: 1; }
+  to { stroke-dashoffset: 0; }
+}
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .thread-draw {
+      stroke-dasharray: 1;
+      animation: thread-draw linear both;
+      animation-timeline: view();
+      animation-range: entry 10% cover 60%;
+    }
+  }
+}
