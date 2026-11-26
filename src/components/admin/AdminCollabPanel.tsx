@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { adminCancelAction, markPayoutAction, recordOfflinePaymentAction } from "@/app/admin/actions";
 import type { AdminCollabActions } from "@/lib/admin/view";
 import { formatTwd } from "@/lib/format";
@@ -24,10 +25,13 @@ type Props = {
 
 /** 合作案詳情的管理員動作（「平台」卡片）：人工標記已付款、補登通知遺失的付款、撥款、平台取消。 */
 export function AdminCollabPanel({ collabId, amount, actions, lost, payout, paid }: Props) {
+  // 取消成功後 actions.cancel 變 false、NoteAction 會被卸載，所以結果提示放在面板這一層
+  const [cancelNotice, setCancelNotice] = useState<string | null>(null);
   const none = !actions.offlinePayment && !actions.payout && !actions.cancel && !actions.lostPayment;
   return (
     <section aria-labelledby="admin-panel-title" className="space-y-4 rounded-card border-2 border-ink bg-surface p-4 md:p-6">
       <h2 id="admin-panel-title" className="text-lg font-bold text-ink">平台處理</h2>
+      {cancelNotice && <p role="status" className="break-words text-sm font-semibold text-ink">{cancelNotice}</p>}
       {none && <p className="text-sm text-muted">這個狀態沒有需要平台處理的事。</p>}
 
       {actions.payout && payout && (
@@ -85,7 +89,11 @@ export function AdminCollabPanel({ collabId, amount, actions, lost, payout, paid
             message={paid
               ? "取消後合作案結束，已付款的款項會標記為需退款（款項 → 需退款），退款要另外在綠界後台處理。"
               : "取消後合作案結束，雙方不能再操作。"}
-            onSubmit={(reason) => adminCancelAction(collabId, reason)}
+            onSubmit={async (reason) => {
+              const res = await adminCancelAction(collabId, reason);
+              if (res.ok && res.notice) setCancelNotice(res.notice);
+              return res;
+            }}
           />
         </div>
       )}
