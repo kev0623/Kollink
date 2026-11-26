@@ -26,7 +26,7 @@ export function ThreadHeader({ side, c, collabs }: { side: MessageSide; c: Conve
         )}
       </div>
       {collabs.length > 0 && (
-        <ul aria-label="這個對話的合作案" className="relative mt-1 flex gap-2 overflow-x-auto">
+        <ul aria-label="這個對話的合作案" className="scroll-fade-x relative mt-1 flex gap-2 overflow-x-auto">
           {collabs.map((k) => (
             <li key={k.id} className="shrink-0">
               <Link href={`${collabBase}/${k.id}`} className="inline-flex min-h-11 max-w-60 items-center truncate rounded-btn bg-subtle px-3 text-xs text-ink hover:bg-subtle-hover">

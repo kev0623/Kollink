@@ -14,7 +14,7 @@ export function avatarSaveArgs(saved: OwnProfileFields, avatarPath: string) {
     p_bio: saved.bio,
     p_style_tags: saved.styleTags,
     p_collab_types: saved.collabTypes,
-    p_engagement_rate: saved.engagementRate as number,
+    p_engagement_rate: saved.engagementRate,
     p_audience_age: saved.audienceAge,
     p_avatar_path: avatarPath,
   };

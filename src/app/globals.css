@@ -201,3 +201,26 @@
   from { box-shadow: 0 0 0 0 var(--color-thread-glow); }
   to { box-shadow: 0 0 0 6px var(--color-primary-soft); } /* 結尾與 ring-[6px] ring-primary-soft 相同，動畫結束不跳動 */
 }
+
+/* 手機上可以左右捲動的標籤列：右緣淡出，提示還有更多。捲到最右邊時淡出收回（支援 scroll-driven animation 才有；否則維持淡出）。 */
+@property --fade-end {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 28px;
+}
+@keyframes fade-end {
+  0%, 85% { --fade-end: 28px; }
+  100% { --fade-end: 0px; }
+}
+@media (max-width: 767px) {
+  .scroll-fade-x {
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - var(--fade-end)), transparent);
+    mask-image: linear-gradient(to right, #000 calc(100% - var(--fade-end)), transparent);
+  }
+  @supports (animation-timeline: scroll()) {
+    .scroll-fade-x {
+      animation: fade-end linear both;
+      animation-timeline: scroll(self x);
+    }
+  }
+}

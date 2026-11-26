@@ -57,7 +57,7 @@ export function paymentResultNotice(result: unknown): { ok: boolean; notice: str
     case "paid_refund_required":
       return { ok: true, notice: "已記錄付款，但合作案已經不在等待付款：這筆款項標記為需退款" };
     case "anomaly":
-      return { ok: false, notice: "金額與付款單不符，已記錄為付款異常（款項 → 付款異常）；合作案狀態沒有改變" };
+      return { ok: false, notice: "金額與付款單不符，已記錄為付款異常（款項標記為付款異常）；合作案狀態沒有改變" };
     default:
       return { ok: false, notice: "發生錯誤，請稍後再試" };
   }

@@ -28,7 +28,7 @@ export default function CreatorMePage() {
   return (
     <>
       <PageHeader title="我的" description="這裡的資料會出現在你的公開頁；報價只有品牌看得到。" />
-      <nav aria-label="本頁段落" className="-mx-4 mb-6 flex gap-2 overflow-x-auto px-4 md:mx-0 md:px-0">
+      <nav aria-label="本頁段落" className="scroll-fade-x -mx-4 mb-6 flex gap-2 overflow-x-auto px-4 md:mx-0 md:px-0">
         {SECTIONS.map((s) => <a key={s.id} href={`#${s.id}`} className="inline-flex h-11 shrink-0 items-center rounded-btn border border-line-strong px-4 text-sm font-bold text-ink hover:bg-subtle">{s.label}</a>)}
       </nav>
       <Suspense fallback={<div className="space-y-6"><Skeleton className="h-96 w-full" /><Skeleton className="h-64 w-full" /></div>}>
@@ -49,7 +49,7 @@ async function Editor() {
   const c = me.creator;
   const [own, hasAccount] = await Promise.all([loadOwnPublicProfile(me.id), loadHasPayoutAccount(me.id)]);
   return (
-    <div className="space-y-10">
+    <div className="max-w-2xl space-y-10">
       <section id="profile" aria-labelledby="profile-title" className="scroll-mt-6 space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 id="profile-title" className="font-serif text-2xl font-bold text-ink">公開頁</h2>

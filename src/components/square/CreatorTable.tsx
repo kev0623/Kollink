@@ -15,7 +15,7 @@ const SORTABLE: SortableColumn[] = [
   { label: "貼文報價", sort: "price", dir: "ascending", hint: "依起價（所有報價中的最低價）由低到高排序" },
 ];
 
-const th = "whitespace-nowrap px-4 py-3 text-left text-xs font-medium text-muted";
+const th = "whitespace-nowrap px-4 py-3 text-left text-xs font-bold text-muted";
 const td = "whitespace-nowrap px-4 py-3";
 
 type Props = { items: SquareCreator[]; sort: SquareSort; onSort: (s: SquareSort) => void };

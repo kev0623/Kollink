@@ -100,7 +100,11 @@ export async function saveAvatarImageAction(avatarPath: string): Promise<FormSta
   const args = avatarSaveArgs(profile, avatarPath);
   if (!args) return { formError: "已儲存的基本資料有問題，請先修正並儲存基本資料" };
   const supabase = await createClient();
-  const { error } = await supabase.rpc("update_creator_public_profile", args);
+  const { error } = await supabase.rpc("update_creator_public_profile", {
+    ...args,
+    // 資料庫參數可以是 null（不填互動率），產生的型別寫成非 null，只在呼叫處轉型
+    p_engagement_rate: args.p_engagement_rate as number,
+  });
   if (error) return failure(error);
   revalidateProfile(me.creator.handle);
   return { ok: true };

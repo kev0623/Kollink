@@ -44,7 +44,7 @@ async function BriefList({ searchParams }: Props) {
   const shown = all.filter((b) => brandTabOf(b.display) === tab);
   return (
     <div>
-      <nav aria-label="招募狀態" className="flex gap-2 overflow-x-auto pb-1">
+      <nav aria-label="招募狀態" className="scroll-fade-x flex gap-2 overflow-x-auto pb-1">
         {BRAND_BRIEF_TABS.map((t) => {
           const count = all.filter((b) => brandTabOf(b.display) === t.value).length;
           const active = t.value === tab;

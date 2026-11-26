@@ -2,7 +2,7 @@
 // check_collab_offer（20261125000100_collab_create.sql）、submit_deliverables（20261125000200_deliverables.sql）、
 // transition_collaboration 的貼文連結 regex（20261122000300_collaborations.sql）。
 import { isOwnDeliverablePath, MAX_DELIVERABLE_FILES } from "@/lib/deliverables";
-import { PAYMENT_MAX_TWD } from "@/lib/payments/limits";
+import { requiresOfflinePayment as exceedsOnlineLimit } from "@/lib/payments/limits";
 import { hasBadChar, textLength } from "./brief";
 import { cleanText, cleanTextWithin } from "./onboarding";
 
@@ -36,10 +36,8 @@ export function parseAmount(v: string): number | null {
   return n >= 1 && n <= AMOUNT_MAX ? n : null;
 }
 
-/** 超過線上付款上限（綠界單筆 PAYMENT_MAX_TWD）：建立可以，但之後只能由平台協助線下付款。 */
-export function exceedsOnlineLimit(amount: number | null): boolean {
-  return amount !== null && amount > PAYMENT_MAX_TWD;
-}
+/** 超過線上付款上限（綠界單筆 PAYMENT_MAX_TWD）：建立可以，但之後只能由平台協助線下付款。與 requiresOfflinePayment 是同一個判斷。 */
+export { exceedsOnlineLimit };
 
 export type OfferInput = { title: string; deliverables: string; amount: string; offlineAck: boolean };
 

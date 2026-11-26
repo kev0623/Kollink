@@ -2,7 +2,7 @@ import Link from "next/link";
 import { chip } from "@/components/ui/styles";
 import { OPPORTUNITY_FILTERS, opportunityHref, sameOpportunityQuery, type OpportunityQuery } from "@/lib/briefs/query";
 
-const scroller = "-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 md:mx-0 md:flex-wrap md:px-0";
+const scroller = "scroll-fade-x -mx-4 flex gap-2 overflow-x-auto px-4 pb-1 md:mx-0 md:flex-wrap md:px-0";
 
 /** 「機會／我的報名」分頁，以及機會的篩選標籤（一次只選一個）。全部是連結，狀態只在網址。 */
 export function OpportunityFilters({ query }: { query: OpportunityQuery }) {

@@ -148,7 +148,7 @@ export function BriefForm({ briefId, isOpen, initial, initialStep, saved, userId
       <input type="hidden" name="id" value={briefId ?? ""} />
       <input type="hidden" name="step" value={step} />
 
-      <ol className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 md:mx-0 md:grid md:grid-cols-4 md:px-0" aria-label="步驟">
+      <ol className="scroll-fade-x -mx-4 flex gap-2 overflow-x-auto px-4 pb-1 md:mx-0 md:grid md:grid-cols-4 md:px-0" aria-label="步驟">
         {STEPS.map((s) => {
           const current = s.step === step;
           const reachable = canJumpToStep(s.step, step, maxStep);

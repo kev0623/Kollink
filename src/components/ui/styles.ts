@@ -13,6 +13,8 @@ export const btn = {
   ghost: `${btnBase} h-11 px-4 text-ink hover:bg-subtle`,
   /** 破壞性動作的第一顆按鈕：描邊＋圖示＋動詞（一定接 ConfirmAction） */
   danger: `${btnBase} h-11 px-5 border border-danger bg-transparent text-danger hover:bg-danger-soft`,
+  /** 次要的破壞性動作（取消合作）：只有紅字與圖示，沒有描邊 */
+  dangerQuiet: `${btnBase} h-11 px-3 text-sm text-danger hover:bg-danger-soft`,
   /** 確認區塊裡的「確定…」 */
   dangerConfirm: `${btnBase} h-11 px-5 border border-danger bg-danger-soft text-danger hover:bg-danger-soft/70`,
   /** 44×44 的圖示按鈕（記得加 aria-label 或 sr-only 文字） */

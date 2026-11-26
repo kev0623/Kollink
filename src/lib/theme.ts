@@ -39,6 +39,20 @@ export function readThemePref(): ThemePref {
   }
 }
 
+// 與 src/app/layout.tsx 的 viewport.themeColor 相同的兩個顏色（手機瀏覽器網址列）。
+export const THEME_COLORS: Record<Theme, string> = { dark: "#0D1424", light: "#F3F5F9" };
+
+/**
+ * 手動選了深色／淺色：把兩個 <meta name="theme-color">（各自帶 prefers-color-scheme 條件）都改成該主題的顏色，
+ * 網址列才會跟著換；跟隨系統時還原成各自的顏色。
+ */
+function syncThemeColorMeta(pref: ThemePref) {
+  document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]').forEach((m) => {
+    const own: Theme = m.media.includes("light") ? "light" : "dark";
+    m.content = THEME_COLORS[pref === "system" ? own : pref];
+  });
+}
+
 /** 瀏覽器：套用偏好到 <html>；persist 為 true 時寫回 localStorage。回傳實際主題。 */
 export function applyThemePref(pref: ThemePref, persist: boolean): Theme {
   const theme = resolveTheme(pref, window.matchMedia(LIGHT_QUERY).matches);
@@ -46,6 +60,7 @@ export function applyThemePref(pref: ThemePref, persist: boolean): Theme {
   root.setAttribute("data-theme", theme);
   root.setAttribute("data-theme-pref", pref);
   root.style.colorScheme = theme;
+  syncThemeColorMeta(pref);
   if (persist) {
     try {
       if (pref === "system") window.localStorage.removeItem(THEME_STORAGE_KEY);

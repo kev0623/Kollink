@@ -12,7 +12,7 @@ export default function BrandLayout({ children }: { children: React.ReactNode })
   return (
     <div className="flex min-h-screen bg-bg">
       <SkipLink />
-      <aside className="hidden shrink-0 md:block">
+      <aside className="hidden shrink-0 border-r border-line bg-panel md:block">
         <Suspense fallback={<div aria-hidden className="h-screen w-[88px] bg-panel" />}><SideNav items={BRAND_NAV} footer={<SideFooter />} /></Suspense>
       </aside>
       <main id="main" tabIndex={-1} className="min-w-0 flex-1 px-4 pb-[calc(6rem+env(safe-area-inset-bottom))] pt-5 outline-none md:px-10 md:pb-12 md:pt-10">
@@ -31,7 +31,7 @@ async function Gate({ children }: { children: React.ReactNode }) {
   const me = await requireRole("brand");
   return (
     <>
-      <MobileTopBar title={me.brand?.brandName ?? "品牌"} accountHref="/brand/settings" />
+      <MobileTopBar home="/brand" accountName={me.brand?.brandName} accountHref="/brand/settings" />
       {children}
     </>
   );

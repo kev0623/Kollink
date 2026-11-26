@@ -8,12 +8,12 @@ import { FormSkeleton } from "@/components/ui/Skeleton";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { BrandSettingsForm } from "./BrandSettingsForm";
 
-export const metadata: Metadata = { title: "品牌設定" };
+export const metadata: Metadata = { title: "設定" };
 
 export default function BrandSettingsPage() {
   return (
     <>
-      <PageHeader title="品牌設定" />
+      <PageHeader title="設定" />
       <Suspense fallback={<FormSkeleton fields={2} />}>
         <Settings />
       </Suspense>

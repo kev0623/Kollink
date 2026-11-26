@@ -19,14 +19,14 @@ export function HowItWorks() {
     <section id="how" aria-labelledby="how-title" className="mx-auto max-w-[1280px] px-5 py-14 md:px-16 md:py-28">
       <h2 id="how-title" className="font-serif text-[28px] font-bold text-ink [text-wrap:balance] md:text-[40px]">從牽線到撥款，四個結</h2>
       <div className="relative mt-10 md:mt-14">
-        {/* 桌面：水平波浪，在 12.5%／37.5%／62.5%／87.5% 經過 y=12（四個結的位置） */}
+        {/* 桌面：水平波浪，從左緣出發，在 12.5%／37.5%／62.5%／87.5% 經過 y=12（四個結的位置，欄間沒有 gap 所以剛好是欄的中心），終點就是第四個結的中心，沒有尾巴 */}
         <svg aria-hidden="true" viewBox="0 0 100 24" preserveAspectRatio="none" className="absolute inset-x-0 top-0 hidden h-6 w-full lg:block">
-          <path d="M0 12 Q6.25 2 12.5 12 T25 12 T37.5 12 T50 12 T62.5 12 T75 12 T87.5 12 T100 12" pathLength={1}
+          <path d="M0 12 Q6.25 2 12.5 12 T25 12 T37.5 12 T50 12 T62.5 12 T75 12 T87.5 12" pathLength={1}
             fill="none" stroke="var(--color-thread)" strokeWidth="2" className="thread-draw" />
         </svg>
-        <ol className="space-y-10 lg:grid lg:grid-cols-4 lg:gap-8 lg:space-y-0">
+        <ol className="space-y-10 lg:grid lg:grid-cols-4 lg:space-y-0">
           {STEPS.map((s, i) => (
-            <li key={s.title} className="relative flex gap-5 lg:flex-col lg:items-center lg:text-center">
+            <li key={s.title} className="relative flex gap-5 lg:flex-col lg:items-center lg:px-4 lg:text-center">
               {/* 手機：從這個結的中心畫到下一個結的中心（最後一個結不畫） */}
               {i < STEPS.length - 1 && (
                 <svg aria-hidden="true" viewBox="0 0 2 100" preserveAspectRatio="none" className="absolute left-[11px] top-3 h-[calc(100%+40px)] w-[2px] lg:hidden">

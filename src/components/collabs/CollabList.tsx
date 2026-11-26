@@ -15,7 +15,7 @@ const EMPTY: Record<CollabSide, { text: string; action: { href: string; label: s
 /** 分頁標籤（連結，寫進 ?tab=）。 */
 export function CollabTabs({ side, tab }: { side: CollabSide; tab: CollabTab }) {
   return (
-    <nav aria-label="合作案狀態" className="flex gap-2 overflow-x-auto">
+    <nav aria-label="合作案狀態" className="scroll-fade-x flex gap-2 overflow-x-auto">
       {COLLAB_TABS.map((t) => {
         const active = t.value === tab;
         const href = t.value === "active" ? `/${side}/collabs` : `/${side}/collabs?tab=${t.value}`;

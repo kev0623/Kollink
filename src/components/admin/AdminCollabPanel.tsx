@@ -91,7 +91,7 @@ export function AdminCollabPanel({ collabId, status, amount, actions, lost, payo
           <NoteAction
             label="平台取消" fieldLabel="取消原因（品牌與創作者都看得到）" noteName="原因" confirmLabel="確定取消合作案" danger
             message={paid
-              ? "取消後合作案結束，已付款的款項會標記為需退款（款項 → 需退款），退款要另外在綠界後台處理。"
+              ? "取消後合作案結束，已付款的款項會標記為需退款，退款要另外在綠界後台處理。"
               : "取消後合作案結束，雙方不能再操作。"}
             onSubmit={async (reason) => {
               const res = await adminCancelAction(collabId, reason);

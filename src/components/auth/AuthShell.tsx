@@ -18,7 +18,7 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
           每一次合作，都從一條線開始。
         </p>
       </div>
-      <main id="main" tabIndex={-1} className="flex flex-1 flex-col justify-center bg-panel px-4 py-8 outline-none md:px-12">
+      <main id="main" tabIndex={-1} className="flex flex-1 flex-col justify-center bg-bg px-4 py-8 outline-none md:bg-panel md:px-12">
         <div className="mx-auto w-full max-w-[420px]">
           <div className="rounded-card border border-line bg-surface p-5 md:p-8">{children}</div>
           <div className="mt-6 flex justify-center"><ThemeSelect /></div>

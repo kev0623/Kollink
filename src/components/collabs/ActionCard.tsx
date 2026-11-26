@@ -5,7 +5,7 @@ import type { PaymentAvailability } from "@/lib/payments/config";
 import type { PaymentSummary } from "@/lib/payments/view";
 import { requiresOfflinePayment } from "@/lib/payments/limits";
 import { CollabActions } from "./CollabActions";
-import { FileTile } from "./FileTile";
+import { FILE_GRID, FileTile } from "./FileTile";
 
 type Props = {
   c: Collab;
@@ -44,7 +44,7 @@ export function ActionCard({ c, side, uid, latest, nowMs, devPaymentEnabled, pay
         </p>
       )}
       {side === "brand" && c.status === "in_review" && latest && latest.files.length > 0 && (
-        <ul aria-label="最新一次交稿的檔案" className="mt-3 flex flex-wrap gap-2">
+        <ul aria-label="最新一次交稿的檔案" className={`mt-3 ${FILE_GRID}`}>
           {latest.files.map((f) => <li key={f.path}><FileTile f={f} /></li>)}
         </ul>
       )}

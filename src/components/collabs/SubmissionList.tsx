@@ -1,8 +1,8 @@
 import type { SubmissionView } from "@/lib/collabs/load";
 import { textLink } from "@/components/ui/styles";
-import { cardPad, h2 } from "@/components/ui/styles";
+import { h2 } from "@/components/ui/styles";
 import { eventTime } from "@/lib/collabs/view";
-import { FileTile } from "./FileTile";
+import { FILE_GRID, FileTile } from "./FileTile";
 
 /** 交稿紀錄：依輪次排列；品牌要求修改的說明顯示在對應那一輪下方。 */
 export function SubmissionList({ submissions }: { submissions: SubmissionView[] }) {
@@ -14,13 +14,13 @@ export function SubmissionList({ submissions }: { submissions: SubmissionView[] 
       ) : (
         <ol className="mt-3 space-y-3">
           {submissions.map((s) => (
-            <li key={s.id} className={cardPad}>
+            <li key={s.id} className="rounded-card border border-line bg-surface p-4 md:p-5">
               <p className="flex flex-wrap items-baseline justify-between gap-2">
                 <span className="font-bold text-ink">第 {s.round} 次交稿</span>
                 <span className="text-xs text-muted">{eventTime(s.createdAt)}</span>
               </p>
               {s.files.length > 0 && (
-                <ul className="mt-3 flex flex-wrap gap-2">
+                <ul className={`mt-3 ${FILE_GRID}`}>
                   {s.files.map((f) => <li key={f.path}><FileTile f={f} /></li>)}
                 </ul>
               )}

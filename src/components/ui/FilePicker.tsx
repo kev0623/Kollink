@@ -6,7 +6,7 @@ import { Upload } from "lucide-react";
 /** 已有圖片時的說明文字：這次選的檔名（沒有就說是目前使用的圖片）。 */
 export function uploadedCaption(has: boolean, pickedName: string | null): string | null {
   if (!has) return null;
-  return pickedName ? `已上傳：${pickedName}` : "目前使用的圖片";
+  return pickedName ? `已上傳：${pickedName}` : "已設定圖片";
 }
 
 type Props = {

@@ -34,7 +34,7 @@ export function BriefDetailView({ brief: b, today, match, aside, headingLevel = 
             {b.collabTypes.length > 0 && (
               <ul aria-label="合作形式" className="mt-3 flex flex-wrap gap-2">
                 {b.collabTypes.map((t) => (
-                  <li key={t} className="rounded-full border border-line px-3 py-1 text-xs font-medium text-ink">{t}</li>
+                  <li key={t} className="rounded-full border border-line px-3 py-1 text-xs text-ink">{t}</li>
                 ))}
               </ul>
             )}

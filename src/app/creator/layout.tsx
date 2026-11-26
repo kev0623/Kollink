@@ -13,7 +13,7 @@ export default function CreatorLayout({ children }: { children: React.ReactNode 
   return (
     <div className="flex min-h-screen bg-bg">
       <SkipLink />
-      <aside className="hidden shrink-0 md:block">
+      <aside className="hidden shrink-0 border-r border-line bg-panel md:block">
         <Suspense fallback={<div aria-hidden className="h-screen w-[88px] bg-panel" />}><SideNav items={CREATOR_NAV} footer={<SideFooter />} /></Suspense>
       </aside>
       <main id="main" tabIndex={-1} className="min-w-0 flex-1 px-4 pb-[calc(6rem+env(safe-area-inset-bottom))] pt-5 outline-none md:px-10 md:pb-12 md:pt-10">
@@ -32,7 +32,7 @@ async function Gate({ children }: { children: React.ReactNode }) {
   const me = await requireRole("creator");
   return (
     <>
-      <MobileTopBar title={me.profile?.displayName ?? "創作者"} accountHref="/creator/me" />
+      <MobileTopBar home="/creator" accountName={me.profile?.displayName} accountHref="/creator/me" />
       <StatusBanner me={me} />
       {children}
     </>

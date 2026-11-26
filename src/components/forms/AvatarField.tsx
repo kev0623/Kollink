@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useId, useRef, useState } from "react";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { FilePicker, uploadedCaption } from "@/components/ui/FilePicker";
 import { btn } from "@/components/ui/styles";
@@ -98,13 +98,19 @@ export function AvatarField({ userId, name, initialPath, error, onBusyChange, di
             {initialOf(name)}
           </div>
         )}
+        <div className="flex min-w-0 flex-col items-start gap-1">
         <FilePicker
           label={path ? "更換圖片" : "選擇圖片"} ariaLabel="上傳頭像" accept="image/png,image/jpeg,image/webp"
           busy={busy} disabled={disabled} fileName={uploadedCaption(!!path, picked)}
           describedBy={note ? noteId : undefined} invalid={note ? true : undefined}
           onFiles={(files) => void onFile(files[0])}
         />
-        {path && <button type="button" disabled={busy || disabled} className={btn.ghost} onClick={remove}>移除頭像</button>}
+        {path && (
+          <button type="button" disabled={busy || disabled} className={btn.dangerQuiet} onClick={remove}>
+            <Trash2 size={16} strokeWidth={1.5} aria-hidden="true" />移除頭像
+          </button>
+        )}
+        </div>
       </div>
       <input type="hidden" name="avatarPath" value={path ?? ""} />
       {note && <span id={noteId} role={msg ? "status" : undefined} className="mt-1.5 flex items-start gap-1 text-xs text-danger"><AlertCircle size={14} strokeWidth={1.5} aria-hidden="true" className="mt-0.5 shrink-0" /><span>{note}</span></span>}

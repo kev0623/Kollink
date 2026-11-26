@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { CollabListSection, CollabListSkeleton } from "@/components/collabs/CollabPages";
 
 type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> };
@@ -10,8 +11,8 @@ export const metadata: Metadata = { title: "合作案" };
 export default function BrandCollabsPage({ searchParams }: Props) {
   return (
     <div>
-      <h1 className="text-[32px] font-bold text-ink">合作案</h1>
-      <div className="mt-6">
+      <PageHeader title="合作案" />
+      <div>
         <Suspense fallback={<CollabListSkeleton />}>
           <CollabListSection side="brand" searchParams={searchParams} />
         </Suspense>

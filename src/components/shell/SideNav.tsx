@@ -14,7 +14,7 @@ export function SideNav({ items, footer }: { items: NavItem[]; footer?: React.Re
   const pathname = usePathname();
   const home = items.find((i) => i.href)?.href ?? "/";
   return (
-    <nav aria-label="主選單" className="sticky top-0 flex h-screen w-[88px] flex-col items-center border-r border-line bg-panel py-5">
+    <nav aria-label="主選單" className="sticky top-0 flex h-screen w-[88px] flex-col items-center py-5">
       <Link href={home} className="mb-6 flex h-11 items-center gap-1.5 rounded-btn px-2 text-lg font-extrabold tracking-tight text-ink">
         <span aria-hidden="true" className="h-2 w-2 rounded-full bg-thread" />K<span className="sr-only">{SITE_NAME}</span>
       </Link>

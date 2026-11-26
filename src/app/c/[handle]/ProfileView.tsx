@@ -68,7 +68,7 @@ function Chips({ label, items, dark }: { label: string; items: string[]; dark?: 
   return (
     <ul aria-label={label} className="flex flex-wrap gap-2">
       {items.map((t) => (
-        <li key={t} className={`rounded-btn px-3 py-1 text-sm ${dark ? "bg-ink font-medium text-on-ink" : "bg-subtle text-ink"}`}>{t}</li>
+        <li key={t} className={`rounded-btn px-3 py-1 text-sm ${dark ? "bg-ink font-bold text-on-ink" : "bg-subtle text-ink"}`}>{t}</li>
       ))}
     </ul>
   );

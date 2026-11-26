@@ -19,6 +19,8 @@ type Props = {
   confirmLabel: string;
   /** 破壞性（描邊紅＋圖示）；不是破壞性但不可復原的（審核通過、接受邀約）用 primary 樣式 */
   danger?: boolean;
+  /** 搭配 danger：第一顆按鈕是安靜的文字按鈕（沒有描邊），給「取消合作」這類次要的破壞性動作 */
+  quiet?: boolean;
   /** 圖示（只有 danger 才會顯示；沒給時用 x）。primary 確認按鈕不放圖示 */
   icon?: ConfirmIcon;
   /** 第一顆按鈕在所有寬度都撐滿（預設：手機撐滿、桌面自動寬度） */
@@ -29,7 +31,7 @@ type Props = {
 };
 
 /** 頁面內的確認區塊（不用 confirm()）：按鈕 → 展開說明與「確定／取消」。展開時焦點移到說明；Esc 收回並還原焦點。 */
-export function ConfirmAction({ label, message, confirmLabel, danger, icon, block, defaultOpen, onConfirm }: Props) {
+export function ConfirmAction({ label, message, confirmLabel, danger, quiet, icon, block, defaultOpen, onConfirm }: Props) {
   const router = useRouter();
   const [open, setOpen] = useState(defaultOpen === true);
   const [error, setError] = useState<string | null>(null);
@@ -79,14 +81,14 @@ export function ConfirmAction({ label, message, confirmLabel, danger, icon, bloc
     });
   }
 
-  const width = block ? "w-full" : "w-full sm:w-auto";
+  const width = quiet ? "" : block ? "w-full" : "w-full sm:w-auto";
   if (!open) {
     return (
       <div className={width}>
         <button
           ref={triggerRef} type="button" aria-expanded={false}
           onClick={() => { setNotice(null); setOpen(true); }}
-          className={`${danger ? btn.danger : btn.primary} ${width}`}
+          className={`${danger ? (quiet ? btn.dangerQuiet : btn.danger) : btn.primary} ${width}`}
         >
           {danger && <Icon size={16} strokeWidth={1.5} aria-hidden="true" />}
           {label}

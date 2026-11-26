@@ -6,6 +6,7 @@ import { creatorCollabAction } from "@/app/creator/collabs/actions";
 import { ConfirmAction } from "@/components/briefs/ConfirmAction";
 import { CopyButton } from "@/components/ui/CopyButton";
 import { ErrorText } from "@/components/ui/ErrorText";
+import { Info } from "lucide-react";
 import { Notice } from "@/components/ui/Notice";
 import { SupportLink } from "@/components/ui/SupportLink";
 import { btn } from "@/components/ui/styles";
@@ -94,35 +95,49 @@ function BrandPayment({ collabId, status, fromApplication, devPaymentEnabled, pa
     ? "取消後這個合作案就結束了，不能復原。已取得的 ATM 帳號請不要再轉帳；如果已經轉帳，平台會退款。確定要取消嗎？"
     : "取消後這個合作案就結束了，不能復原。確定要取消嗎？";
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       {offlineOnly && (
-        <Notice tone="warning" title="這筆要線下付款">
+        <Inset title="這筆要線下付款">
           {status === "invited"
             ? `金額超過線上付款上限 ${formatTwd(PAYMENT_MAX_TWD)}。創作者接受後無法線上付款，需要聯絡平台安排匯款；不想線下付款的話，可以先撤回、改低金額後重新發出。`
             : `金額超過線上付款上限 ${formatTwd(PAYMENT_MAX_TWD)}，請聯絡平台安排匯款；平台確認入帳後會自動進入交稿。`}
           <div><SupportLink subject="線下付款" /></div>
-        </Notice>
+        </Inset>
       )}
       {online && payment.env === "stage" && (
-        <Notice tone="info" title="測試模式">目前使用綠界測試環境，不會真的扣款，付款完成也不會撥款給創作者。</Notice>
+        <Inset title="測試模式">目前使用綠界測試環境，不會真的扣款，付款完成也不會撥款給創作者。</Inset>
       )}
       {atm && <AtmCard atm={atm} />}
       {online && (!atm || changeMethod) && (
         <PayForm collabId={collabId} payment={payment} recentPending={summary.recentCreditPending} onCancel={atm ? () => setChangeMethod(false) : undefined} />
       )}
-      <div className="flex flex-col gap-2 sm:flex-row">
-        {atm && !changeMethod && (
-          <button type="button" onClick={() => setChangeMethod(true)} className={`${btn.secondary} w-full sm:w-auto`}>
-            改用其他方式付款
-          </button>
-        )}
+      {atm && !changeMethod && (
+        <button type="button" onClick={() => setChangeMethod(true)} className={`${btn.secondary} w-full sm:w-auto`}>
+          改用其他方式付款
+        </button>
+      )}
+      {status === "awaiting_payment" && devPaymentEnabled && <DevMarkPaid collabId={collabId} />}
+      {/* 取消是安靜的破壞性動作：和付款動作隔開，不用描邊按鈕 */}
+      <div className="border-t border-line pt-3">
         <ConfirmAction
-          label={status !== "invited" ? "取消合作" : fromApplication ? "撤回錄取" : "撤回邀約"} danger icon="x" confirmLabel="確定取消"
+          label={status !== "invited" ? "取消合作" : fromApplication ? "撤回錄取" : "撤回邀約"} danger quiet icon="x" confirmLabel="確定取消"
           message={cancelMessage}
           onConfirm={() => brandCollabAction(collabId, "cancel")}
         />
       </div>
-      {status === "awaiting_payment" && devPaymentEnabled && <DevMarkPaid collabId={collabId} />}
+    </div>
+  );
+}
+
+/** 輪到你的卡片裡的說明：沒有第二層底色，只有圖示與文字。 */
+function Inset({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="flex gap-2 text-sm text-ink">
+      <Info size={16} strokeWidth={1.5} aria-hidden="true" className="mt-0.5 shrink-0" />
+      <div className="min-w-0 break-words">
+        <p className="font-bold">{title}</p>
+        <div className="mt-0.5 text-muted">{children}</div>
+      </div>
     </div>
   );
 }
@@ -130,7 +145,7 @@ function BrandPayment({ collabId, status, fromApplication, devPaymentEnabled, pa
 /** ATM 待繳：銀行代碼、虛擬帳號、金額、期限（綠界取號通知寫進資料庫的值）。 */
 function AtmCard({ atm }: { atm: AtmPending }) {
   return (
-    <div className="rounded-input border border-line-strong bg-subtle p-4 text-sm text-ink">
+    <div className="rounded-input border border-line bg-surface p-4 text-sm text-ink">
       <p className="font-bold">請在 {atmDeadlineLabel(atm.expireDate)}轉帳</p>
       <dl className="mt-2 grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-1">
         <dt className="text-muted">銀行代碼</dt>

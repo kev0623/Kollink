@@ -139,7 +139,7 @@ export async function adminCancelAction(collabId: unknown, reason: unknown): Pro
   revalidateCollab(collabId);
   const flagged = typeof data === "number" ? data : 0;
   return flagged > 0
-    ? { ok: true, notice: `已取消。${flagged} 筆已付款的款項標記為需退款（款項 → 需退款）` }
+    ? { ok: true, notice: `已取消。${flagged} 筆已付款的款項標記為需退款` }
     : { ok: true };
 }
 

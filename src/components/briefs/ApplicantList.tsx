@@ -35,7 +35,7 @@ export function ApplicantList({ briefId, brief, applicants, initialFilter }: {
 
   return (
     <div>
-      <div role="group" aria-label="篩選報名者" className="flex gap-2 overflow-x-auto pb-1">
+      <div role="group" aria-label="篩選報名者" className="scroll-fade-x flex gap-2 overflow-x-auto pb-1">
         {APPLICANT_FILTERS.map((f) => (
           <button key={f.value} type="button" onClick={() => choose(f.value)} aria-pressed={filter === f.value} className={chip(filter === f.value)}>
             {f.label} <span className="tabular-nums opacity-80">{filterApplicants(applicants, f.value).length}</span>
