@@ -54,9 +54,10 @@ function SelfPreviewBanner({ status }: { status: CreatorStatus }) {
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+/** card：只有獨立區塊（作品、報價）用卡片；其他用分隔線隔開（規格 §8）。 */
+function Section({ title, children, card }: { title: string; children: React.ReactNode; card?: boolean }) {
   return (
-    <section className={cardPad}>
+    <section className={card ? cardPad : "border-t border-line pt-5 md:pt-6"}>
       <h2 className={h2}>{title}</h2>
       <div className="mt-3">{children}</div>
     </section>
@@ -102,7 +103,7 @@ function HeaderCard({ c, favorite }: { c: PublicCreator; favorite?: boolean }) {
         <p className="mt-4 flex items-center gap-1 text-sm text-muted">
           <Star size={14} strokeWidth={1.5} aria-hidden="true" />新創作者・尚無評價
         </p>
-        {c.bio && <p className="mt-4 whitespace-pre-line break-words text-sm text-ink">{c.bio}</p>}
+        {c.bio && <p className="mt-5 whitespace-pre-line break-words border-t border-line pt-5 text-sm text-ink">{c.bio}</p>}
       </div>
     </section>
   );
@@ -110,7 +111,7 @@ function HeaderCard({ c, favorite }: { c: PublicCreator; favorite?: boolean }) {
 
 function StatsCard({ c }: { c: PublicCreator }) {
   return (
-    <section className={cardPad} aria-label="數據">
+    <section className="border-t border-line pt-5 md:pt-6" aria-label="數據">
       <dl className="grid grid-cols-3 gap-2 text-center">
         <Stat label="IG 粉絲" value={formatNumber(c.followerCount)} />
         <Stat label="互動率" value={formatPercent(c.engagementRate)} />
@@ -131,7 +132,7 @@ function Stat({ label, value }: { label: string; value: string }) {
 
 function PortfolioGrid({ name, items }: { name: string; items: PortfolioItem[] }) {
   return (
-    <Section title="作品">
+    <Section title="作品" card>
       <ul className="grid grid-cols-2 gap-2 md:grid-cols-3">
         {items.map((it, i) => {
           const img = (
@@ -166,7 +167,7 @@ function PortfolioGrid({ name, items }: { name: string; items: PortfolioItem[] }
 function RatesSection({ viewer, handle, rates }: { viewer: ViewerKind; handle: string; rates: Rate[] }) {
   if (viewer === "creator") {
     return (
-      <Section title="報價方案">
+      <Section title="報價方案" card>
         <p className="flex items-center gap-2 rounded-input bg-subtle p-4 text-sm font-semibold text-ink">
           <Lock size={16} strokeWidth={1.5} aria-hidden="true" />報價只開放給品牌查看
         </p>
@@ -175,7 +176,7 @@ function RatesSection({ viewer, handle, rates }: { viewer: ViewerKind; handle: s
   }
   if (viewer !== "brand") {
     return (
-      <Section title="報價方案">
+      <Section title="報價方案" card>
         <Link
           href={`/login?next=${encodeURIComponent(`/c/${handle}`)}`}
           className="flex items-center gap-2 rounded-input bg-subtle p-4 text-sm font-semibold text-ink hover:bg-line"
@@ -186,7 +187,7 @@ function RatesSection({ viewer, handle, rates }: { viewer: ViewerKind; handle: s
     );
   }
   return (
-    <Section title="報價方案">
+    <Section title="報價方案" card>
       {rates.length === 0 ? (
         <p className="text-sm text-muted">尚未提供報價，可以直接邀請洽談</p>
       ) : (

@@ -25,15 +25,15 @@ export default async function Image({ params }: { params: Promise<{ handle: stri
     (
       <div
         style={{
-          width: "100%", height: "100%", display: "flex", flexDirection: "column", justifyContent: "space-between",
+          width: "100%", height: "100%", display: "flex", flexDirection: "column", 
           background: OG_COLORS.bg, color: OG_COLORS.ink, padding: 72, position: "relative",
         }}
       >
         <svg width="1200" height="630" viewBox="0 0 1200 630" style={{ position: "absolute", left: 0, top: 0 }}>
-          <path d="M172 272 C 420 520, 760 560, 1080 540" fill="none" stroke={OG_COLORS.thread} strokeWidth="5" strokeLinecap="round" />
-          <circle cx="1080" cy="540" r="10" fill="none" stroke={OG_COLORS.thread} strokeWidth="5" />
+          <path d="M172 272 C 230 500, 640 560, 990 548" fill="none" stroke={OG_COLORS.thread} strokeWidth="5" strokeLinecap="round" />
+          <circle cx="1000" cy="548" r="10" fill="none" stroke={OG_COLORS.thread} strokeWidth="5" />
         </svg>
-        <div style={{ display: "flex", alignItems: "center", gap: 48 }}>
+        <div style={{ display: "flex", alignItems: "flex-start", gap: 48 }}>
           {avatar ? (
             <img src={avatar} alt="" width={200} height={200} style={{ borderRadius: 100, objectFit: "cover", border: `6px solid ${OG_COLORS.thread}` }} />
           ) : (
@@ -63,26 +63,26 @@ export default async function Image({ params }: { params: Promise<{ handle: stri
             >
               {`@${c.handle}`}
             </div>
+            <div style={{ display: "block", maxWidth: 808, fontSize: 36, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
+              {`IG 粉絲 ${formatNumber(c.followerCount)}`}
+            </div>
+            <div style={{ display: "flex", gap: 12, maxWidth: 808, overflow: "hidden", marginTop: 4 }}>
+              {c.categories.slice(0, MAX_OG_CATEGORIES).map((cat) => (
+                <div
+                  key={cat}
+                  style={{
+                    display: "block", padding: "8px 24px", borderRadius: 9999, background: OG_COLORS.surface,
+                    border: `2px solid ${OG_COLORS.line}`, fontSize: 28, maxWidth: 260, overflow: "hidden",
+                    whiteSpace: "nowrap", textOverflow: "ellipsis",
+                  }}
+                >
+                  {cat}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-          <div style={{ fontSize: 44 }}>{`IG 粉絲 ${formatNumber(c.followerCount)}`}</div>
-          <div style={{ display: "flex", gap: 12, width: "100%", overflow: "hidden" }}>
-            {c.categories.slice(0, MAX_OG_CATEGORIES).map((cat) => (
-              <div
-                key={cat}
-                style={{
-                  display: "block", padding: "8px 24px", borderRadius: 9999, background: OG_COLORS.surface,
-                  border: `2px solid ${OG_COLORS.line}`, fontSize: 28, maxWidth: 360, overflow: "hidden",
-                  whiteSpace: "nowrap", textOverflow: "ellipsis",
-                }}
-              >
-                {cat}
-              </div>
-            ))}
-          </div>
-          <div style={{ fontSize: 28, fontWeight: 700 }}>{SITE_NAME}</div>
-        </div>
+        <div style={{ position: "absolute", right: 72, bottom: 66, fontSize: 28, fontWeight: 700 }}>{SITE_NAME}</div>
       </div>
     ),
     { ...size },
