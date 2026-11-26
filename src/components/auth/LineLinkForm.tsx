@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { isValidOtpCode, OTP_MAX_LENGTH, toOtpCode } from "@/lib/auth/otp-code";
-import { isLineLinkError, LINE_LINK_ERRORS, lineVerifyNotice, type LineLinkError } from "@/lib/auth/line/messages";
+import { isLineLinkError, LINE_LINK_ERRORS, lineAccountLabel, lineVerifyNotice, type LineLinkError } from "@/lib/auth/line/messages";
+import { parsePendingResponse, type PendingViewData } from "@/lib/auth/line/pending-view";
 import { btn, input } from "@/components/ui/styles";
 import { ErrorText } from "@/components/ui/ErrorText";
 import { Notice } from "@/components/ui/Notice";
@@ -18,13 +19,15 @@ function safeRedirect(v: unknown): string | null {
 }
 
 /**
- * LINE 登入後的 Email 驗證碼步驟（/login?line=verify）。
+ * LINE 登入後的 Email 驗證碼步驟（/login?line=verify）。先顯示要綁定的 LINE 帳號與 Email，使用者按下才寄驗證碼
+ * （不會因為被人導進 LINE 流程就自動寄信）。
  * 驗證碼的寄送與驗證都在瀏覽器用 Supabase 進行（與 Email 登入相同，頻率限制算在使用者自己的 IP）；
  * 驗證通過、session 建立後，POST /auth/line/link 只負責把 LINE 綁定到這個帳號。
  */
 export function LineLinkForm({ onCancelHref }: { onCancelHref: string }) {
   const supabase = useMemo(() => createClient(), []);
-  const [email, setEmail] = useState<string | null>(null);
+  const [view, setView] = useState<PendingViewData | null>(null);
+  const [sent, setSent] = useState(false);
   const [expired, setExpired] = useState(false);
   const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -50,43 +53,46 @@ export function LineLinkForm({ onCancelHref }: { onCancelHref: string }) {
     const { error: e } = await supabase.auth.signInWithOtp({ email: to, options: { shouldCreateUser: true } });
     setPending(false);
     setCooldown(RESEND_SECONDS);
+    setSent(true);
     if (e?.status === 429) {
       // 剛寄過（例如重新整理頁面）：信箱裡的驗證碼仍然有效
       setInfo("驗證碼剛寄出過，請查看信箱；收不到的話稍後可以重寄。");
       return;
     }
-    if (e) fail("send");
+    if (e) {
+      setSent(false);
+      fail("send");
+      return;
+    }
   }
 
   useEffect(() => {
     if (started.current) return;
     started.current = true;
     void (async () => {
-      let to: string | null = null;
+      let data: PendingViewData | null = null;
       try {
         const res = await fetch("/auth/line/pending", { cache: "no-store" });
-        const body = (await res.json()) as { email?: unknown };
-        to = typeof body.email === "string" ? body.email : null;
+        data = parsePendingResponse(await res.json());
       } catch {
-        to = null;
+        data = null;
       }
-      if (!to) {
-        setExpired(true);
-        return;
-      }
-      setEmail(to);
-      await send(to);
-      codeRef.current?.focus();
+      if (!data) setExpired(true);
+      else setView(data);
     })();
-    // send 只在第一次載入時自動執行
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (sent) codeRef.current?.focus();
+  }, [sent]);
 
   useEffect(() => {
     if (cooldown <= 0) return;
     const t = setTimeout(() => setCooldown((c) => c - 1), 1000);
     return () => clearTimeout(t);
   }, [cooldown]);
+
+  const email = view?.email ?? null;
 
   async function verify() {
     if (!email) return;
@@ -119,8 +125,13 @@ export function LineLinkForm({ onCancelHref }: { onCancelHref: string }) {
     const to = safeRedirect(body?.redirect);
     if (!to) {
       setPending(false);
-      if (body?.error === "mismatch" || body?.error === "expired") setExpired(true);
-      fail(isLineLinkError(body?.error) ? body.error : "failed");
+      if (body?.error === "mismatch" || body?.error === "expired") {
+        setExpired(true);
+        fail(isLineLinkError(body?.error) ? body.error : "failed");
+        return;
+      }
+      // 驗證碼已通過（已登入），只是綁定沒完成：重新整理會被帶離這個畫面，所以直接說明
+      fail("bind");
       return;
     }
     setDone(true);
@@ -135,10 +146,28 @@ export function LineLinkForm({ onCancelHref }: { onCancelHref: string }) {
       </div>
     );
   }
-  if (!email) return <Skeleton className="h-[188px] w-full" />;
+  if (!view || !email) return <Skeleton className="h-[188px] w-full" />;
+  const account = lineAccountLabel(view.name);
+
+  if (!sent) {
+    return (
+      <div>
+        {account && <p className="mb-2 break-words text-sm font-bold text-ink">{account}</p>}
+        <p className="break-words text-sm text-muted">
+          LINE 提供的 Email 是 <span className="font-bold text-ink">{email}</span>。為了確認這個 Email 是你的，我們會寄一組驗證碼過去。
+        </p>
+        <button type="button" disabled={pending} onClick={() => void send(email)} className={`${btn.primary} mt-4 w-full`}>
+          {pending ? "寄送中…" : "寄驗證碼到這個信箱"}
+        </button>
+        <a href={onCancelHref} className={`${btn.ghost} mt-2 w-full`}>改用其他方式登入</a>
+        <div key={attempt} className="mt-3"><ErrorText id={ERROR_ID} message={error} /></div>
+      </div>
+    );
+  }
 
   return (
     <div>
+      {account && <p className="mb-2 break-words text-sm font-bold text-ink">{account}</p>}
       <Notice tone="info" className="mb-4">{lineVerifyNotice(email)}</Notice>
       <form noValidate onSubmit={(e) => { e.preventDefault(); void verify(); }} className="space-y-3">
         <label htmlFor="line-code" className="text-sm font-bold text-ink">驗證碼</label>

@@ -9,10 +9,11 @@ const verify = (token: string) => verifyLineIdToken(token, opts);
 
 describe("verifyLineIdToken", () => {
   it("合法：回傳 sub 與小寫的 Email", () => {
-    expect(verify(makeIdToken(claims(NOW, NONCE)))).toEqual({ ok: true, claims: { sub: TEST_SUB, email: "someone@example.com" } });
+    expect(verify(makeIdToken(claims(NOW, NONCE)))).toEqual({ ok: true, claims: { sub: TEST_SUB, email: "someone@example.com", name: "測試" } });
+    expect(verify(makeIdToken(claims(NOW, NONCE, { name: 7 })))).toMatchObject({ ok: true, claims: { name: null } });
   });
   it("沒有 Email 或格式不對：email 是 null", () => {
-    expect(verify(makeIdToken(claims(NOW, NONCE, { email: undefined })))).toEqual({ ok: true, claims: { sub: TEST_SUB, email: null } });
+    expect(verify(makeIdToken(claims(NOW, NONCE, { email: undefined })))).toEqual({ ok: true, claims: { sub: TEST_SUB, email: null, name: "測試" } });
     expect(verify(makeIdToken(claims(NOW, NONCE, { email: "not-an-email" })))).toMatchObject({ ok: true, claims: { email: null } });
     expect(verify(makeIdToken(claims(NOW, NONCE, { email: 42 })))).toMatchObject({ ok: true, claims: { email: null } });
   });

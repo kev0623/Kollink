@@ -184,6 +184,8 @@ describe("GET /auth/line/callback", () => {
     expect(m.signOut).not.toHaveBeenCalled();
     const linkCookie = cookieFrom(res, "kl_line_link")!;
     expect(linkCookie.header).toMatch(/HttpOnly/i);
+    const { unseal } = await import("@/lib/auth/line/sealed-cookie");
+    expect(unseal(linkCookie.value, "link", TEST_CHANNEL_SECRET, Math.floor(Date.now() / 1000))).toMatchObject({ name: "測試", email: "someone@example.com" });
     expect(linkCookie.header).toMatch(/Path=\/auth\/line(;|$)/);
     expect(linkCookie.value).not.toContain("someone");
     expect(cookieFrom(res, "kl_line_flow")?.header).toMatch(/Max-Age=0/);
@@ -224,13 +226,13 @@ describe("GET /auth/line/callback", () => {
 
 describe("GET /auth/line/pending", () => {
   const now = () => Math.floor(Date.now() / 1000);
-  const get = (cookie: string | null, site = "same-origin") =>
-    pending(new NextRequest(`${SITE}/auth/line/pending`, { headers: { "sec-fetch-site": site, ...(cookie ? { cookie: `kl_line_link=${cookie}` } : {}) } }));
-  it("回傳這個瀏覽器自己的 LINE Email（不含 LINE ID、帳號 id）", async () => {
-    const c = seal("link", { sub: TEST_SUB, email: "someone@example.com", kind: "existing", uid: "user-2", next: null, role: null }, TEST_CHANNEL_SECRET, now() + 600);
-    const res = await get(c);
+  const get = (cookie: string | null, site: string | null = "same-origin") =>
+    pending(new NextRequest(`${SITE}/auth/line/pending`, { headers: { ...(site ? { "sec-fetch-site": site } : {}), ...(cookie ? { cookie: `kl_line_link=${cookie}` } : {}) } }));
+  const valid = () => seal("link", { sub: TEST_SUB, email: "someone@example.com", name: "小明", kind: "existing", uid: "user-2", next: null, role: null }, TEST_CHANNEL_SECRET, now() + 600);
+  it("回傳這個瀏覽器自己的 LINE Email 與顯示名稱（不含 LINE ID、帳號 id）", async () => {
+    const res = await get(valid());
     const body = await res.json();
-    expect(body).toEqual({ email: "someone@example.com" });
+    expect(body).toEqual({ email: "someone@example.com", name: "小明" });
     expect(res.headers.get("cache-control")).toContain("no-store");
   });
   it("沒有 cookie、過期、用途不對：expired", async () => {
@@ -238,8 +240,13 @@ describe("GET /auth/line/pending", () => {
     const flow = seal("flow", { sub: TEST_SUB, email: "someone@example.com" }, TEST_CHANNEL_SECRET, now() + 600);
     expect(await (await get(flow)).json()).toEqual({ error: "expired" });
   });
-  it("跨站請求：403", async () => {
-    expect((await get(null, "cross-site")).status).toBe(403);
+  it("沒有 Sec-Fetch-Site（舊瀏覽器）：允許", async () => {
+    expect(await (await get(valid(), null)).json()).toEqual({ email: "someone@example.com", name: "小明" });
+  });
+  it.each(["same-site", "cross-site"])("Sec-Fetch-Site=%s：403", async (site) => {
+    const res = await get(valid(), site);
+    expect(res.status).toBe(403);
+    expect(res.headers.get("cache-control")).toContain("no-store");
   });
 });
 

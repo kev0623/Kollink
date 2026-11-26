@@ -7,7 +7,7 @@ import { safeEqual } from "./sealed-cookie";
 // 我們自己驗：只接受 HS256、驗簽用固定時間比較、iss／aud／exp／iat／nonce 全部檢查。
 // 不呼叫 LINE 的 /verify 端點：token 是剛從 LINE token 端點（TLS、伺服器對伺服器）拿到的，本地驗證不多一次網路往返，也能完整單元測試。
 
-export type LineClaims = { sub: string; email: string | null };
+export type LineClaims = { sub: string; email: string | null; name: string | null };
 export type VerifyFailure = "format" | "alg" | "signature" | "iss" | "aud" | "exp" | "iat" | "nonce" | "sub";
 export type VerifyResult = { ok: true; claims: LineClaims } | { ok: false; reason: VerifyFailure };
 
@@ -50,5 +50,6 @@ export function verifyLineIdToken(
   if (typeof c.sub !== "string" || !LINE_SUB_RE.test(c.sub)) return { ok: false, reason: "sub" };
 
   const rawEmail = typeof c.email === "string" ? c.email.trim().toLowerCase() : "";
-  return { ok: true, claims: { sub: c.sub, email: rawEmail && isEmail(rawEmail) ? rawEmail : null } };
+  // name 只原樣傳出（字串才取）；清理在 cleanLineName（存進 cookie 前）
+  return { ok: true, claims: { sub: c.sub, email: rawEmail && isEmail(rawEmail) ? rawEmail : null, name: typeof c.name === "string" ? c.name : null } };
 }

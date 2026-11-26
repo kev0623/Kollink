@@ -40,7 +40,7 @@ export default function PrivacyPage() {
 
       <LegalSection id="privacy-data" title="二、我們蒐集的資料">
         <ul>
-          <li><strong>帳號資料：</strong>Email、身分（品牌或創作者）。使用 Google 登入時，另外會收到 Google 提供的 Email、名稱與大頭貼網址。使用 LINE 登入時，我們會收到 LINE 使用者 ID、顯示名稱、大頭貼網址與 Email，只儲存 LINE 使用者 ID（用來辨識是同一個 LINE 帳號）與 Email，不儲存 LINE 的顯示名稱與大頭貼。</li>
+          <li><strong>帳號資料：</strong>Email、身分（品牌或創作者）。使用 Google 登入時，另外會收到 Google 提供的 Email、名稱與大頭貼網址。使用 LINE 登入時，我們會收到 LINE 使用者 ID、顯示名稱、大頭貼網址與 Email，只儲存 LINE 使用者 ID（用來辨識是同一個 LINE 帳號）與 Email；LINE 的顯示名稱只在第一次綁定時暫存在你瀏覽器的加密 Cookie 裡（讓你確認要綁定的 LINE 帳號，10 分鐘內失效），不存進我們的資料庫，大頭貼則不使用。</li>
           <li><strong>品牌資料：</strong>品牌名稱、產業、Logo。</li>
           <li><strong>創作者資料：</strong>網址代稱、Instagram 帳號、追蹤數、互動率、地區、類別、自我介紹、頭像與作品圖片。審核通過後，這些資料會顯示在你的公開頁。</li>
           <li><strong>創作者收款帳戶：</strong>銀行代碼、分行代碼、帳號與戶名。<strong>只有你本人與平台管理員看得到</strong>，品牌看不到，只用於撥款。</li>

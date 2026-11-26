@@ -153,7 +153,7 @@ Supabase 的自訂 OIDC 登入不能用在 LINE 網頁登入（LINE 網頁登入
   1. 這個 LINE 已經綁定帳號 → 直接登入（伺服器用 Supabase 管理金鑰產生一次性的登入 token，立刻在伺服器換成 session，token 不會出現在網址）。
   2. LINE 沒有提供 Email → 不建立帳號，登入頁顯示「LINE 沒有提供 Email…」。
   3. 其他情況（Email 已有帳號，或是新的 Email，畫面一律相同、不透露帳號是否存在）→ 把 LINE ID 與 Email 加密存進 10 分鐘的 cookie，導到 `/login?line=verify`。這個瀏覽器若已登入別的帳號，先登出（否則 proxy 會把 `/login` 導走，綁定時也無法確認 session 是誰的）。
-- `/login?line=verify`：畫面向 `GET /auth/line/pending` 取得這個瀏覽器自己的 LINE Email 並顯示，**在瀏覽器**用 Supabase 寄驗證碼與驗證（跟 Email 登入完全相同，Supabase 的頻率限制算在使用者自己的 IP，不會因為伺服器共用 IP 而互相影響）。
+- `/login?line=verify`：畫面向 `GET /auth/line/pending` 取得這個瀏覽器自己的 LINE Email 與顯示名稱並顯示，使用者按「寄驗證碼到這個信箱」後**在瀏覽器**用 Supabase 寄驗證碼與驗證（跟 Email 登入完全相同，Supabase 的頻率限制算在使用者自己的 IP，不會因為伺服器共用 IP 而互相影響）。
 - `POST /auth/line/link`：只負責綁定。必須同源（Origin），目前的 session（剛用驗證碼登入的帳號）Email 必須等於 LINE 的 Email（既有帳號還要是同一個 user id），才寫入綁定；不符就登出並清掉暫存 cookie。
 - LINE 不保證 Email 已驗證，所以不能只憑 LINE 給的 Email 就登入既有帳號，也不能先替那個 Email 建帳號（否則別人用填了你 Email 的 LINE 可以先搶註）；一律要先通過寄到該 Email 的驗證碼。
 - 綁定存在 `public.line_identities`（一個帳號最多綁一個 LINE、一個 LINE 只能綁一個帳號）。這張表 API 角色完全不能讀寫，只能透過 `line_login_lookup`、`line_link_identity` 兩個函式（只授權給 service_role）。
@@ -213,7 +213,7 @@ select count(*) from information_schema.tables where table_schema = 'public' and
    `SITE_URL` 用來組 LINE 的回呼網址（不會看請求的 Host 標頭）；只設 `SITE_URL` 不會開啟綠界付款（付款還需要 `ECPAY_*`）。
 7. 重新部署：Deployments → 最新一筆 Production → ⋯ → Redeploy。
 8. 測試（用無痕視窗、頻道 Developing 時用已加入 Tester 的 LINE 帳號）：
-   - [ ] `/signup` 選「創作者」→「使用 LINE 登入」→ LINE 同意畫面要列出 Email → 回到網站顯示「我們寄了一組驗證碼到 LINE 提供的 Email（你的信箱）…」→ 收信輸入驗證碼 → 進入填寫創作者資料。
+   - [ ] `/signup` 選「創作者」→「使用 LINE 登入」→ LINE 同意畫面要列出 Email → 回到網站顯示「要綁定的 LINE 帳號：（你的 LINE 名稱）」與 LINE 的 Email → 按「寄驗證碼到這個信箱」→ 收信輸入驗證碼 → 進入填寫創作者資料。
    - [ ] 登出後再用 LINE 登入 → 不需要驗證碼，直接進入。
    - [ ] 用已經以 Email 註冊過的信箱的 LINE 帳號登入 → 同樣的驗證碼畫面 → 輸入驗證碼 → 進到原本的帳號（不會多一個帳號）。
    - [ ] 已經登入的瀏覽器再按「使用 LINE 登入」（未綁定的 LINE）→ 會先登出、出現驗證碼畫面。
@@ -228,6 +228,9 @@ select count(*) from information_schema.tables where table_schema = 'public' and
 - `/auth/line/start` 沒有每個 IP 的頻率限制（它只設定暫存 cookie，不會寄信或建帳號）；需要時用 Vercel Firewall 對 `/auth/line/` 加規則。
 - LINE 綁定到帳號時寄通知信給帳號擁有者（「你的帳號已綁定 LINE」）。
 - 設定頁加「LINE 已綁定／解除綁定」；目前解除綁定只能用上面的 SQL。
+- 用還沒綁定的 LINE 登入時，這個瀏覽器原本登入的帳號會先被登出（只登出這個裝置）：否則到不了輸入驗證碼的畫面，綁定時也無法確認 session 屬於誰。這是刻意的行為。
+- 驗證碼畫面要按「寄驗證碼到這個信箱」才會寄信（不會因為被人導進 LINE 流程就自動寄）；畫面顯示 LINE 的顯示名稱（只放在加密暫存 cookie，不存資料庫），讓使用者確認要綁定的是哪個 LINE。
+- 之後改用自訂網域時，如果該網域底下有**不受信任的子網域**（別人能放內容的子網域），子網域可以替主網域設定 cookie（cookie tossing），有機會干擾 LINE 暫存 cookie 或 Supabase session cookie。屆時 LINE 暫存 cookie 改用 `__Host-` 前綴（要搭配 `Path=/`）或不要把不受信任的服務放在同一個網域下。
 
 ## 管理後台（/admin）
 

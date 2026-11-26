@@ -11,6 +11,7 @@ import {
 import { safeEqual, seal, unseal } from "@/lib/auth/line/sealed-cookie";
 import { verifyLineIdToken } from "@/lib/auth/line/id-token";
 import { exchangeLineCode, resolveLineAccount } from "@/lib/auth/line/flow";
+import { cleanLineName } from "@/lib/auth/line/pending";
 import { clearLineCookie, lineCookieOptions, logLine, toLoginError } from "@/lib/auth/line/http";
 import type { LineErrorCode } from "@/lib/auth/line/messages";
 
@@ -62,7 +63,7 @@ export async function GET(request: NextRequest) {
     logLine("id_token", verified.reason);
     return fail("line_failed");
   }
-  const { sub, email } = verified.claims;
+  const { sub, email, name } = verified.claims;
 
   const admin = createAdminClient();
   const { data: rows, error: lookupErr } = await admin.rpc("line_login_lookup", { p_line_sub: sub, p_email: email ?? "" });
@@ -112,7 +113,7 @@ export async function GET(request: NextRequest) {
   }
   const linkCookie = seal(
     "link",
-    { sub, email, kind: decision.kind === "verify_existing" ? "existing" : "new", uid: decision.kind === "verify_existing" ? decision.userId : null, next, role },
+    { sub, email, name: cleanLineName(name), kind: decision.kind === "verify_existing" ? "existing" : "new", uid: decision.kind === "verify_existing" ? decision.userId : null, next, role },
     config.channelSecret,
     now + LINE_COOKIE_TTL,
   );
