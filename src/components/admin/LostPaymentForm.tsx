@@ -22,6 +22,7 @@ export function LostPaymentForm({ collabId, merchantTradeNo, amount }: { collabI
   const [amt, setAmt] = useState("");
   const [memo, setMemo] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [errs, setErrs] = useState<{ ptn?: string; amt?: string; memo?: string }>({});
   const [notice, setNotice] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const ptnRef = useRef<HTMLInputElement>(null);
@@ -39,10 +40,16 @@ export function LostPaymentForm({ collabId, merchantTradeNo, amount }: { collabI
     );
   }
   function submit() {
-    if (!PROVIDER_TRADE_NO_RE.test(ptn.trim())) return setError("綠界交易編號是 1–20 位英數字");
-    if (parseAmount(amt) === null) return setError("請填綠界後台顯示的金額（整數）");
+    const next: { ptn?: string; amt?: string; memo?: string } = {};
+    if (!PROVIDER_TRADE_NO_RE.test(ptn.trim())) next.ptn = "綠界交易編號是 1–20 位英數字";
+    if (parseAmount(amt) === null) next.amt = "請填綠界後台顯示的金額（整數）";
     const err = validateAdminNote(memo.trim(), "說明");
-    if (err) return setError(err);
+    if (err) next.memo = err;
+    setErrs(next);
+    if (next.ptn || next.amt || next.memo) {
+      setError(null);
+      return;
+    }
     setError(null);
     startTransition(async () => {
       try {
@@ -67,20 +74,20 @@ export function LostPaymentForm({ collabId, merchantTradeNo, amount }: { collabI
       <p className="text-sm text-ink">
         先在綠界廠商後台查 <b className="break-all font-mono">{merchantTradeNo}</b>，確認交易成功、金額是 {formatTwd(amount)}。
       </p>
-      <Field label="綠界交易編號">
-        {(c) => <input {...c} ref={ptnRef} value={ptn} onChange={(e) => setPtn(e.target.value)} disabled={pending} maxLength={20} autoComplete="off" className={`${input} font-mono`} />}
+      <Field label="綠界交易編號" error={errs.ptn}>
+        {(c) => <input {...c} ref={ptnRef} value={ptn} onChange={(e) => { setPtn(e.target.value); setErrs((x) => ({ ...x, ptn: undefined })); }} disabled={pending} maxLength={20} autoComplete="off" className={`${input} font-mono`} />}
       </Field>
-      <Field label="綠界後台顯示的金額">
-        {(c) => <input {...c} value={amt} onChange={(e) => setAmt(e.target.value)} disabled={pending} inputMode="numeric" autoComplete="off" className={input} />}
+      <Field label="綠界後台顯示的金額" error={errs.amt}>
+        {(c) => <input {...c} value={amt} onChange={(e) => { setAmt(e.target.value); setErrs((x) => ({ ...x, amt: undefined })); }} disabled={pending} inputMode="numeric" autoComplete="off" className={input} />}
       </Field>
-      <Field label="說明（只有管理員看得到）">
-        {(c) => <textarea {...c} rows={2} value={memo} onChange={(e) => setMemo(e.target.value)} disabled={pending} className={textarea} />}
+      <Field label="說明（只有管理員看得到）" error={errs.memo}>
+        {(c) => <textarea {...c} rows={2} value={memo} onChange={(e) => { setMemo(e.target.value); setErrs((x) => ({ ...x, memo: undefined })); }} disabled={pending} className={textarea} />}
       </Field>
       <div className="flex flex-wrap gap-2">
         <button type="button" onClick={submit} disabled={pending} className={btn.primary}>
           {pending ? "處理中…" : "標記已付款"}
         </button>
-        <button type="button" onClick={() => { setOpen(false); setError(null); }} disabled={pending} className={btn.secondary}>
+        <button type="button" onClick={() => { setOpen(false); setError(null); setErrs({}); }} disabled={pending} className={btn.secondary}>
           取消
         </button>
       </div>

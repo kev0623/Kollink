@@ -69,8 +69,8 @@ async function Section({ params }: Props) {
       changedRecently: accountChangedRecently(account?.updatedAt ?? null, now),
     };
   }
-  // 只有等待付款的合作案才補登；已取消或完成的不顯示（QA m17）
-  const lost = c.status === "awaiting_payment"
+  // 等待付款或已取消（取消後才到的款項）可補登，與 adminCollabActions 一致；參與者管理員不顯示
+  const lost = actions.lostPayment
     ? lostPaymentCandidates(payments).map((p) => ({ merchantTradeNo: p.merchantTradeNo, amount: p.amount }))
     : [];
   return (
@@ -85,7 +85,7 @@ async function Section({ params }: Props) {
         <Notice tone="info">你是這個合作案的參與者，不能用管理員身分處理。請另一位管理員處理。</Notice>
       ) : (
         <AdminCollabPanel
-          collabId={c.id} amount={c.amount} actions={actions} lost={lost} payout={payout}
+          collabId={c.id} status={c.status} amount={c.amount} actions={actions} lost={lost} payout={payout}
           paid={payments.some((p) => p.status === "paid" && !p.refundRequired && !p.refundedAt)}
         />
       )}

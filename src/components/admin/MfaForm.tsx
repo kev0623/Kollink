@@ -79,8 +79,10 @@ export function MfaForm({ mode, factorId, next }: Props) {
           {enrollment && (
             <div className="space-y-3">
               {/* QR Code 是 Supabase 回傳的 data URI（CSP img-src 已允許 data:） */}
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={enrollment.qrCode} alt="驗證器 QR Code" width={192} height={192} className="mx-auto rounded-input border border-line bg-surface p-2" />
+              <div className="mx-auto w-fit rounded-card border border-line bg-qr-bg p-5">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={enrollment.qrCode} alt="驗證器 QR Code" width={192} height={192} className="block size-48" />
+              </div>
               <p className="text-sm text-muted">無法掃描時，請在驗證器手動輸入這組密鑰：</p>
               <p className="break-all rounded-input border border-line bg-subtle px-3 py-2 font-mono text-sm text-ink select-all">{enrollment.secret}</p>
             </div>
@@ -97,7 +99,7 @@ export function MfaForm({ mode, factorId, next }: Props) {
         disabled={!activeFactorId} className={`${input} tracking-widest`}
       />
       <button type="submit" disabled={pending || !activeFactorId} className={`${btn.primary} w-full`}>
-        {mode === "enroll" ? "完成綁定" : "驗證"}
+        {pending ? "驗證中…" : mode === "enroll" ? "完成綁定" : "驗證"}
       </button>
       <ErrorText id="mfa-error" message={error} />
     </form>

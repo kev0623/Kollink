@@ -6,7 +6,6 @@ import { SignOutButton } from "@/components/shell/SignOutButton";
 import { SideNav } from "@/components/shell/SideNav";
 import { BottomTabBar } from "@/components/shell/BottomTabBar";
 import { MobileTopBar } from "@/components/shell/MobileTopBar";
-import { SITE_NAME } from "@/lib/site";
 import { ADMIN_NAV } from "@/components/shell/nav";
 import { SkipLink } from "@/components/ui/SkipLink";
 import { ListSkeleton } from "@/components/ui/Skeleton";
@@ -35,7 +34,7 @@ async function Gate({ children }: { children: React.ReactNode }) {
   await requireAdmin();
   return (
     <>
-      <MobileTopBar title={`${SITE_NAME} 管理員`} accountHref={null}>
+      <MobileTopBar title="管理後台" accountHref={null}>
         <ThemeSelect bar />
         <SignOutButton />
       </MobileTopBar>

@@ -31,9 +31,13 @@ describe("globals.css 的主題 token", () => {
   });
   it("規格 §2.1 的 token 都在", () => {
     for (const k of ["bg", "panel", "surface", "subtle", "line", "line-strong", "ink", "on-ink", "muted", "primary", "primary-hover",
-      "on-primary", "primary-soft", "accent", "thread", "thread-glow", "far", "success", "success-soft", "danger", "danger-soft", "focus"]) {
+      "on-primary", "primary-soft", "accent", "thread", "thread-glow", "far", "success", "success-soft", "danger", "danger-soft", "focus", "qr-bg"]) {
       expect(dark.has(`--color-${k}`), k).toBe(true);
     }
+  });
+  it("QR Code 底色兩個主題都是白色（掃描需要亮底）", () => {
+    expect(dark.get("--color-qr-bg")).toBe("#FFFFFF");
+    expect(light.get("--color-qr-bg")).toBe("#FFFFFF");
   });
   it("淺色 success 加深（QA m9）", () => {
     expect(light.get("--color-success")).toBe("#17705A");

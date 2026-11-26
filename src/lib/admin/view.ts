@@ -241,6 +241,11 @@ export function lostPaymentCandidates(payments: AdminPayment[]): AdminPayment[] 
   return payments.filter((p) => p.merchantTradeNo.startsWith("KL") && p.status !== "paid");
 }
 
+/** 補登付款時的提醒：不在等待付款的合作案（例如已取消）補登後，這筆款項會標記為需退款。 */
+export function lostPaymentNote(status: CollabStatus): string | null {
+  return status === "awaiting_payment" ? null : "這個合作案已經不在等待付款。補登後這筆款項會標記為需退款。";
+}
+
 // ── 撥款 ──
 
 export type AdminPayoutRow = {

@@ -22,5 +22,8 @@ describe("amountMatches（人工標記已付款要核對金額，QA m17）", () 
     expect(amountMatches("1200", 12000)).toBe(false);
     expect(amountMatches("", 12000)).toBe(false);
     expect(amountMatches("12000.5", 12000)).toBe(false);
+    expect(amountMatches("１２，０００", 12000)).toBe(true);
+    expect(amountMatches("２５００００", 250000)).toBe(true);
+    expect(amountMatches("12，000", 12000)).toBe(true);
   });
 });

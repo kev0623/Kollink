@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { adminCancelAction, markPayoutAction, recordOfflinePaymentAction } from "@/app/admin/actions";
-import type { AdminCollabActions } from "@/lib/admin/view";
+import { lostPaymentNote, type AdminCollabActions } from "@/lib/admin/view";
+import type { CollabStatus } from "@/lib/collabs/view";
 import { formatTwd } from "@/lib/format";
 import { formatAccountNumber } from "@/lib/payout-account";
 import { Notice } from "@/components/ui/Notice";
@@ -17,6 +18,7 @@ export type PayoutPanel = {
 
 type Props = {
   collabId: string;
+  status: CollabStatus;
   amount: number;
   actions: AdminCollabActions;
   lost: { merchantTradeNo: string; amount: number }[];
@@ -25,7 +27,7 @@ type Props = {
 };
 
 /** 合作案詳情的管理員動作（「平台」卡片）：人工標記已付款、補登通知遺失的付款、撥款、平台取消。 */
-export function AdminCollabPanel({ collabId, amount, actions, lost, payout, paid }: Props) {
+export function AdminCollabPanel({ collabId, status, amount, actions, lost, payout, paid }: Props) {
   // 取消成功後 actions.cancel 變 false、NoteAction 會被卸載，所以結果提示放在面板這一層
   const [cancelNotice, setCancelNotice] = useState<string | null>(null);
   const none = !actions.offlinePayment && !actions.payout && !actions.cancel && !actions.lostPayment;
@@ -52,7 +54,7 @@ export function AdminCollabPanel({ collabId, amount, actions, lost, payout, paid
             <Notice tone="danger">{payout.blocker ?? "創作者還沒填收款帳戶"}</Notice>
           ) : (
             <NoteAction
-              label="已轉帳，標記撥款" fieldLabel="轉帳說明（日期、轉出帳戶、交易序號；只有管理員看得到）" noteName="轉帳說明"
+              primary label="已轉帳，標記撥款" fieldLabel="轉帳說明（日期、轉出帳戶、交易序號；只有管理員看得到）" noteName="轉帳說明"
               confirmLabel="確定已撥款"
               message="先在銀行轉帳給上面的帳戶，再標記。標記後合作案結案，不能復原。"
               onSubmit={(memo) => markPayoutAction(collabId, memo, payout.account ? payout.account.accountNumber.slice(-4) : "")}
@@ -78,6 +80,7 @@ export function AdminCollabPanel({ collabId, amount, actions, lost, payout, paid
         <div className="space-y-2">
           <h3 className="text-lg font-bold text-ink">綠界已扣款、但沒收到通知</h3>
           <p className="text-sm text-muted">綠界一天最多重送 4 次通知；全部失敗時，在綠界後台確認後在這裡補登。</p>
+          {lostPaymentNote(status) && <Notice tone="warning">{lostPaymentNote(status)}</Notice>}
           {lost.map((p) => <LostPaymentForm key={p.merchantTradeNo} collabId={collabId} merchantTradeNo={p.merchantTradeNo} amount={p.amount} />)}
         </div>
       )}

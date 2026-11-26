@@ -24,6 +24,6 @@ export const PROVIDER_TRADE_NO_RE = /^[A-Za-z0-9]{1,20}$/;
 
 /** 人工標記已付款前的金額核對：只在畫面上擋（伺服器端的 admin_record_* 不變）。 */
 export function amountMatches(input: string, expected: number): boolean {
-  const d = input.replace(/[,，\s]/g, "");
+  const d = input.normalize("NFKC").replace(/[,\s]/g, "");
   return /^\d{1,9}$/.test(d) && Number(d) === expected;
 }

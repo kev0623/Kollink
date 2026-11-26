@@ -25,13 +25,15 @@ type Props = {
   noteName: string;
   confirmLabel: string;
   danger?: boolean;
+  /** 這是面板唯一的主要動作：觸發按鈕用主要樣式 */
+  primary?: boolean;
   /** 人工標記已付款：要求再輸入一次金額核對（只在畫面上擋） */
   confirmAmount?: number;
   onSubmit: (note: string) => Promise<Result>;
 };
 
 /** 管理員動作：頁面內展開的確認區塊，原因／說明必填、最多 500 字（不用瀏覽器的 confirm()）。 */
-export function NoteAction({ label, message, fieldLabel, noteName, confirmLabel, danger, confirmAmount, onSubmit }: Props) {
+export function NoteAction({ label, message, fieldLabel, noteName, confirmLabel, danger, primary, confirmAmount, onSubmit }: Props) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [note, setNote] = useState("");
@@ -95,8 +97,8 @@ export function NoteAction({ label, message, fieldLabel, noteName, confirmLabel,
       <div className="w-full sm:w-auto">
         <button
           ref={triggerRef} type="button" onClick={() => { setNotice(null); setOpen(true); }}
-          aria-expanded={false} aria-controls={regionId}
-          className={`${danger ? btn.danger : btn.secondary} w-full sm:w-auto`}
+          aria-expanded={false}
+          className={`${danger ? btn.danger : primary ? btn.primary : btn.secondary} w-full sm:w-auto`}
         >
           {danger && <XCircle size={16} strokeWidth={1.5} aria-hidden="true" />}
           {label}

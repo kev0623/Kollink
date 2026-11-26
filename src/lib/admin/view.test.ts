@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  accountChangedRecently, adminCollabActions, creatorActions, igUrl, lostPaymentCandidates, paymentSourceLabel,
+  accountChangedRecently, adminCollabActions, creatorActions, igUrl, lostPaymentCandidates, lostPaymentNote, paymentSourceLabel,
   payoutBlocker, toAdminCollab, toAdminCreator, toAdminPayment, toAnomaly, toFlaggedMessage, toOverview,
   toPayoutAccountFull, totalOf, type AdminPaymentRow,
 } from "./view";
@@ -65,6 +65,13 @@ describe("付款單", () => {
     ];
     expect(lostPaymentCandidates(rows).map((p) => p.id)).toEqual(["p", "s"]);
     expect(rows[3].status).toBe("pending");
+  });
+});
+
+describe("補登付款的提醒", () => {
+  it("只有不在等待付款時顯示", () => {
+    expect(lostPaymentNote("awaiting_payment")).toBeNull();
+    expect(lostPaymentNote("cancelled")).toBe("這個合作案已經不在等待付款。補登後這筆款項會標記為需退款。");
   });
 });
 
