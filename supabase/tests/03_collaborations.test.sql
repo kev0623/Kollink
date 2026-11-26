@@ -249,9 +249,12 @@ select throws_ok(
 -- ===== 管理員撥款 =====
 select set_config('request.jwt.claims',
   '{"sub":"00000000-0000-0000-0000-0000000000a1","role":"authenticated"}', true);
+-- 計畫 9 起撥款只能經由 admin_mark_payout（kollink.paying_out 旗標）；這裡直接模擬旗標，只測狀態機
+select set_config('kollink.paying_out', 'on', true);
 select is(
   public.transition_collaboration('00000000-0000-0000-0000-00000000cc01', 'payout'),
   'completed'::public.collab_status, '管理員撥款，結案');
+select set_config('kollink.paying_out', 'off', true);
 select is(
   (select published_url from public.collaborations
      where id = '00000000-0000-0000-0000-00000000cc01'),
