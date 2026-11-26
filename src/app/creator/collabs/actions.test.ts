@@ -19,13 +19,22 @@ beforeEach(() => {
 });
 
 describe("creatorCollabAction", () => {
-  it("只接受接受與婉拒", async () => {
+  it("只接受接受、婉拒與退出", async () => {
     expect(await creatorCollabAction(COLLAB, "submit")).toMatchObject({ ok: false });
     expect(rpc).not.toHaveBeenCalled();
     rpc.mockResolvedValue({ data: "awaiting_payment", error: null });
     expect(await creatorCollabAction(COLLAB, "accept")).toEqual({ ok: true });
     expect(requireRole).toHaveBeenCalledWith("creator");
     expect(rpc).toHaveBeenCalledWith("transition_collaboration", { p_collab_id: COLLAB, p_action: "accept" });
+  });
+  it("待付款時退出合作（cancel）；停權中接受邀約的錯誤轉成中文", async () => {
+    rpc.mockResolvedValue({ data: "cancelled", error: null });
+    expect(await creatorCollabAction(COLLAB, "cancel")).toEqual({ ok: true });
+    expect(rpc).toHaveBeenCalledWith("transition_collaboration", { p_collab_id: COLLAB, p_action: "cancel" });
+    rpc.mockResolvedValue({ data: null, error: { code: "55000", message: "creator not approved" } });
+    const r = await creatorCollabAction(COLLAB, "accept");
+    expect(r).toMatchObject({ ok: false });
+    expect(r.ok === false && r.error).toContain("審核");
   });
 });
 

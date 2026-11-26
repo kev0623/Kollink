@@ -16,26 +16,18 @@ function subsQuery(data: unknown[]) {
   return q;
 }
 
-/** payments：select → eq → order → limit */
-const paymentsSelect = vi.fn();
-function paymentsQuery(data: unknown[]) {
-  const q = {
-    select: (cols: string) => { paymentsSelect(cols); return q; },
-    eq: () => q, order: () => q, limit: async () => ({ data, error: null }),
+/** from(table)：只剩 collaboration_submissions（付款改走 rpc get_my_payment_details，資料庫不再授權直接讀 ATM 欄位） */
+function tables(subs: unknown[]) {
+  return (table: string) => {
+    if (table === "payments") throw new Error("不可直接讀 payments");
+    return subsQuery(subs);
   };
-  return q;
-}
-
-/** from(table)：payments 與 collaboration_submissions 各回各的 */
-function tables(subs: unknown[], payments: unknown[] = []) {
-  return (table: string) => (table === "payments" ? paymentsQuery(payments) : subsQuery(subs));
 }
 
 beforeEach(() => {
   rpc.mockReset();
   from.mockReset();
   createSignedUrls.mockReset();
-  paymentsSelect.mockReset();
 });
 
 describe("loadMyCollabs", () => {
@@ -81,14 +73,35 @@ describe("loadCollabDetail", () => {
     expect(createSignedUrls).not.toHaveBeenCalled();
     expect(d?.submissions).toEqual([]);
   });
-  it("一起讀付款單（不讀 raw_notify）", async () => {
-    rpc.mockImplementation(async (fn: string) => fn === "get_collaboration"
-      ? { data: [{ id: ID, status: "awaiting_payment", my_side: "brand" }], error: null }
-      : { data: [], error: null });
+  it("付款單經由 get_my_payment_details 讀取（不直接讀 payments 表）", async () => {
     const pay = { status: "pending", payment_method: "atm", atm_v_account: "9103522850" };
-    from.mockImplementation(tables([], [pay]));
+    rpc.mockImplementation(async (fn: string) => {
+      if (fn === "get_collaboration") return { data: [{ id: ID, status: "awaiting_payment", my_side: "brand" }], error: null };
+      if (fn === "get_my_payment_details") return { data: [pay], error: null };
+      return { data: [], error: null };
+    });
+    from.mockImplementation(tables([]));
     const d = await loadCollabDetail(ID);
+    expect(rpc).toHaveBeenCalledWith("get_my_payment_details", { p_collab_id: ID });
     expect(d?.payments).toEqual([pay]);
-    expect(paymentsSelect.mock.calls[0][0]).not.toContain("raw_notify");
+  });
+  it("創作者拿到的付款單 ATM 欄位是 null，原樣帶回（摘要不會有轉帳資訊）", async () => {
+    const pay = { status: "pending", payment_method: "atm", atm_bank_code: null, atm_v_account: null, atm_expire_date: null };
+    rpc.mockImplementation(async (fn: string) => {
+      if (fn === "get_collaboration") return { data: [{ id: ID, status: "awaiting_payment", my_side: "creator" }], error: null };
+      if (fn === "get_my_payment_details") return { data: [pay], error: null };
+      return { data: [], error: null };
+    });
+    from.mockImplementation(tables([]));
+    expect((await loadCollabDetail(ID))?.payments[0]).toMatchObject({ atm_v_account: null });
+  });
+  it("付款單讀取失敗往上丟", async () => {
+    rpc.mockImplementation(async (fn: string) => {
+      if (fn === "get_collaboration") return { data: [{ id: ID, status: "awaiting_payment", my_side: "brand" }], error: null };
+      if (fn === "get_my_payment_details") return { data: null, error: new Error("denied") };
+      return { data: [], error: null };
+    });
+    from.mockImplementation(tables([]));
+    await expect(loadCollabDetail(ID)).rejects.toThrow("denied");
   });
 });

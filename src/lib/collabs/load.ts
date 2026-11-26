@@ -6,7 +6,7 @@ import {
   type Collab, type CollabEvent, type CollabListItem, type CollabListRow, type CollabRow, type CollabTab,
   type EventRow, type Submission, type SubmissionRow,
 } from "./view";
-import { PAYMENT_COLUMNS, type PaymentRow } from "@/lib/payments/view";
+import type { PaymentRow } from "@/lib/payments/view";
 
 // 合作案的伺服器端讀取。全部用使用者自己的 client（definer 函式與 RLS 自己檢查身分）。
 // 會讀 cookie：只能在 requireRole 之後呼叫。不快取。
@@ -21,7 +21,7 @@ export async function loadMyCollabs(tab: CollabTab): Promise<CollabListItem[]> {
 
 export type SubmissionFile = { path: string; kind: FileKind; label: string; url: string | null };
 export type SubmissionView = Submission & { files: SubmissionFile[]; revisionNotes: string[] };
-/** payments：由新到舊最多 20 筆（RLS：參與者與管理員）；畫面用 summarizePayments 整理。 */
+/** payments：由新到舊最多 20 筆（get_my_payment_details：參與者與管理員）；畫面用 summarizePayments 整理。 */
 export type CollabDetailData = { collab: Collab; submissions: SubmissionView[]; events: CollabEvent[]; payments: PaymentRow[] };
 
 /** 一個合作案的詳情；不是參與者（也不是管理員）或不存在回傳 null。檔案附 1 小時的 signed URL。 */
@@ -38,8 +38,8 @@ export async function loadCollabDetail(id: string): Promise<CollabDetailData | n
       .select("id, round, note, links, file_paths, created_at")
       .eq("collaboration_id", id).order("round", { ascending: true }),
     supabase.rpc("list_collaboration_events", { p_id: id }),
-    supabase.from("payments").select(PAYMENT_COLUMNS)
-      .eq("collaboration_id", id).order("created_at", { ascending: false }).limit(20),
+    // 品牌與管理員拿完整欄位；創作者拿到的 atm_* 是 null（資料庫端處理）。由新到舊最多 20 筆。
+    supabase.rpc("get_my_payment_details", { p_collab_id: id }),
   ]);
   if (subsRes.error) throw subsRes.error;
   if (eventsRes.error) throw eventsRes.error;

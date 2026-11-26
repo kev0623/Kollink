@@ -8,6 +8,7 @@ const MESSAGES: Record<string, string> = {
   "not authenticated": "登入已逾時，請重新登入",
   "not a brand": "這個帳號不是品牌，無法執行此操作",
   "not a creator": "這個帳號不是創作者，無法執行此操作",
+  "text too long": "內容太長，請縮短後再送出",
   "creator not approved": "審核通過後即可報名",
   "not brief owner": "找不到這則招募",
   "brief not found": "找不到這則招募",

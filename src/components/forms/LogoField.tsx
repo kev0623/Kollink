@@ -2,6 +2,7 @@
 import { useId, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { brandLogoUrl } from "@/lib/brand-logo";
+import { hasAllowedImageExtension, uploadErrorMessage } from "@/lib/upload-limits";
 
 const MAX_BYTES = 2 * 1024 * 1024;
 const TYPES: Record<string, string> = { "image/png": "png", "image/jpeg": "jpg", "image/webp": "webp" };
@@ -42,13 +43,13 @@ export function LogoField({ userId, initialPath, error, onBusyChange, disabled }
     if (!file) return;
     setMsg(null);
     const ext = TYPES[file.type];
-    if (!ext) return setMsg("只接受 PNG、JPG、WebP");
+    if (!ext || !hasAllowedImageExtension(file.name)) return setMsg("只接受 PNG、JPG、WebP");
     if (file.size > MAX_BYTES) return setMsg("檔案不能超過 2MB");
     setBusyState(true);
     try {
       const path = `${userId}/${crypto.randomUUID()}.${ext}`;
       const { error: e } = await createClient().storage.from("brand-logos").upload(path, file, { contentType: file.type });
-      if (e) return setMsg("上傳失敗，請再試一次");
+      if (e) return setMsg(uploadErrorMessage(e, "brand-logos"));
       discard(ownedRef.current);
       ownedRef.current = path;
       setLogoPath(path);

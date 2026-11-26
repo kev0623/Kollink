@@ -57,8 +57,12 @@ export function mapAccountError(error: { code?: string; message?: string }):
   if (error.code === "42501" && message === "not a creator") {
     return { kind: "state", state: { formError: "這個帳號不是創作者，無法執行此操作" } };
   }
+  if (error.code === "22023" && message === "text too long") {
+    return { kind: "state", state: { formError: "內容太長，請縮短後再送出" } };
+  }
   if (error.code === "22023") {
     const key = message.replace(/^invalid /, "");
+    if (key === "follower_count") return { kind: "state", state: { fieldErrors: { followerCount: "粉絲數必須是 0 到 1 億的整數" } } };
     const field = Object.hasOwn(FIELD_BY_DB, key) ? FIELD_BY_DB[key] : undefined;
     if (field) return { kind: "state", state: { fieldErrors: { [field]: "格式不正確" } } };
   }

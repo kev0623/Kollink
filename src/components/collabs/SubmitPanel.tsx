@@ -4,6 +4,7 @@ import { useId, useState } from "react";
 import { FileText, Film, ImageIcon, X } from "lucide-react";
 import { submitDeliverablesAction } from "@/app/creator/collabs/actions";
 import { createClient } from "@/lib/supabase/client";
+import { uploadErrorMessage } from "@/lib/upload-limits";
 import {
   DELIVERABLE_ACCEPT, DELIVERABLES_BUCKET, fileKindOf, MAX_DELIVERABLE_FILES, planDeliverableUpload,
 } from "@/lib/deliverables";
@@ -50,7 +51,7 @@ export function SubmitPanel({ collabId, uid }: { collabId: string; uid: string }
         try {
           const { error: e } = await storage.upload(plan.path, file, { contentType: file.type, upsert: false });
           if (e) {
-            failures.push(`${file.name}：上傳失敗，請再試一次`);
+            failures.push(`${file.name}：${uploadErrorMessage(e, "deliverables")}`);
             continue;
           }
         } catch {

@@ -93,6 +93,10 @@ describe("validateCreatorInput", () => {
     expect(validateCreatorInput({ ...okCreator, igUsername: "@mei" })).toBeNull();
     expect(validateCreatorInput({ ...okCreator, igUsername: "mei ig" })?.igUsername).toBeTruthy();
   });
+  it("粉絲數上限 1 億", () => {
+    expect(validateCreatorInput({ ...okCreator, followerCount: "100000000" })?.followerCount).toBeUndefined();
+    expect(validateCreatorInput({ ...okCreator, followerCount: "100000001" })?.followerCount).toBe("粉絲數不能超過 1 億");
+  });
   it.each(["", "-1", "1.5", "abc", "1234567890"])("粉絲數 %s 不合法", (n) => {
     expect(validateCreatorInput({ ...okCreator, followerCount: n })?.followerCount).toBeTruthy();
   });

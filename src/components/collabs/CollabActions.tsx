@@ -30,7 +30,7 @@ export function CollabActions({ collabId, status, side, uid, devPaymentEnabled, 
       <BrandPayment collabId={collabId} status={status} devPaymentEnabled={devPaymentEnabled} payment={payment} summary={summary} />
     );
   }
-  if (side === "creator" && status === "awaiting_payment" && devPaymentEnabled) return <DevMarkPaid collabId={collabId} />;
+  if (side === "creator" && status === "awaiting_payment") return <CreatorLeave collabId={collabId} devPaymentEnabled={devPaymentEnabled} />;
   if (side === "creator" && status === "awaiting_submission") return <SubmitPanel collabId={collabId} uid={uid} />;
   if (side === "brand" && status === "in_review") return <Review collabId={collabId} />;
   if (side === "creator" && status === "awaiting_publish") return <PublishForm collabId={collabId} />;
@@ -60,6 +60,20 @@ function InviteReply({ collabId }: { collabId: string }) {
         />
       </div>
       <Feedback error={error} notice={notice} />
+    </div>
+  );
+}
+
+/** 品牌還沒付款前，創作者可以退出合作（transition_collaboration 的 cancel）；付款之後資料庫不允許。 */
+function CreatorLeave({ collabId, devPaymentEnabled }: { collabId: string; devPaymentEnabled: boolean }) {
+  return (
+    <div className="space-y-3">
+      <ConfirmAction
+        label="退出合作" danger confirmLabel="確定退出"
+        message="退出後這個合作案就結束了，不能復原；品牌可以重新邀請你或改找其他創作者。確定要退出嗎？"
+        onConfirm={() => creatorCollabAction(collabId, "cancel")}
+      />
+      {devPaymentEnabled && <DevMarkPaid collabId={collabId} />}
     </div>
   );
 }

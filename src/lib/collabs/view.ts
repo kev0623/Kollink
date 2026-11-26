@@ -384,7 +384,8 @@ export function eventText(e: CollabEvent): string {
     case "decline":
       return `${who} 婉拒邀約`;
     case "cancel":
-      return `${who} 取消合作`;
+      // 資安修正：創作者可以在品牌付款前退出
+      return e.actorKind === "creator" ? "創作者退出合作" : `${who} 取消合作`;
     case "mark_paid":
       return "款項已託管";
     case "submit":

@@ -3,6 +3,7 @@
 import { useEffect, useId, useState } from "react";
 import { BriefCover } from "@/components/briefs/BriefCover";
 import { createClient } from "@/lib/supabase/client";
+import { uploadErrorMessage } from "@/lib/upload-limits";
 import { BRIEF_COVER_BUCKET, planCoverUpload } from "@/lib/brief-cover";
 import { createCoverOwnership } from "@/lib/cover-ownership";
 
@@ -49,7 +50,7 @@ export function CoverField({ userId, value, onChange, brandName, brandLogoPath, 
     try {
       const { error: e } = await createClient().storage.from(BRIEF_COVER_BUCKET)
         .upload(plan.path, file, { contentType: file.type });
-      if (e) return setMsg("上傳失敗，請再試一次");
+      if (e) return setMsg(uploadErrorMessage(e, "brief-covers"));
       ownership.adopt(plan.path);
       onChange(plan.path);
     } catch {

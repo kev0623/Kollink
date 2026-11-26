@@ -27,3 +27,12 @@ describe("collabFieldError", () => {
     expect(collabFieldError({ code: "42501", message: "invalid title" })).toBeNull();
   });
 });
+
+describe("資安修正新增的錯誤", () => {
+  it("邀請上限、停權、文字太長、管理員是參與者", () => {
+    expect(collabErrorMessage({ code: "54000", message: "too many invites" })).toContain("上限");
+    expect(collabErrorMessage({ code: "55000", message: "creator not approved" })).toContain("審核通過");
+    expect(collabErrorMessage({ code: "22023", message: "text too long" })).toBe("內容太長，請縮短後再送出");
+    expect(collabErrorMessage({ code: "42501", message: "admin is participant" })).toContain("參與者");
+  });
+});

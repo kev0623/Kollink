@@ -24,6 +24,12 @@ describe("summarizePayments", () => {
     expect(summarizePayments([noInfo], NOW).atm).toBeNull();
     expect(summarizePayments([row({}), valid], NOW).atm).toBeNull();
   });
+  it("創作者拿到的 ATM 欄位是 null（get_my_payment_details）：摘要沒有轉帳資訊，其他狀態照常", () => {
+    const creatorRow = row({ payment_method: "atm", status: "pending", amount_twd: 4500 });
+    const s = summarizePayments([creatorRow], NOW);
+    expect(s.atm).toBeNull();
+    expect(summaryForSide(s, "creator").refundPending).toBe(false);
+  });
   it("30 分鐘內的信用卡待付款單：確認中", () => {
     expect(summarizePayments([row({})], NOW).recentCreditPending).toBe(true);
     expect(summarizePayments([row({ created_at: "2026-11-27T03:20:00Z" })], NOW).recentCreditPending).toBe(false);
