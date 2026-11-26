@@ -5,7 +5,8 @@ import { connection } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { homeFor, type Role } from "./post-login";
 
-export type CreatorStatus = "pending" | "approved" | "suspended";
+/** rejected：管理員退回（計畫 9），創作者修正後可以重新送審。 */
+export type CreatorStatus = "pending" | "approved" | "suspended" | "rejected";
 
 export type CurrentUser = {
   id: string;
@@ -20,6 +21,8 @@ export type CurrentUser = {
     categories: string[];
     status: CreatorStatus;
     handleLocked: boolean;
+    /** 退回或停權的原因（管理員寫的，只有本人看得到）；其他狀態是 null */
+    reviewNote: string | null;
   } | null;
   verificationCode: string | null;
 };
@@ -57,7 +60,7 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
   if (profile?.role === "creator") {
     const [{ data: c, error: e1 }, { data: v, error: e2 }] = await Promise.all([
       supabase.from("creator_profiles")
-        .select("handle, ig_username, follower_count, region, categories, status, handle_locked_at")
+        .select("handle, ig_username, follower_count, region, categories, status, handle_locked_at, review_note")
         .eq("user_id", user.id).maybeSingle(),
       supabase.from("creator_verifications").select("code").eq("user_id", user.id).maybeSingle(),
     ]);
@@ -73,6 +76,7 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
         categories: c.categories,
         status: c.status as CreatorStatus,
         handleLocked: c.handle_locked_at !== null,
+        reviewNote: c.review_note ?? null,
       } : null,
       verificationCode: v?.code ?? null,
     };
@@ -80,6 +84,28 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
 
   return base;
 });
+
+/** 目前使用者是不是管理員（admins 表；is_admin() 只授權給 authenticated）。沒有登入是 false。會讀 cookie。 */
+export const getIsAdmin = cache(async (): Promise<boolean> => {
+  const me = await getCurrentUser();
+  if (!me) return false;
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("is_admin");
+  if (error) throw error;
+  return data === true;
+});
+
+/**
+ * 管理後台的守門（計畫 9）：每個 /admin 頁面與 Server Action 都要呼叫（同 requireRole 的理由）。
+ * 未登入導到登入頁；不是管理員導回自己的首頁（沒有 profile 的導到 /onboarding）。
+ * 管理員不一定有 profile：通常是專用帳號，只在 admins 表裡。
+ */
+export async function requireAdmin(): Promise<CurrentUser> {
+  const me = await getCurrentUser();
+  if (!me) redirect("/login?next=/admin");
+  if (!(await getIsAdmin())) redirect(me.profile ? homeFor(me.profile.role) : "/onboarding");
+  return me;
+}
 
 /**
  * 頁面與 Server Action 的角色守門：layout 在用戶端切換頁面時不會重新執行，所以每個讀取使用者資料的頁面都要自己呼叫。

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isDevLoginEnabled } from "./dev-login";
+import { DEV_ACCOUNTS, isDevAccount, isDevLoginEnabled } from "./dev-login";
 
 describe("isDevLoginEnabled", () => {
   it("開發模式 + 本機 Supabase → 開", () => {
@@ -16,5 +16,15 @@ describe("isDevLoginEnabled", () => {
   it("沒有網址或網址無效 → 關", () => {
     expect(isDevLoginEnabled({ NODE_ENV: "development" })).toBe(false);
     expect(isDevLoginEnabled({ NODE_ENV: "development", NEXT_PUBLIC_SUPABASE_URL: "not a url" })).toBe(false);
+  });
+});
+
+describe("測試帳號（計畫 9 加入管理員）", () => {
+  it("只接受 brand、creator、admin", () => {
+    expect(isDevAccount("admin")).toBe(true);
+    expect(isDevAccount("brand")).toBe(true);
+    expect(isDevAccount("root")).toBe(false);
+    expect(isDevAccount(null)).toBe(false);
+    expect(DEV_ACCOUNTS.admin).toBe("dev-admin@kollink.test");
   });
 });
