@@ -2,7 +2,7 @@
 -- 每一項都有「攻擊被擋」與「合法路徑仍可用」。id 前綴 …0000000e5xxx，handle 前綴 sechard_。
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(146);
+select plan(147);
 
 -- ── 測試資料（postgres 身分）──
 -- e5001 品牌 B1、e5002 品牌 B2、e5003 管理員兼品牌 AB
@@ -217,6 +217,9 @@ select is((select status from public.brief_applications where id = '00000000-000
 select throws_ok(
   $$select public.transition_collaboration('00000000-0000-0000-0000-0000000e5d04', 'cancel')$$,
   '22023', null, '已付款（待交稿）後創作者不能退出');
+select throws_ok(
+  $$select public.transition_collaboration('00000000-0000-0000-0000-0000000e5d05', 'cancel')$$,
+  '55000', 'payment in progress', '品牌已取得未逾期的 ATM 帳號後創作者不能退出');
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000e5001","role":"authenticated"}', true);
 select set_config('sh.app4', public.accept_application_with_collab('00000000-0000-0000-0000-0000000e5a04', 6000, 'IG 貼文 1 篇')::text, true);
 select is((select status::text from public.collaborations where id = current_setting('sh.app4')::uuid),

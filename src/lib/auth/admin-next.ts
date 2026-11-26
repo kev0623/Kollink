@@ -20,6 +20,8 @@ export function adminNextPath(input: string | null | undefined): string | null {
   if (!p) return null;
   const pathname = p.split(/[?#]/)[0];
   if (pathname !== "/admin" && !pathname.startsWith("/admin/")) return null;
+  // proxy 的 matcher 不處理以圖片副檔名結尾的路徑，那些路徑上的 x-kollink-path 是用戶端自己帶的，不採用
+  if (/\.[a-z0-9]{2,5}$/i.test(pathname)) return null;
   if (pathname === "/admin/mfa" || pathname.startsWith("/admin/mfa/")) return null;
   return p;
 }

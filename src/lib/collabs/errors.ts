@@ -28,6 +28,7 @@ const MESSAGES: Record<string, string> = {
   "text too long": "內容太長，請縮短後再送出",
   "too many invites": "24 小時內邀請的次數已達上限（30 次），請明天再試",
   "creator not approved": "創作者帳號目前不是審核通過的狀態，無法開始新的合作",
+  "payment in progress": "品牌已取得轉帳帳號，等付款期限過後才能退出；需要協助請聯絡平台。",
   "admin is participant": "你是這個合作案的參與者，不能以管理員身分處理",
 };
 

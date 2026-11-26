@@ -10,6 +10,9 @@ describe("collabErrorMessage", () => {
     expect(collabErrorMessage({ code: "22023", message: "invalid transition: approve from awaiting_publish by brand" })).toBe(COLLAB_STALE_MESSAGE);
     expect(collabErrorMessage({ code: "55000", message: "collaboration not awaiting submission" })).toBe(COLLAB_STALE_MESSAGE);
   });
+  it("ATM 取號後創作者不能退出", () => {
+    expect(collabErrorMessage({ code: "55000", message: "payment in progress" })).toBe("品牌已取得轉帳帳號，等付款期限過後才能退出；需要協助請聯絡平台。");
+  });
   it("其他錯誤不洩漏內容", () => {
     expect(collabErrorMessage({ code: "XX000", message: "boom" })).toBe("發生錯誤，請稍後再試");
     expect(collabErrorMessage({})).toBe("發生錯誤，請稍後再試");

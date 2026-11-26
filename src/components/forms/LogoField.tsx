@@ -2,7 +2,7 @@
 import { useId, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { brandLogoUrl } from "@/lib/brand-logo";
-import { hasAllowedImageExtension, uploadErrorMessage } from "@/lib/upload-limits";
+import { uploadErrorMessage } from "@/lib/upload-limits";
 
 const MAX_BYTES = 2 * 1024 * 1024;
 const TYPES: Record<string, string> = { "image/png": "png", "image/jpeg": "jpg", "image/webp": "webp" };
@@ -43,7 +43,7 @@ export function LogoField({ userId, initialPath, error, onBusyChange, disabled }
     if (!file) return;
     setMsg(null);
     const ext = TYPES[file.type];
-    if (!ext || !hasAllowedImageExtension(file.name)) return setMsg("只接受 PNG、JPG、WebP");
+    if (!ext) return setMsg("只接受 PNG、JPG、WebP");
     if (file.size > MAX_BYTES) return setMsg("檔案不能超過 2MB");
     setBusyState(true);
     try {

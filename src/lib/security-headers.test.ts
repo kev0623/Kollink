@@ -82,6 +82,7 @@ describe("securityHeaders", () => {
     expect(h["Permissions-Policy"]).toContain("camera=()");
     expect(h["Permissions-Policy"]).toContain("microphone=()");
     expect(h["Permissions-Policy"]).toContain("geolocation=()");
+    expect(h["Permissions-Policy"]).not.toContain("interest-cohort");
     expect(h["Content-Security-Policy"]).toContain("default-src 'self'");
   });
 });

@@ -18,7 +18,7 @@ describe("adminNextPath", () => {
   it("拒絕 /admin 以外、/admin/mfa 本身與不安全的路徑", () => {
     for (const p of [
       null, undefined, "", "/brand", "/administrator", "/admin-x", "/admin/mfa", "/admin/mfa?next=/admin",
-      "//evil.com/admin", "https://evil.com/admin", "/admin/../brand", "/admin/%2e%2e/brand", "/\\evil.com",
+      "//evil.com/admin", "https://evil.com/admin", "/admin/../brand", "/admin/%2e%2e/brand", "/\\evil.com", "/admin/x.png", "/admin/collabs/1.JPEG?a=1",
     ]) {
       expect(adminNextPath(p)).toBeNull();
     }

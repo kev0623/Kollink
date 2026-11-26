@@ -1,5 +1,4 @@
 import { publicObjectUrl } from "./storage-url";
-import { hasAllowedImageExtension } from "./upload-limits";
 
 export const BRIEF_COVER_BUCKET = "brief-covers";
 export const BRIEF_COVER_MAX_BYTES = 5 * 1024 * 1024;
@@ -14,9 +13,9 @@ export function briefCoverUrl(path: string | null): string | null {
  * 規則與 storage policy（20261124000600_brief_covers.sql）、briefs.cover_path 的 CHECK 一致（id 用 crypto.randomUUID()）。
  */
 export function planCoverUpload(
-  userId: string, file: { type: string; size: number; name?: string }, id: string,
+  userId: string, file: { type: string; size: number }, id: string,
 ): { path: string } | { error: string } {
-  if (!Object.hasOwn(EXT_BY_TYPE, file.type) || (file.name !== undefined && !hasAllowedImageExtension(file.name))) return { error: "只接受 JPG、PNG、WebP" };
+  if (!Object.hasOwn(EXT_BY_TYPE, file.type)) return { error: "只接受 JPG、PNG、WebP" };
   if (file.size > BRIEF_COVER_MAX_BYTES) return { error: "檔案不能超過 5MB" };
   return { path: `${userId}/cover-${id}.${EXT_BY_TYPE[file.type]}` };
 }

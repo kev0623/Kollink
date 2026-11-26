@@ -128,6 +128,14 @@ begin
     raise exception 'creator not approved' using errcode = '55000';
   end if;
 
+  -- 品牌已取得 ATM 轉帳帳號（尚未逾期）時，創作者不能退出，避免品牌轉帳後合作案已取消
+  if c.status = 'awaiting_payment' and p_action = 'cancel' and v_actor = 'creator'
+     and exists (select 1 from public.payments pm
+                  where pm.collaboration_id = c.id and pm.status = 'pending'
+                    and pm.atm_v_account is not null and pm.atm_expire_date >= public.today_tw()) then
+    raise exception 'payment in progress' using errcode = '55000';
+  end if;
+
   v_to := case
     when c.status = 'invited' and p_action = 'accept' and v_actor = 'creator'
       then 'awaiting_payment'::public.collab_status

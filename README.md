@@ -94,7 +94,7 @@ returning user_id;
 - 第一次：登入後會被導到 `/admin/mfa`，用 Google Authenticator、1Password 等掃描 QR Code（或手動輸入密鑰），輸入 6 位數完成綁定，再進後台。
 - 之後每次登入：Email 驗證碼通過後，在 `/admin/mfa` 輸入驗證器上的 6 位數。
 - 還沒通過第二步驟的管理員帳號，在資料庫裡等於一般帳號（有 profile 的照自己的角色操作）。
-- 備用 SQL 用 `service_role`（system 身分），不受第二步驟影響；SQL Editor 就是這個身分。
+- 備用 SQL 用 `service_role`（system 身分），不受第二步驟影響：SQL Editor 本身以 `postgres` 身分執行，備用 SQL 之所以有效，是因為開頭做了 `set local role service_role` 並設定 claims。
 - **遺失驗證器**：在 Supabase Studio 的 SQL Editor 刪掉該使用者的 MFA 因子（直接複製，只改 Email）。刪完後對方再次登入會重新綁定：
   ```sql
   delete from auth.mfa_factors
@@ -357,7 +357,7 @@ select count(*) as refund_required from public.payments where refund_required;  
 
 本機的 `config.toml` 不會自動套用到正式專案，上線前在 Supabase 後台逐項設定：
 
-1. Authentication → Providers → Email：開啟「Confirm email」（`enable_confirmations`）；Email OTP 長度 **8**、有效期限 **600 秒**（資安修正：碼越長、越短命，暴力猜測越難）。後台預設是 8 碼、3600 秒，有效期限一定要改。登入頁接受 6 到 8 位數，所以本機（6 碼）與正式環境（8 碼）都能用。
+1. Authentication → Providers → Email（本次資安版本上線時，OTP 長度要等新版網站上線後才改，見「資安修正（全系統體檢）上線」第 7 步）：開啟「Confirm email」（`enable_confirmations`）；Email OTP 長度 **8**、有效期限 **600 秒**（資安修正：碼越長、越短命，暴力猜測越難）。後台預設是 8 碼、3600 秒，有效期限一定要改。登入頁接受 6 到 8 位數，所以本機（6 碼）與正式環境（8 碼）都能用。
 2. Authentication → Sign In / Providers：關閉匿名登入（anonymous sign-ins）。
 3. 密碼登入封鎖：真正的保證是 migration 裡的 `null_encrypted_password` trigger（推送 migration 即生效，不受方案限制）。另外在 Authentication → Hooks 新增 Postgres hook「Password verification attempt」指向 `public.hook_reject_password`，作為第二層防護（方案允許才有）。
 4. Authentication → URL Configuration：Site URL 填正式網址；Redirect URLs 加入下面這行（`<site>` 換成正式網址）：
@@ -378,15 +378,60 @@ select count(*) as refund_required from public.payments where refund_required;  
 - migration 之後，舊版網站的合作案詳情會因為讀不到 ATM 欄位而出錯（現在改用 `get_my_payment_details`）。
 - migration 之後，沒有通過 TOTP 的管理員在資料庫裡不是管理員；舊版網站沒有 `/admin/mfa`，管理員會進不了後台。
 
-**部署順序（依序，中間不要停太久）：**
+**部署順序（依序；下面的指令與 SQL 都請直接複製貼上，不要手打）：**
 
-1. Supabase Dashboard → Authentication → Multi-Factor：開啟 TOTP。
-2. 同一個地方順便設定 Email OTP：長度 8、有效期限 600 秒（Authentication → Providers → Email）。
-3. `npx supabase db push --remote --dry-run` 確認只會套用 `20261129000100`、`20261129000200`，再 `npx supabase db push --remote`。
-4. **馬上**合併 PR（Vercel 自動部署）。步驟 3 到部署完成之間，合作案詳情頁與後台會暫時出錯，所以不要拖。
-5. 部署後**立刻**用每個管理員帳號登入 `/admin/mfa` 綁定驗證器（第一次綁定只需要 Email 登入的 aal1，所以這時候就能做），確認綁定後進得了 `/admin`；用品牌帳號開一個待付款的合作案，確認付款資訊正常。
-6. 用超過上限的上傳實際驗證一次 Storage 數量限制（計數 helper 以 postgres 身分讀 `storage.objects`；讀不到時會變成計數為 0、上限失效，但不會擋掉正常上傳）。
-7. 在 Vercel 預覽環境用綠界測試環境走一次信用卡（含 3D 驗證）與 ATM 取號，確認 CSP 的 `form-action` 沒有擋掉導向（見下方「資安待辦」）。
+1. 確認 Vercel 的 Production 環境變數有 `NEXT_PUBLIC_SUPABASE_URL` 與 `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`（CSP 在建置時就固定，缺了的話網站連不上 Supabase）。
+2. 推 migration 前的只讀檢查（只回一列）。在終端機執行：
+   ```bash
+   npx supabase db query --remote --read-only "select (select rolbypassrls from pg_roles where rolname = 'postgres') as bypassrls, has_table_privilege('postgres', 'storage.objects', 'select') as can_read_storage, (select max(version) from supabase_migrations.schema_migrations) as last_migration, (select count(*) from pg_policies where policyname in ('brand_logos_insert_own','brand_logos_update_own','creator_media_insert_own','creator_media_update_own','brief_covers_insert_own','brief_covers_update_own','profiles_select','brand_profiles_select','creator_favorites_insert_own')) as old_policies, (select count(*) from pg_proc where pronamespace = 'public'::regnamespace and proname in ('storage_quota_ok','storage_upload_quota_ok','can_view_user','get_my_payment_details','is_admin_account','creator_profiles_log_stats')) as new_fns_existing, (select count(*) from public.creator_profiles where follower_count > 100000000) as followers_over_cap, (select count(*) from public.admins) as admins, (select count(*) from auth.mfa_factors f join public.admins a on a.user_id = f.user_id where f.status = 'verified') as admin_totp;"
+   ```
+   或把下面的 SQL 貼到 Supabase Studio 的 SQL Editor：
+   ```sql
+select (select rolbypassrls from pg_roles where rolname = 'postgres') as bypassrls,
+       has_table_privilege('postgres', 'storage.objects', 'select') as can_read_storage,
+       (select max(version) from supabase_migrations.schema_migrations) as last_migration,
+       (select count(*) from pg_policies where policyname in ('brand_logos_insert_own','brand_logos_update_own','creator_media_insert_own','creator_media_update_own','brief_covers_insert_own','brief_covers_update_own','profiles_select','brand_profiles_select','creator_favorites_insert_own')) as old_policies,
+       (select count(*) from pg_proc where pronamespace = 'public'::regnamespace and proname in ('storage_quota_ok','storage_upload_quota_ok','can_view_user','get_my_payment_details','is_admin_account','creator_profiles_log_stats')) as new_fns_existing,
+       (select count(*) from public.creator_profiles where follower_count > 100000000) as followers_over_cap,
+       (select count(*) from public.admins) as admins,
+       (select count(*) from auth.mfa_factors f join public.admins a on a.user_id = f.user_id where f.status = 'verified') as admin_totp;
+   ```
+   預期結果：
+   - `can_read_storage` = `true`。**若是 `false` 就中止，不要推 migration**：Storage 的計數 helper 讀不到 `storage.objects`，推了之後每一次上傳都會 permission denied。
+   - `bypassrls` = `true`（若是 `false`，Storage 數量上限會悄悄失效）。
+   - `last_migration` = `20261128000400`。
+   - `old_policies` = `9`。
+   - `new_fns_existing` = `0`。
+   - `followers_over_cap` = `0`。
+   - `admins` ≥ `1`。
+3. Supabase Dashboard → Authentication → Multi-Factor：開啟 **TOTP**（Enroll 與 Verify 都要開）。**這時先不要改 Email OTP 長度**（舊版網站只接受 6 碼）。
+4. 確認要推的 migration，再推送：
+   ```bash
+   npx supabase db push --remote --dry-run
+   ```
+   清單必須只有 `20261129000100` 與 `20261129000200`，確認後：
+   ```bash
+   npx supabase db push --remote --yes
+   ```
+5. **馬上**合併 PR（資料庫與網站必須一起上線：新版網站上線前，合作案詳情頁會出錯，管理員也沒有後台權限）。
+6. 每位管理員馬上開 `/admin`，到 `/admin/mfa` 綁定驗證器（第一次綁定只需要 Email 登入），確認 `/admin` 進得去。另外確認：品牌帳號看待付款的合作案有付款資訊、創作者畫面沒有 ATM 帳號細節、上傳一張圖成功。
+7. 到這裡才改：Authentication → Providers → Email 的 OTP 長度改為 8、有效期限 600 秒；改完用 8 位數驗證碼登入一次。
+8. 之後、金流正式上線前：在 Vercel 預覽環境用綠界測試環境走信用卡（含 3D 驗證）與 ATM 取號；若 CSP 擋住導向，放寬 `form-action`（見下方「資安待辦」）。
+
+**卡住時：**
+
+- **不要回滾 migration。**
+- `db push` 之後 Vercel 部署失敗：先用下面的暫時 SQL（SQL Editor）讓舊版網站的合作案頁面恢復運作：
+  ```sql
+  grant select (atm_bank_code, atm_v_account, atm_expire_date) on public.payments to authenticated;
+  ```
+  新版網站上線後馬上收回：
+  ```sql
+  revoke select (atm_bank_code, atm_v_account, atm_expire_date) on public.payments from authenticated;
+  ```
+- 這段期間管理員用 service_role 備用 SQL（見上面各節）處理後台工作。
+- **絕對不要在 `db push` 之前部署新版網站**（會導致登入失敗）。
+- 如果只套用了 `20261129000100`（第二個沒推成功）：合併 PR 前先重跑步驟 4 的 `db push`。
 
 **這個版本的行為變更：**
 

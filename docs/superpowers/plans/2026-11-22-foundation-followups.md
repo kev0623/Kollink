@@ -291,6 +291,8 @@
 - 綠界 CSP `form-action` 只放行綠界網域，3D 驗證與 ATM 的跨網域導向鏈沒有驗證；上線前在預覽環境用測試環境確認。
 - 部署後立刻讓每位管理員綁定 TOTP（第一次綁定只需要 aal1）；沒綁定前進不了後台。
 - Storage 數量上限（brand-logos 40、creator-media 120、brief-covers 300、deliverables 每案 200）計的是目前存在的物件，等於累計上限；需要清孤兒檔的排程（README「正式環境設定」第 9 項）。
+- Vercel 預覽工具列（preview toolbar）可能被 CSP 部分擋住（只影響預覽環境，正式環境沒有）。
+- 之後啟用 CAPTCHA（Turnstile 或 hCaptcha）時，CSP 的 `script-src` 與 `frame-src` 要加上對應網域。
 - Email OTP 6–8 碼輸入只有單元測試，沒有在瀏覽器走過完整寄信流程。
 
 ### 10. 審核逾期自動通過
