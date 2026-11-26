@@ -2,6 +2,9 @@
 
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Notice } from "@/components/ui/Notice";
+import { btn } from "@/components/ui/styles";
 import { loadOlderMessagesAction, markReadAction } from "@/lib/messages/actions";
 import {
   closedNotice, mergeMessages, MESSAGES_READ_EVENT, toMessage, withDaySeparators,
@@ -18,13 +21,15 @@ type Props = {
   initialMessages: Message[];
   initialHasMore: boolean;
   closed: boolean;
+  /** 這個對話的合作案都已結束（完成、婉拒、取消）且至少有一個 */
+  collabsEnded?: boolean;
 };
 
 /**
  * 對話內容：訊息（由舊到新、日期分隔線）、載入較早的訊息、即時新訊息、標記已讀、輸入區。
  * router.refresh()（列表的 LiveRefresh）會帶來新的 initialMessages：合併進目前的訊息，不覆蓋已載入的舊訊息。
  */
-export function ThreadView({ conversationId, meId, side, initialMessages, initialHasMore, closed }: Props) {
+export function ThreadView({ conversationId, meId, side, initialMessages, initialHasMore, closed, collabsEnded }: Props) {
   const [messages, setMessages] = useState(initialMessages);
   const [hasMore, setHasMore] = useState(initialHasMore);
   const [seenInitial, setSeenInitial] = useState(initialMessages);
@@ -93,19 +98,19 @@ export function ThreadView({ conversationId, meId, side, initialMessages, initia
     <div className="flex min-h-0 flex-1 flex-col gap-3">
       <div className="relative min-h-0 flex-1 md:overflow-y-auto">
         {live === "error" && (
-          <p role="status" className="mb-3 rounded-input bg-surface p-3 text-center text-sm text-muted">即時更新已中斷，請重新整理頁面</p>
+          <Notice tone="warning" className="mb-3">即時更新已中斷，請重新整理頁面</Notice>
         )}
         {hasMore && (
           <div className="mb-3 text-center">
-            <button type="button" onClick={loadOlder} disabled={loadingOlder}
-              className="h-9 rounded-btn border border-line bg-surface px-4 text-sm font-semibold text-ink disabled:opacity-60">
+            <button type="button" onClick={loadOlder} disabled={loadingOlder} className={btn.ghost}>
               {loadingOlder ? "載入中…" : "載入較早的訊息"}
             </button>
           </div>
         )}
         {error && <p role="alert" className="mb-3 text-center text-sm text-danger">{error}</p>}
+        {collabsEnded && <Notice tone="info" className="mb-3">合作已結束，訊息仍會保留。</Notice>}
         {messages.length === 0 ? (
-          <p className="py-10 text-center text-sm text-muted">還沒有訊息，打聲招呼吧。</p>
+          <EmptyState text="還沒有訊息，打聲招呼吧。" />
         ) : (
           <ol aria-label="訊息" className="space-y-3 px-1">
             {withDaySeparators(messages).map((e) =>
@@ -120,7 +125,7 @@ export function ThreadView({ conversationId, meId, side, initialMessages, initia
         <div ref={endRef} className="scroll-mb-56 md:scroll-mb-0" />
       </div>
       {closed ? (
-        <p className="shrink-0 rounded-card border border-line bg-surface p-4 text-center text-sm text-muted">{closedNotice(side)}</p>
+        <Notice tone="warning" className="shrink-0">{closedNotice(side)}</Notice>
       ) : (
         <Composer conversationId={conversationId} onSent={(m) => setMessages((cur) => mergeMessages(cur, [m]))} />
       )}

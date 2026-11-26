@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { MESSAGE_BODY_MAX, cleanMessageBody, validateMessageBody } from "@/lib/validation/message";
 import {
-  closedNotice, counterpartOf, listTimeLabel, mergeMessages, messagesHref, messageTime, previewText,
+  closedNotice, composerCount, composerKeyAction, counterpartOf, listTimeLabel, mergeMessages, messagesHref, messageTime, previewText,
   toConversation, toConversationListItem, toMessage, unreadBadgeText, withDaySeparators, type Message,
 } from "./view";
 
@@ -82,5 +83,49 @@ describe("訊息", () => {
       msg("c", "2026-11-26T01:00:00Z"),
     ]);
     expect(out.map((e) => (e.kind === "day" ? e.label : e.key))).toEqual(["2026/11/25", "a", "2026/11/26", "b", "c"]);
+  });
+});
+
+describe("composerKeyAction（桌面 Enter 送出）", () => {
+  const k = (key: string, o: Partial<{ shift: boolean; composing: boolean; finePointer: boolean; mod: boolean }> = {}) =>
+    composerKeyAction({ key, shift: false, composing: false, finePointer: true, mod: false, ...o });
+  it("桌面：Enter 送出、Shift+Enter 換行", () => {
+    expect(k("Enter")).toBe("send");
+    expect(k("Enter", { shift: true })).toBe("newline");
+  });
+  it("選字中（注音、倉頡）的 Enter 不送出，即使按了 Ctrl／⌘", () => {
+    expect(k("Enter", { composing: true })).toBeNull();
+    expect(k("Enter", { composing: true, mod: true })).toBeNull();
+  });
+  it("觸控裝置：Enter 換行；Ctrl／⌘+Enter 一律送出", () => {
+    expect(k("Enter", { finePointer: false })).toBe("newline");
+    expect(k("Enter", { finePointer: false, mod: true })).toBe("send");
+  });
+  it("其他按鍵不處理", () => {
+    expect(k("a")).toBeNull();
+  });
+});
+
+describe("composerCount 與送出驗證一致", () => {
+  const ok = (s: string) => validateMessageBody(cleanMessageBody(s)) === null;
+  it("剛好上限可送、多一個字不行；emoji 以 code point 計", () => {
+    expect(composerCount("a".repeat(MESSAGE_BODY_MAX))).toBe(MESSAGE_BODY_MAX);
+    expect(ok("a".repeat(MESSAGE_BODY_MAX))).toBe(true);
+    expect(composerCount("a".repeat(MESSAGE_BODY_MAX + 1))).toBe(MESSAGE_BODY_MAX + 1);
+    expect(ok("a".repeat(MESSAGE_BODY_MAX + 1))).toBe(false);
+    expect(composerCount("😀".repeat(MESSAGE_BODY_MAX))).toBe(MESSAGE_BODY_MAX);
+    expect(ok("😀".repeat(MESSAGE_BODY_MAX))).toBe(true);
+  });
+  it("頭尾空白與 CRLF 先清理再計", () => {
+    expect(composerCount("  hi  ")).toBe(2);
+    expect(composerCount("a\r\nb")).toBe(3);
+    expect(composerCount("   ")).toBe(0);
+  });
+});
+
+describe("listTimeLabel：今年以前加年份", () => {
+  it("跨年顯示 YYYY/MM/DD", () => {
+    expect(listTimeLabel("2025-03-04T04:00:00Z", "2026-11-26")).toBe("2025/03/04");
+    expect(listTimeLabel("2026-11-25T15:59:00Z", "2026-11-26")).toBe("11/25");
   });
 });

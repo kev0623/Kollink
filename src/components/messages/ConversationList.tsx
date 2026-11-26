@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { rows } from "@/components/ui/styles";
 import { Counterpart } from "@/components/collabs/Counterpart";
 import {
   EMPTY_LIST_TEXT, listTimeLabel, messagesHref, previewText, unreadBadgeText,
@@ -7,13 +9,13 @@ import {
 
 type Props = { side: MessageSide; items: ConversationListItem[]; activeId: string | null; today: string };
 
-/** 對話列表。目前打開的那一列反白、不顯示未讀數（標記已讀與重新整理有先後）。 */
+/** 對話列表。目前打開的那一列用主色淡底（primary-soft）反白、不顯示未讀數（標記已讀與重新整理有先後）。 */
 export function ConversationList({ side, items, activeId, today }: Props) {
   if (items.length === 0) {
-    return <p className="rounded-card border border-line bg-surface p-6 text-center text-sm text-muted">{EMPTY_LIST_TEXT[side]}</p>;
+    return <EmptyState text={EMPTY_LIST_TEXT[side]} />;
   }
   return (
-    <ul aria-label="對話列表" className="divide-y divide-line overflow-hidden rounded-card border border-line bg-surface">
+    <ul aria-label="對話列表" className={rows}>
       {items.map((it) => {
         const active = it.id === activeId;
         const unread = active ? null : unreadBadgeText(it.unread);
@@ -22,7 +24,7 @@ export function ConversationList({ side, items, activeId, today }: Props) {
             <Link
               href={messagesHref(side, it.id)}
               aria-current={active ? "page" : undefined}
-              className={`flex items-start gap-3 p-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ink ${active ? "bg-subtle" : "hover:bg-bg"}`}
+              className={`flex min-h-11 items-start gap-3 p-4 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus ${active ? "bg-primary-soft" : "hover:bg-subtle"}`}
             >
               <Counterpart side={side} name={it.counterpartName} imagePath={it.counterpartImagePath} />
               <div className="min-w-0 flex-1">
@@ -34,7 +36,7 @@ export function ConversationList({ side, items, activeId, today }: Props) {
                   <p className={`min-w-0 flex-1 truncate text-sm ${unread ? "text-ink" : "text-muted"}`}>{previewText(it)}</p>
                   {it.closed && <span className="shrink-0 rounded-btn bg-subtle px-2 py-0.5 text-xs text-muted">暫停</span>}
                   {unread && (
-                    <span className="shrink-0 rounded-btn bg-ink px-2 py-0.5 text-xs font-semibold text-on-ink">
+                    <span className="shrink-0 rounded-btn bg-primary px-2 py-0.5 text-xs font-bold text-on-primary">
                       {unread}<span className="sr-only"> 則未讀</span>
                     </span>
                   )}

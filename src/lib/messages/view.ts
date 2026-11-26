@@ -1,6 +1,8 @@
 // 站內訊息的顯示規則與 Row → 顯示物件。RPC 的回傳型別把欄位都標成非 null，實際上可能是 null，
 // 所以這裡的 Row 型別欄位都可為 null，呼叫端先轉成 unknown 再轉型。
 import { formatDateTimeTw } from "@/lib/briefs/dates";
+import { textLength } from "@/lib/validation/brief";
+import { cleanMessageBody } from "@/lib/validation/message";
 
 export type MessageSide = "brand" | "creator";
 
@@ -66,11 +68,25 @@ export function previewText(it: Pick<ConversationListItem, "lastBody" | "lastSen
   return it.lastSenderIsMe ? `你：${short}` : short;
 }
 
-/** 列表的時間：台灣今天顯示 HH:mm，其他天顯示 MM/DD。today 是伺服器算好的 YYYY-MM-DD。 */
+/** 列表的時間：台灣今天顯示 HH:mm，今年顯示 MM/DD，更早顯示 YYYY/MM/DD。today 是伺服器算好的 YYYY-MM-DD。 */
 export function listTimeLabel(iso: string, today: string): string {
   if (Number.isNaN(Date.parse(iso))) return "";
   const t = formatDateTimeTw(iso); // YYYY/MM/DD HH:mm
-  return t.slice(0, 10) === today.replaceAll("-", "/") ? t.slice(11) : t.slice(5, 10);
+  if (t.slice(0, 10) === today.replaceAll("-", "/")) return t.slice(11);
+  return t.slice(0, 4) === today.slice(0, 4) ? t.slice(5, 10) : t.slice(0, 10);
+}
+
+/** 輸入框按鍵：桌面（精準指標）Enter 送出、Shift+Enter 換行；觸控裝置 Enter 換行；Ctrl／⌘+Enter 一律送出；選字中（注音、倉頡等）不處理。 */
+export function composerKeyAction(e: { key: string; shift: boolean; composing: boolean; finePointer: boolean; mod: boolean }): "send" | "newline" | null {
+  if (e.key !== "Enter" || e.composing) return null;
+  if (e.mod) return "send";
+  if (e.shift || !e.finePointer) return "newline";
+  return "send";
+}
+
+/** 輸入框的字數：和送出驗證用同一套（先 cleanMessageBody、以 code point 計），所以計數超過上限就等於送出會被擋。 */
+export function composerCount(body: string): number {
+  return textLength(cleanMessageBody(body));
 }
 
 /** 未讀徽章：0 不顯示、超過 9 顯示 9+。 */
