@@ -39,7 +39,7 @@ values
   ('00000000-0000-0000-0000-0000000a3c01', '00000000-0000-0000-0000-000000000a3c', 'ecpay', 'KL261128P9G000003', 1000, 'paid', '2411280000000003', now(), 'prod', 'credit', true);
 
 set local role authenticated;
-select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-000000000a33","role":"authenticated"}', true);
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-000000000a33","role":"authenticated","aal":"aal2"}', true);
 select throws_ok(
   $$select public.resolve_payment_refund('00000000-0000-0000-0000-0000000a3b01', '已退款')$$,
   '42501', 'admin is participant', '管理員是品牌：不能處理自己合作案的退款');
@@ -49,7 +49,7 @@ select lives_ok(
   $$select public.resolve_payment_refund('00000000-0000-0000-0000-0000000a3a01', '已退款')$$,
   '同一位管理員處理別人的合作案：可以');
 
-select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-000000000a34","role":"authenticated"}', true);
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-000000000a34","role":"authenticated","aal":"aal2"}', true);
 select lives_ok(
   $$select public.resolve_payment_refund('00000000-0000-0000-0000-0000000a3b01', '另一位管理員已退款')$$,
   '非參與者管理員可以處理該合作案的退款');

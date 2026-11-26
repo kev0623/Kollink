@@ -71,7 +71,7 @@ select is(
   (select count(*)::int from public.creator_profiles where handle in ('admtest_one', 'admtest_two')),
   0, '品牌看不到待審核的創作者');
 
-select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-000000000a19","role":"authenticated"}', true);
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-000000000a19","role":"authenticated","aal":"aal2"}', true);
 select is(
   (select count(*)::int from public.admin_list_creators('pending', 'admtest', 50, 0)),
   2, '管理員看得到待審核列表');
@@ -97,11 +97,14 @@ select is(
 select ok(
   (select handle_locked_at is not null from public.creator_profiles where user_id = '00000000-0000-0000-0000-000000000a11'),
   '核准後鎖定 handle');
+-- 20261129000100_security_hardening.sql（L3）：authenticated 讀不到 audit_logs.actor_id，改以 postgres 檢查寫入的內容
+reset role;
 select is(
   (select actor_kind || ',' || actor_id::text || ',' || coalesce(collaboration_id::text, 'null')
      from public.audit_logs
     where subject_id = '00000000-0000-0000-0000-000000000a11' and action = 'creator_approve'),
   'admin,00000000-0000-0000-0000-000000000a19,null', 'audit：actor 是管理員、沒有合作案');
+set local role authenticated;
 select throws_ok(
   $$select public.set_creator_status('00000000-0000-0000-0000-000000000a12', 'reject', '  ')$$,
   '22023', 'invalid reason', '退回要寫原因');
@@ -173,7 +176,7 @@ select throws_ok(
   '42501', 'not admin', '品牌不能標記');
 select is((select count(*)::int from public.message_reviews), 0, '品牌讀不到檢視紀錄');
 
-select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-000000000a19","role":"authenticated"}', true);
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-000000000a19","role":"authenticated","aal":"aal2"}', true);
 select is(
   (select count(*)::int from public.admin_list_flagged_messages('open', 100, 0)
     where conversation_id = '00000000-0000-0000-0000-00000000aa01'),

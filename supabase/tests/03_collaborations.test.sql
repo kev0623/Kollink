@@ -248,7 +248,7 @@ select throws_ok(
 
 -- ===== 管理員撥款 =====
 select set_config('request.jwt.claims',
-  '{"sub":"00000000-0000-0000-0000-0000000000a1","role":"authenticated"}', true);
+  '{"sub":"00000000-0000-0000-0000-0000000000a1","role":"authenticated","aal":"aal2"}', true);
 -- 計畫 9 起撥款只能經由 admin_mark_payout（kollink.paying_out 旗標）；這裡直接模擬旗標，只測狀態機
 select set_config('kollink.paying_out', 'on', true);
 select is(
@@ -273,7 +273,7 @@ select is(
 
 -- ===== 管理員同時是品牌：以品牌身分行動 =====
 select set_config('request.jwt.claims',
-  '{"sub":"00000000-0000-0000-0000-0000000000a2","role":"authenticated"}', true);
+  '{"sub":"00000000-0000-0000-0000-0000000000a2","role":"authenticated","aal":"aal2"}', true);
 select is(
   public.transition_collaboration('00000000-0000-0000-0000-00000000cc06', 'cancel'),
   'cancelled'::public.collab_status, '管理員是品牌時可以取消自己的邀約');

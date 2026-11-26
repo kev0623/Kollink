@@ -87,7 +87,7 @@ select is(
   'brand|列表品牌|列表小美|p6list|null', '品牌拿到詳情');
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-000000000751","role":"authenticated"}', true);
 select is((select my_side from public.get_collaboration('00000000-0000-0000-0000-0000000007e2')), 'creator', '創作者拿到詳情');
-select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-000000000759","role":"authenticated"}', true);
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-000000000759","role":"authenticated","aal":"aal2"}', true);
 select is((select my_side from public.get_collaboration('00000000-0000-0000-0000-0000000007e2')), 'admin', '管理員拿到詳情');
 
 -- ── 系統事件 ──

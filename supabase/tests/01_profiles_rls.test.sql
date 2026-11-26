@@ -32,7 +32,8 @@ select set_config('request.jwt.claims', '{"role":"anon"}', true);
 
 select is((select count(*)::int from public.creator_profiles), 1,
   '訪客只看得到已審核通過的創作者');
-select is((select count(*)::int from public.creator_rates), 0,
+-- 20261129000100_security_hardening.sql：anon 不再有 creator_rates 的 select 權限（原本靠沒有 anon policy 回 0 筆）
+select throws_ok($$select count(*) from public.creator_rates$$, '42501', null,
   '訪客看不到報價');
 
 -- 品牌 b1

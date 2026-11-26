@@ -114,7 +114,7 @@ select throws_ok(
   '42501', 'not admin', '品牌不能平台取消');
 
 -- ===== 2. 人工標記已付款（線下） =====
-select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-000000000a29","role":"authenticated"}', true);
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-000000000a29","role":"authenticated","aal":"aal2"}', true);
 select throws_ok(
   $$select public.admin_record_offline_payment('00000000-0000-0000-0000-000000000ac1', ' ')$$,
   '22023', 'invalid note', '說明必填');
@@ -128,10 +128,13 @@ select is(
   (select left(merchant_trade_no, 3) || ',' || admin_note || ',' || coalesce(provider_env, 'null')
      from public.admin_list_payments('all', 50, 0, '00000000-0000-0000-0000-000000000ac1')),
   'MAN,品牌 11/27 匯款，末五碼 12345,null', 'MAN 付款單記下說明（管理員從列表讀得到 admin_note）');
+-- 20261129000100_security_hardening.sql（L3）：authenticated 讀不到 audit_logs.actor_id，改以 postgres 檢查寫入的內容
+reset role;
 select is(
   (select actor_kind || ',' || actor_id::text from public.audit_logs
     where collaboration_id = '00000000-0000-0000-0000-000000000ac1' and action = 'mark_paid'),
   'admin,00000000-0000-0000-0000-000000000a29', 'mark_paid 的 actor 是管理員');
+set local role authenticated;
 select throws_ok(
   $$select public.admin_record_offline_payment('00000000-0000-0000-0000-000000000ac1', '重複')$$,
   '55000', 'collaboration not awaiting payment', '已付款不能再標記');
@@ -167,13 +170,13 @@ select is(
   'paid,stage,2411270000000001,綠界後台確認 11/27 成功', '記下環境、交易編號、說明');
 
 -- 管理員是品牌的合作案：以參與者身分，不能用管理員權限
-select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-000000000a28","role":"authenticated"}', true);
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-000000000a28","role":"authenticated","aal":"aal2"}', true);
 select throws_ok(
   $$select public.admin_record_offline_payment('00000000-0000-0000-0000-000000000ac7', '自己付')$$,
   '42501', 'admin is participant', '管理員不能標記自己品牌的合作案');
 
 -- ===== 4. 撥款 =====
-select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-000000000a29","role":"authenticated"}', true);
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-000000000a29","role":"authenticated","aal":"aal2"}', true);
 select is(
   (select account_number from public.admin_get_payout_account('00000000-0000-0000-0000-000000000ac3')),
   '123456785678', '撥款畫面看得到完整帳號');

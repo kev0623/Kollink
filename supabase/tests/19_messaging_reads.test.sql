@@ -81,7 +81,7 @@ select is(
   (select my_side || '|' || brand_name || '|' || creator_name || '|' || creator_handle || '|' || closed
      from public.get_conversation('00000000-0000-0000-0000-00000008c841')),
   'creator|讀取品牌|讀取小美|p7rmei|false', '創作者拿到對話標題');
-select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-000000000859","role":"authenticated"}', true);
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-000000000859","role":"authenticated","aal":"aal2"}', true);
 select is((select my_side from public.get_conversation('00000000-0000-0000-0000-00000008c841')), 'admin', '管理員拿得到（唯讀）');
 
 -- ── 訊息分頁 ──
@@ -102,7 +102,7 @@ select is((select count(*)::int from public.list_messages('00000000-0000-0000-00
   3, 'p_limit 太大時最多 100（這裡全部 3 則）');
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-000000000842","role":"authenticated"}', true);
 select is((select count(*)::int from public.list_messages('00000000-0000-0000-0000-00000008c841')), 0, '第三方拿不到訊息');
-select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-000000000859","role":"authenticated"}', true);
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-000000000859","role":"authenticated","aal":"aal2"}', true);
 select is((select count(*)::int from public.list_messages('00000000-0000-0000-0000-00000008c841')), 3, '管理員讀得到');
 
 -- ── 合作案詳情帶出對話 ──

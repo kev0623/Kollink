@@ -75,7 +75,7 @@ select lives_ok(
   '前後的換行會被 clean_text 去掉，正常戶名可儲存');
 
 -- ===== 2. 自己不能處理自己 =====
-select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-000000000a34","role":"authenticated"}', true);
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-000000000a34","role":"authenticated","aal":"aal2"}', true);
 select throws_ok(
   $$select public.set_creator_status('00000000-0000-0000-0000-000000000a34', 'suspend', '自己停權自己')$$,
   '42501', 'admin is subject', '管理員不能改自己的創作者狀態');
@@ -93,7 +93,7 @@ select lives_ok(
   '復原');
 
 -- ===== 3. 補登：鎖順序、admin_note、異常來源 =====
-select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-000000000a35","role":"authenticated"}', true);
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-000000000a35","role":"authenticated","aal":"aal2"}', true);
 select ok(
   position('for update' in pg_get_functiondef('public.admin_record_lost_payment(text, text, integer, text, text)'::regprocedure))
     > 0
@@ -140,7 +140,7 @@ select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000
 select lives_ok(
   $$select public.set_my_payout_account('822', null, '9876549999', '王小明')$$,
   '創作者改帳戶');
-select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-000000000a35","role":"authenticated"}', true);
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-000000000a35","role":"authenticated","aal":"aal2"}', true);
 select throws_ok(
   $$select public.admin_mark_payout('00000000-0000-0000-0000-0000000af0c1', '已轉帳', '5678')$$,
   '55000', 'payout account changed', '帳戶已變更：撥款被拒絕');
@@ -165,7 +165,7 @@ select is(
   (select count(*)::int from public.collaboration_payouts), 0, '品牌（參與者）看不到撥款紀錄');
 
 -- ===== 6. 管理員是參與者 =====
-select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-000000000a36","role":"authenticated"}', true);
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-000000000a36","role":"authenticated","aal":"aal2"}', true);
 select throws_ok(
   $$select public.admin_mark_payout('00000000-0000-0000-0000-0000000af0c3', '已轉帳', '9999')$$,
   '42501', 'admin is participant', '管理員是品牌：不能撥款');

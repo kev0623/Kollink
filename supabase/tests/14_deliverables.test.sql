@@ -64,10 +64,11 @@ select throws_ok(
   '42501', null, '品牌不能上傳');
 
 -- ── 讀取 ──
-select is((select count(*)::int from storage.objects where bucket_id = 'deliverables'), 1, '品牌讀得到合作案的檔案');
+-- 20261129000100_security_hardening.sql（L4）：品牌只讀得到已交出的檔案；交稿後讀得到的斷言在 28_security_hardening
+select is((select count(*)::int from storage.objects where bucket_id = 'deliverables'), 0, '品牌讀不到還沒交出的檔案');
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-000000000722","role":"authenticated"}', true);
 select is((select count(*)::int from storage.objects where bucket_id = 'deliverables'), 0, '第三人讀不到');
-select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-000000000739","role":"authenticated"}', true);
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-000000000739","role":"authenticated","aal":"aal2"}', true);
 select is((select count(*)::int from storage.objects where bucket_id = 'deliverables'), 1, '管理員讀得到');
 
 -- ── 交稿 ──
