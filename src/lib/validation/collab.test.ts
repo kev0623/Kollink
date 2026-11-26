@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  acceptDefaults, cleanLongText, isValidLink, isValidPostUrl, parseAmount, parseLinks, parseOfferForm,
+  acceptDefaults, cleanLongText, isValidLink, isValidPostUrl, needsCreatorConsent, parseAmount, parseLinks, parseOfferForm,
   validateOffer, validateRevisionNote, validateSubmission,
 } from "./collab";
 
@@ -87,6 +87,20 @@ describe("交稿", () => {
     expect(validateSubmission({ note: "", links: Array(6).fill("https://a.com"), filePaths: [] }, C, U)).toEqual({ links: "最多 5 個連結" });
     expect(validateSubmission({ note: "", links: [], filePaths: [`${C}/other/x.jpg`] }, C, U)).toEqual({ files: "檔案資料不正確，請重新上傳" });
     expect(validateSubmission({ note: "", links: [], filePaths: Array(11).fill(F) }, C, U)).toEqual({ files: "一次最多 10 個檔案" });
+  });
+});
+
+describe("低於報價要創作者確認", () => {
+  it("金額低於報價才需要確認（與 accept_application_with_collab 相同）", () => {
+    expect(needsCreatorConsent(4999, 5000)).toBe(true);
+    expect(needsCreatorConsent(1, 5000)).toBe(true);
+    expect(needsCreatorConsent(5000, 5000)).toBe(false);
+    expect(needsCreatorConsent(6000, 5000)).toBe(false);
+  });
+  it("沒有報價或金額還沒填好：不需要確認", () => {
+    expect(needsCreatorConsent(1, null)).toBe(false);
+    expect(needsCreatorConsent(null, 5000)).toBe(false);
+    expect(needsCreatorConsent(1, 0)).toBe(false);
   });
 });
 

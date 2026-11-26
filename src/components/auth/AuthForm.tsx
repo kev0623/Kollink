@@ -2,18 +2,11 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { isValidOtpCode, OTP_MAX_LENGTH, toOtpCode } from "@/lib/auth/otp-code";
 
 type Props = { role: "brand" | "creator" | null; next: string | null; googleEnabled: boolean };
 
 const RESEND_SECONDS = 60;
-
-/** 全形數字轉半形，只留數字，最多 6 碼。 */
-function toCode(v: string) {
-  return v
-    .replace(/[０-９]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0))
-    .replace(/\D/g, "")
-    .slice(0, 6);
-}
 
 export function AuthForm({ role, next, googleEnabled }: Props) {
   const supabase = useMemo(() => createClient(), []);
@@ -57,6 +50,10 @@ export function AuthForm({ role, next, googleEnabled }: Props) {
 
   async function verify() {
     setError(null);
+    if (!isValidOtpCode(code.trim())) {
+      setError("請輸入信件裡的 6 到 8 位數驗證碼");
+      return;
+    }
     setPending(true);
     const { error: e } = await supabase.auth.verifyOtp({ email: email.trim(), token: code.trim(), type: "email" });
     if (e) {
@@ -113,11 +110,11 @@ export function AuthForm({ role, next, googleEnabled }: Props) {
         </form>
       ) : (
         <form onSubmit={(e) => { e.preventDefault(); void verify(); }} className="space-y-3">
-          <p className="text-sm text-muted">驗證碼已寄到 {email}，15 分鐘內有效</p>
+          <p className="text-sm text-muted">驗證碼已寄到 {email}，請在 10 分鐘內輸入</p>
           <label htmlFor="auth-code" className="sr-only">驗證碼</label>
           <input
-            id="auth-code" ref={codeRef} inputMode="numeric" autoComplete="one-time-code" pattern="\d{6}" maxLength={6} required
-            value={code} onChange={(e) => setCode(toCode(e.target.value))} placeholder="6 碼驗證碼"
+            id="auth-code" ref={codeRef} inputMode="numeric" autoComplete="one-time-code" pattern="\d{6,8}" minLength={6} maxLength={OTP_MAX_LENGTH} required
+            value={code} onChange={(e) => setCode(toOtpCode(e.target.value))} placeholder="驗證碼（6 到 8 碼）"
             className="w-full rounded-input border border-line bg-surface px-3 py-2 outline-none focus:ring-2 focus:ring-ink tracking-widest"
           />
           <button type="submit" disabled={pending} className="h-11 w-full rounded-btn bg-ink px-4 font-semibold text-on-ink disabled:opacity-60">

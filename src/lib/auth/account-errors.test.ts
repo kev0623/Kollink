@@ -25,6 +25,14 @@ describe("mapAccountError", () => {
       kind: "state", state: { fieldErrors: { logoPath: "格式不正確" } },
     });
   });
+  it("粉絲數超出範圍與文字太長", () => {
+    expect(mapAccountError({ code: "22023", message: "invalid follower_count" })).toEqual({
+      kind: "state", state: { fieldErrors: { followerCount: "粉絲數必須是 0 到 1 億的整數" } },
+    });
+    expect(mapAccountError({ code: "22023", message: "text too long" })).toEqual({
+      kind: "state", state: { formError: "內容太長，請縮短後再送出" },
+    });
+  });
   it("不是品牌或創作者", () => {
     expect(mapAccountError({ code: "42501", message: "not a brand" })).toEqual({
       kind: "state", state: { formError: "這個帳號不是品牌，無法執行此操作" },

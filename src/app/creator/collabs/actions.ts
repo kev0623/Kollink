@@ -20,10 +20,10 @@ function revalidateCollab(id: string) {
   revalidatePath(`/creator/collabs/${id}`);
 }
 
-/** 創作者回覆邀約：接受或婉拒。 */
+/** 創作者回覆邀約（接受或婉拒），或在品牌付款前退出合作（cancel，只有待付款時資料庫才允許）。 */
 export async function creatorCollabAction(collabId: unknown, action: unknown): Promise<ActionResult> {
   await requireRole("creator");
-  if (!isUuid(collabId) || (action !== "accept" && action !== "decline")) return { ok: false, error: BAD_INPUT };
+  if (!isUuid(collabId) || (action !== "accept" && action !== "decline" && action !== "cancel")) return { ok: false, error: BAD_INPUT };
   const supabase = await createClient();
   const { error } = await supabase.rpc("transition_collaboration", { p_collab_id: collabId, p_action: action });
   if (error) return { ok: false, error: collabErrorMessage(error) };

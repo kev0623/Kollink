@@ -164,7 +164,7 @@ select is((select count(*)::int from public.brief_applications), 3, '品牌只�
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-000000000601","role":"authenticated"}', true);
 select is((select count(*)::int from public.briefs), 5, '品牌看得到自己的全部招募（含草稿、已截止、已關閉）');
 select is((select count(*)::int from public.brief_applications), 2, '品牌甲看得到自己招募的 2 筆報名');
-select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-000000000619","role":"authenticated"}', true);
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-000000000619","role":"authenticated","aal":"aal2"}', true);
 select is((select count(*)::int from public.briefs), 10, '管理員看得到全部招募');
 
 -- ── D. 報名 ──

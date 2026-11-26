@@ -43,6 +43,8 @@ select lives_ok(
 select is(
   (select count(*)::int from public.payments where collaboration_id = '00000000-0000-0000-0000-0000000009d1'),
   1, '只建立一張付款單');
+-- 20261129000100_security_hardening.sql（L5）：authenticated 讀不到 merchant_trade_no，改以 postgres 檢查
+reset role;
 select is(
   (select merchant_trade_no ~ '^KL[0-9]{6}[0-9A-F]{12}$' from public.payments
     where collaboration_id = '00000000-0000-0000-0000-0000000009d1'),
@@ -69,7 +71,7 @@ select set_config('p8f.pid', (select id::text from public.payments
   where collaboration_id = '00000000-0000-0000-0000-0000000009d1'), true);
 
 set local role authenticated;
-select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-000000000939","role":"authenticated"}', true);
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-000000000939","role":"authenticated","aal":"aal2"}', true);
 select lives_ok(
   $$select public.resolve_payment_refund(current_setting('p8f.pid')::uuid, 'SECRET-ADMIN-NOTE 內部帳號 123')$$,
   '管理員標記退款');

@@ -115,7 +115,7 @@ select lives_ok($$select public.start_conversation('00000000-0000-0000-0000-0000
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-000000000802","role":"authenticated"}', true);
 select throws_ok($$select * from public.send_message('00000000-0000-0000-0000-00000008c001', '插話')$$,
   'P0002', 'conversation not found', '第三方不能在別人的對話裡發訊息');
-select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-000000000819","role":"authenticated"}', true);
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-000000000819","role":"authenticated","aal":"aal2"}', true);
 select throws_ok($$select * from public.send_message('00000000-0000-0000-0000-00000008c001', '我是管理員')$$,
   'P0002', 'conversation not found', '管理員不能代替參與者發訊息');
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-000000000811","role":"authenticated"}', true);
@@ -181,7 +181,7 @@ select is((select count(*)::int from public.messages where conversation_id = '00
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-000000000802","role":"authenticated"}', true);
 select is((select count(*)::int from public.messages where conversation_id = '00000000-0000-0000-0000-00000008c001'),
   0, '第三方看不到');
-select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-000000000819","role":"authenticated"}', true);
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-000000000819","role":"authenticated","aal":"aal2"}', true);
 select is((select count(*)::int from public.messages where conversation_id = '00000000-0000-0000-0000-00000008c001' and flagged_contact),
   1, '管理員看得到被標記的訊息');
 

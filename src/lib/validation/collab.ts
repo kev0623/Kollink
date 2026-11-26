@@ -122,6 +122,14 @@ export function validateSubmission(i: SubmissionInput, collabId: string, uid: st
   return Object.keys(e).length ? e : null;
 }
 
+/**
+ * 錄取金額低於創作者報名時的報價：合作案會先進入「等待創作者確認」（invited），創作者接受後品牌才能付款。
+ * 與 accept_application_with_collab（20261129000100_security_hardening.sql）的規則相同；沒有報價時不需要確認。
+ */
+export function needsCreatorConsent(amount: number | null, proposedPrice: number | null): boolean {
+  return amount !== null && proposedPrice !== null && amount < proposedPrice;
+}
+
 const SUMMARY_CHARS = 200;
 
 /**

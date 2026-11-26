@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { homeFor, isRole, resolvePostLoginPath } from "./post-login";
+import { homeFor, isRole, resolvePostLoginPath, withMfaStep } from "./post-login";
 
 describe("resolvePostLoginPath", () => {
   it("沒有帳號、有選身分 → 對應的填資料頁", () => {
@@ -64,5 +64,17 @@ describe("管理員（計畫 9）", () => {
   it("不是管理員：/admin 的 next 不採用", () => {
     expect(resolvePostLoginPath({ role: "brand", requestedRole: null, next: "/admin", isAdmin: false })).toBe("/brand");
     expect(resolvePostLoginPath({ role: null, requestedRole: null, next: "/admin" })).toBe("/onboarding");
+  });
+});
+
+describe("withMfaStep", () => {
+  it("已通過第二步驟或不是後台路徑：原樣", () => {
+    expect(withMfaStep("/admin/collabs", false)).toBe("/admin/collabs");
+    expect(withMfaStep("/brand", true)).toBe("/brand");
+  });
+  it("還沒通過第二步驟：去 /admin/mfa 並帶回原路徑", () => {
+    expect(withMfaStep("/admin", true)).toBe("/admin/mfa");
+    expect(withMfaStep("/admin/collabs?state=x", true)).toBe("/admin/mfa?next=%2Fadmin%2Fcollabs%3Fstate%3Dx");
+    expect(withMfaStep("/admin/mfa", true)).toBe("/admin/mfa");
   });
 });

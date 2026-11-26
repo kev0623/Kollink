@@ -18,3 +18,11 @@ describe("relativeRedirect", () => {
   });
   it("/.//evil.com 退回首頁", () => expect(loc("/.//evil.com")).toBe("/"));
 });
+
+describe("relativeRedirect extraHeaders", () => {
+  it("套用額外標頭（Supabase 的 Cache-Control），但 Location 以算出的為準", () => {
+    const r = relativeRedirect("/brand", 307, { "Cache-Control": "private, no-cache, no-store, must-revalidate", Location: "//evil.com" });
+    expect(r.headers.get("Cache-Control")).toContain("no-store");
+    expect(r.headers.get("Location")).toBe("/brand");
+  });
+});

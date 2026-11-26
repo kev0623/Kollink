@@ -325,7 +325,7 @@ select isnt((select code from public.creator_verifications), current_setting('t.
 
 -- 管理員
 select set_config('request.jwt.claims',
-  '{"sub":"00000000-0000-0000-0000-0000000000d4","role":"authenticated"}', true);
+  '{"sub":"00000000-0000-0000-0000-0000000000d4","role":"authenticated","aal":"aal2"}', true);
 select is((select count(*)::int from public.creator_verifications), 2,
   '管理員看得到所有人的驗證碼');
 

@@ -1,6 +1,7 @@
 "use client";
 import { useId, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { uploadErrorMessage } from "@/lib/upload-limits";
 import { CREATOR_MEDIA_BUCKET, creatorMediaUrl, planMediaUpload } from "@/lib/creator-media";
 import { initialOf } from "@/lib/format";
 
@@ -45,7 +46,7 @@ export function AvatarField({ userId, name, initialPath, error, onBusyChange, di
     try {
       const { error: e } = await createClient().storage.from(CREATOR_MEDIA_BUCKET)
         .upload(plan.path, file, { contentType: file.type });
-      if (e) return setMsg("上傳失敗，請再試一次");
+      if (e) return setMsg(uploadErrorMessage(e, "creator-media"));
       discard(ownedRef.current);
       ownedRef.current = plan.path;
       setPath(plan.path);

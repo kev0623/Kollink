@@ -1,10 +1,12 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { updateSession } from "@/lib/supabase/proxy";
 import { requiresAuth } from "@/lib/auth/routes";
+import { REQUEST_PATH_HEADER, requestPath } from "@/lib/auth/admin-next";
 
 // 只做樂觀檢查：更新 session cookie、沒登入就導去 /login。身分與資料完整度由各區 layout 檢查。
 export async function proxy(request: NextRequest) {
-  const { response, user } = await updateSession(request);
+  // requireAdmin() 用這個標頭決定管理員通過第二步驟後回哪一頁（一律覆寫用戶端帶的值）
+  const { response, user } = await updateSession(request, { [REQUEST_PATH_HEADER]: requestPath(request.nextUrl) });
   if (!user && requiresAuth(request.nextUrl.pathname)) {
     const login = request.nextUrl.clone();
     login.pathname = "/login";

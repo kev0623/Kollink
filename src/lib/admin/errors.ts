@@ -15,6 +15,7 @@ const MESSAGES: Record<string, string> = {
   "admin is participant": "你是這個合作案的參與者，不能用管理員身分處理",
   "admin is subject": "不能處理自己的帳號或訊息",
   "payout account changed": PAYOUT_ACCOUNT_CHANGED_MESSAGE,
+  "text too long": "內容太長，請縮短後再送出",
   "invalid note": "說明必填，最多 500 字，不能有特殊字元",
   "invalid reason": "原因必填，最多 500 字，不能有特殊字元",
   "creator not found": "找不到這位創作者",

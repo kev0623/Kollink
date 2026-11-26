@@ -409,14 +409,14 @@ isOneToOne: false
                   ]
                 },"payment_anomalies": {
                   Row: {
-                    "collaboration_id": string | null,"created_at": string,"expected_amount_twd": number | null,"id": number,"kind": string,"merchant_trade_no": string,"payment_id": string | null,"provider_trade_no": string,"raw": NonNullable<Json>,"received_amount_twd": number | null,"resolved_at": string | null,"resolved_note": string | null,"source": string
+                    "collaboration_id": string | null,"created_at": string,"expected_amount_twd": number | null,"id": number,"kind": string,"merchant_trade_no": string,"payment_id": string | null,"provider_trade_no": string,"raw": NonNullable<Json>,"received_amount_twd": number | null,"resolved_at": string | null,"resolved_by": string | null,"resolved_note": string | null,"source": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "collaboration_id"?: string | null,"created_at"?: string,"expected_amount_twd"?: number | null,"id"?: never,"kind": string,"merchant_trade_no": string,"payment_id"?: string | null,"provider_trade_no"?: string,"raw"?: NonNullable<Json>,"received_amount_twd"?: number | null,"resolved_at"?: string | null,"resolved_note"?: string | null,"source": string
+                    "collaboration_id"?: string | null,"created_at"?: string,"expected_amount_twd"?: number | null,"id"?: never,"kind": string,"merchant_trade_no": string,"payment_id"?: string | null,"provider_trade_no"?: string,"raw"?: NonNullable<Json>,"received_amount_twd"?: number | null,"resolved_at"?: string | null,"resolved_by"?: string | null,"resolved_note"?: string | null,"source": string
                   }
                   Update: {
-                    "collaboration_id"?: string | null,"created_at"?: string,"expected_amount_twd"?: number | null,"id"?: never,"kind"?: string,"merchant_trade_no"?: string,"payment_id"?: string | null,"provider_trade_no"?: string,"raw"?: NonNullable<Json>,"received_amount_twd"?: number | null,"resolved_at"?: string | null,"resolved_note"?: string | null,"source"?: string
+                    "collaboration_id"?: string | null,"created_at"?: string,"expected_amount_twd"?: number | null,"id"?: never,"kind"?: string,"merchant_trade_no"?: string,"payment_id"?: string | null,"provider_trade_no"?: string,"raw"?: NonNullable<Json>,"received_amount_twd"?: number | null,"resolved_at"?: string | null,"resolved_by"?: string | null,"resolved_note"?: string | null,"source"?: string
                   }
                   Relationships: [
                     {
@@ -576,6 +576,9 @@ isOneToOne: false
 "can_view_brief":
 { Args: { "p_brand_id": string,"p_deadline": string,"p_id": string,"p_status": string }; Returns: boolean
                            },
+"can_view_user":
+{ Args: { "p_user_id": string }; Returns: boolean
+                           },
 "check_categories":
 { Args: { "p": (string)[] }; Returns: (string)[]
                            },
@@ -641,6 +644,11 @@ isOneToOne: false
               "brand_id": string,"brand_logo_path": string,"brand_name": string,"closed": boolean,"creator_avatar_path": string,"creator_handle": string,"creator_id": string,"creator_name": string,"id": string,"my_side": string
             }[]
                            },
+"get_my_payment_details":
+{ Args: { "p_collab_id": string }; Returns: {
+              "amount_twd": number,"atm_bank_code": string,"atm_expire_date": string,"atm_v_account": string,"created_at": string,"id": string,"paid_at": string,"payment_method": string,"provider_env": string,"refund_required": boolean,"status": string
+            }[]
+                           },
 "get_opportunity":
 { Args: { "p_id": string }; Returns: {
               "applicant_count": number,"brand_id": string,"brand_logo_path": string,"brand_name": string,"budget_max_twd": number,"budget_min_twd": number,"categories": (string)[],"category_ok": boolean,"collab_ok": boolean,"collab_types": (string)[],"cover_path": string,"deadline": string,"description": string,"followers_ok": boolean,"id": string,"includes_product": boolean,"is_match": boolean,"min_followers": number,"my_application_id": string,"my_message": string,"my_proposed_price_twd": number,"my_status": string,"region": string,"region_ok": boolean,"status": string,"title": string
@@ -664,6 +672,9 @@ isOneToOne: false
 { Args: { "p_amount_twd": number,"p_creator_id": string,"p_deliverables": string,"p_title": string }; Returns: string
                            },
 "is_admin":
+{ Args: Record<PropertyKey, never>; Returns: boolean
+                           },
+"is_admin_account":
 { Args: Record<PropertyKey, never>; Returns: boolean
                            },
 "is_conversation_participant":
@@ -769,6 +780,12 @@ isOneToOne: false
                            },
 "start_conversation":
 { Args: { "p_creator_id": string }; Returns: string
+                           },
+"storage_quota_ok":
+{ Args: { "p_bucket": string,"p_max": number,"p_prefix": string }; Returns: boolean
+                           },
+"storage_upload_quota_ok":
+{ Args: { "p_bucket": string }; Returns: boolean
                            },
 "submit_deliverables":
 { Args: { "p_collab_id": string,"p_file_paths"?: (string)[],"p_links"?: (string)[],"p_note"?: string }; Returns: number

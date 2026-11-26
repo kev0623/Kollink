@@ -200,11 +200,13 @@ select is(
   'paid/null', '沒帶環境（本機、人工）時 provider_env 是 null');
 
 -- ── 退款標記 ──
+-- 20261129000100_security_hardening.sql（L5）：authenticated 讀不到 merchant_trade_no，改用 id
+reset role;
+select set_config('p8.credit_id', (select id::text from public.payments where merchant_trade_no = current_setting('p8.credit')), true);
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-000000000901","role":"authenticated"}', true);
 select throws_ok(
-  format($$select public.resolve_payment_refund((select id from public.payments where merchant_trade_no = %L), '已退款')$$,
-         current_setting('p8.credit')),
+  $$select public.resolve_payment_refund(current_setting('p8.credit_id')::uuid, '已退款')$$,
   '42501', 'not admin', '品牌不能標記退款');
 
 set local role service_role;
@@ -230,20 +232,25 @@ select is(
 reset role;
 insert into public.payments (collaboration_id, provider, merchant_trade_no, amount_twd) values
   ('00000000-0000-0000-0000-0000000009c4', 'ecpay', 'KLCANCEL01', 3000);
+select set_config('p8.cancel_id', (select id::text from public.payments where merchant_trade_no = 'KLCANCEL01'), true);
 set local role service_role;
 select set_config('request.jwt.claims', '{"role":"service_role"}', true);
 select is(
   public.record_payment_success('KLCANCEL01', 3000, 'T-X1', '{}'::jsonb, 'prod'),
   'paid_refund_required', '取消後到款：需退款');
 set local role authenticated;
-select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-000000000919","role":"authenticated"}', true);
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-000000000919","role":"authenticated","aal":"aal2"}', true);
+-- 20261129000100_security_hardening.sql（L5）：authenticated 讀不到 merchant_trade_no，改用 id
 select lives_ok(
-  $$select public.resolve_payment_refund((select id from public.payments where merchant_trade_no = 'KLCANCEL01'), '已退款')$$,
+  $$select public.resolve_payment_refund(current_setting('p8.cancel_id')::uuid, '已退款')$$,
   '管理員可以標記退款');
+-- 20261129000100_security_hardening.sql（L3）：authenticated 讀不到 audit_logs.actor_id，改以 postgres 檢查寫入的內容
+reset role;
 select is(
   (select actor_kind || '/' || actor_id::text from public.audit_logs
     where collaboration_id = '00000000-0000-0000-0000-0000000009c4' and action = 'payment_refunded'),
   'admin/00000000-0000-0000-0000-000000000919', '管理員的退款紀錄有 actor_id');
+set local role authenticated;
 
 -- ── 異常列表與處理 ──
 select is(

@@ -10,6 +10,9 @@ describe("collabErrorMessage", () => {
     expect(collabErrorMessage({ code: "22023", message: "invalid transition: approve from awaiting_publish by brand" })).toBe(COLLAB_STALE_MESSAGE);
     expect(collabErrorMessage({ code: "55000", message: "collaboration not awaiting submission" })).toBe(COLLAB_STALE_MESSAGE);
   });
+  it("ATM 取號後創作者不能退出", () => {
+    expect(collabErrorMessage({ code: "55000", message: "payment in progress" })).toBe("品牌已取得轉帳帳號，等付款期限過後才能退出；需要協助請聯絡平台。");
+  });
   it("其他錯誤不洩漏內容", () => {
     expect(collabErrorMessage({ code: "XX000", message: "boom" })).toBe("發生錯誤，請稍後再試");
     expect(collabErrorMessage({})).toBe("發生錯誤，請稍後再試");
@@ -25,5 +28,14 @@ describe("collabFieldError", () => {
     expect(collabFieldError({ code: "22023", message: "invalid file_paths" })).toEqual({ files: "格式不正確" });
     expect(collabFieldError({ code: "22023", message: "invalid transition: x" })).toBeNull();
     expect(collabFieldError({ code: "42501", message: "invalid title" })).toBeNull();
+  });
+});
+
+describe("資安修正新增的錯誤", () => {
+  it("邀請上限、停權、文字太長、管理員是參與者", () => {
+    expect(collabErrorMessage({ code: "54000", message: "too many invites" })).toContain("上限");
+    expect(collabErrorMessage({ code: "55000", message: "creator not approved" })).toContain("審核通過");
+    expect(collabErrorMessage({ code: "22023", message: "text too long" })).toBe("內容太長，請縮短後再送出");
+    expect(collabErrorMessage({ code: "42501", message: "admin is participant" })).toContain("參與者");
   });
 });

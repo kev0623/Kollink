@@ -19,9 +19,10 @@ type Props = {
   adminCancelled: boolean;
 };
 
-/** 「現在要做什麼」卡片（主色外框）：輪到自己時顯示動作；輪到對方時明確寫「你不用做任何事」。 */
+/** 「現在要做什麼」卡片（主色外框）：輪到自己時顯示動作；輪到對方時說明在等什麼（文字見 actionCardCopy）。 */
 export function ActionCard({ c, side, uid, latest, nowMs, devPaymentEnabled, payment, summary, adminCancelled }: Props) {
-  const copy = actionCardCopy(c.status, side, adminCancelled);
+  const fromApplication = c.briefId !== null;
+  const copy = actionCardCopy(c.status, side, adminCancelled, fromApplication);
   const countdown = c.status === "in_review" ? reviewCountdown(c.reviewDueAt, nowMs) : null;
   return (
     <section aria-labelledby="action-title" className={`rounded-card border-2 bg-surface p-4 md:p-5 ${copy.mine ? "border-primary" : "border-line"}`}>
@@ -40,7 +41,7 @@ export function ActionCard({ c, side, uid, latest, nowMs, devPaymentEnabled, pay
       )}
       <div className="mt-4">
         <CollabActions
-          collabId={c.id} status={c.status} side={side} uid={uid}
+          collabId={c.id} status={c.status} side={side} uid={uid} fromApplication={fromApplication}
           devPaymentEnabled={devPaymentEnabled} payment={payment} summary={summary}
         />
       </div>

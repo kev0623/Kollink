@@ -2,6 +2,7 @@
 import { useId, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { brandLogoUrl } from "@/lib/brand-logo";
+import { uploadErrorMessage } from "@/lib/upload-limits";
 
 const MAX_BYTES = 2 * 1024 * 1024;
 const TYPES: Record<string, string> = { "image/png": "png", "image/jpeg": "jpg", "image/webp": "webp" };
@@ -48,7 +49,7 @@ export function LogoField({ userId, initialPath, error, onBusyChange, disabled }
     try {
       const path = `${userId}/${crypto.randomUUID()}.${ext}`;
       const { error: e } = await createClient().storage.from("brand-logos").upload(path, file, { contentType: file.type });
-      if (e) return setMsg("上傳失敗，請再試一次");
+      if (e) return setMsg(uploadErrorMessage(e, "brand-logos"));
       discard(ownedRef.current);
       ownedRef.current = path;
       setLogoPath(path);

@@ -1,6 +1,7 @@
 "use client";
 import { useActionState, useId, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { uploadErrorMessage } from "@/lib/upload-limits";
 import { CREATOR_MEDIA_BUCKET, creatorMediaUrl, planMediaUpload } from "@/lib/creator-media";
 import { MAX_PORTFOLIO } from "@/lib/validation/creator-profile";
 import { inputClass } from "@/components/forms/Field";
@@ -36,7 +37,7 @@ export function PortfolioForm({ userId, initial }: { userId: string; initial: Po
     try {
       const { error } = await createClient().storage.from(CREATOR_MEDIA_BUCKET)
         .upload(plan.path, file, { contentType: file.type });
-      if (error) return setMsg("上傳失敗，請再試一次");
+      if (error) return setMsg(uploadErrorMessage(error, "creator-media"));
       owned.current.add(plan.path);
       setRows((r) => [...r, { imagePath: plan.path, linkUrl: "" }]);
     } catch {

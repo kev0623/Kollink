@@ -94,12 +94,24 @@ describe("詳情", () => {
     for (const s of ALL) {
       for (const side of ["brand", "creator"] as const) {
         const copy = actionCardCopy(s, side);
+        // 例外：創作者在待付款時可以退出，說明改寫成可以退出
+        if (s === "awaiting_payment" && side === "creator") continue;
         if (turnOf(s) !== null && !copy.mine) expect(copy.body).toContain("你不用做任何事");
       }
     }
     expect(actionCardCopy("in_review", "brand")).toMatchObject({ mine: true, title: "輪到你：審核交稿" });
     expect(actionCardCopy("in_review", "creator")).toMatchObject({ mine: false, title: "等對方審核" });
     expect(actionCardCopy("awaiting_payment", "brand").body).toContain("信用卡或 ATM 轉帳");
+    const leave = actionCardCopy("awaiting_payment", "creator").body;
+    expect(leave).toContain("付款前可以退出");
+    expect(leave).not.toContain("你不用做任何事");
+  });
+  it("卡片：來自報名、等待創作者確認（錄取金額低於報價）", () => {
+    expect(actionCardCopy("invited", "brand", false, true)).toMatchObject({ mine: false, title: "等待創作者確認" });
+    expect(actionCardCopy("invited", "brand", false, true).body).toContain("你不用做任何事");
+    expect(actionCardCopy("invited", "creator", false, true)).toMatchObject({ mine: true, title: "輪到你：確認合作條件" });
+    expect(actionCardCopy("invited", "creator", false, true).body).not.toContain("邀約");
+    expect(actionCardCopy("invited", "brand")).toMatchObject({ title: "等對方回覆邀約" });
   });
   it("審核倒數", () => {
     const now = Date.parse("2026-11-25T00:00:00Z");
@@ -119,6 +131,11 @@ describe("交稿與事件", () => {
   it("事件文字", () => {
     expect(eventText(ev({ action: "create", actorKind: "brand", actorName: "花粉", toStatus: "invited" }))).toBe("花粉 發出邀約");
     expect(eventText(ev({ action: "create", actorKind: "brand", actorName: "花粉", toStatus: "awaiting_payment" }))).toBe("花粉 錄取並建立合作案");
+    expect(eventText(ev({ action: "create", actorKind: "brand", actorName: "花粉", toStatus: "invited" }), true))
+      .toBe("花粉 錄取報名（金額低於報價，等待創作者確認）");
+    expect(eventText(ev({ action: "accept" }), true)).toBe("小美 接受合作條件");
+    expect(eventText(ev({ action: "decline" }), true)).toBe("小美 婉拒合作條件");
+    expect(eventText(ev({ action: "accept" }))).toBe("小美 接受邀約");
     expect(eventText(ev({ action: "submit" }))).toBe("小美 已交稿");
     expect(eventText(ev({ action: "request_changes", actorName: "花粉", note: "亮一點" }))).toBe("花粉 要求修改：亮一點");
     expect(eventText(ev({ action: "mark_paid", actorKind: "system", actorName: "系統" }))).toBe("款項已託管");

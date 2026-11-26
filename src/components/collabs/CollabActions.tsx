@@ -17,20 +17,25 @@ import { useCollabAction } from "./useCollabAction";
 
 type Props = {
   collabId: string; status: CollabStatus; side: CollabSide; uid: string;
+  /** 來自招募報名（invited 代表錄取金額低於報價、等待創作者確認），按鈕文字不寫「邀約」 */
+  fromApplication: boolean;
   devPaymentEnabled: boolean; payment: PaymentAvailability; summary: PaymentSummary;
 };
 
 const primary = "h-11 w-full rounded-btn bg-ink px-6 font-semibold text-on-ink disabled:opacity-60 sm:w-auto";
 
 /** 「現在要做什麼」卡片裡的按鈕（依狀態與視角）。 */
-export function CollabActions({ collabId, status, side, uid, devPaymentEnabled, payment, summary }: Props) {
-  if (side === "creator" && status === "invited") return <InviteReply collabId={collabId} />;
+export function CollabActions({ collabId, status, side, uid, fromApplication, devPaymentEnabled, payment, summary }: Props) {
+  if (side === "creator" && status === "invited") return <InviteReply collabId={collabId} fromApplication={fromApplication} />;
   if (side === "brand" && (status === "invited" || status === "awaiting_payment")) {
     return (
-      <BrandPayment collabId={collabId} status={status} devPaymentEnabled={devPaymentEnabled} payment={payment} summary={summary} />
+      <BrandPayment
+        collabId={collabId} status={status} fromApplication={fromApplication}
+        devPaymentEnabled={devPaymentEnabled} payment={payment} summary={summary}
+      />
     );
   }
-  if (side === "creator" && status === "awaiting_payment" && devPaymentEnabled) return <DevMarkPaid collabId={collabId} />;
+  if (side === "creator" && status === "awaiting_payment") return <CreatorLeave collabId={collabId} devPaymentEnabled={devPaymentEnabled} />;
   if (side === "creator" && status === "awaiting_submission") return <SubmitPanel collabId={collabId} uid={uid} />;
   if (side === "brand" && status === "in_review") return <Review collabId={collabId} />;
   if (side === "creator" && status === "awaiting_publish") return <PublishForm collabId={collabId} />;
@@ -46,16 +51,19 @@ function Feedback({ error, notice }: { error: string | null; notice: string | nu
   );
 }
 
-function InviteReply({ collabId }: { collabId: string }) {
+function InviteReply({ collabId, fromApplication }: { collabId: string; fromApplication: boolean }) {
   const { pending, error, notice, run } = useCollabAction();
   return (
     <div className="space-y-2">
       <div className="flex flex-col gap-2 sm:flex-row">
         <button type="button" disabled={pending} onClick={() => run(() => creatorCollabAction(collabId, "accept"))} className={primary}>
-          {pending ? "處理中…" : "接受邀約"}
+          {pending ? "處理中…" : fromApplication ? "接受條件" : "接受邀約"}
         </button>
         <ConfirmAction
-          label="婉拒" danger confirmLabel="確定婉拒" message="婉拒後品牌需要重新發出邀約，確定要婉拒嗎？"
+          label="婉拒" danger confirmLabel="確定婉拒"
+          message={fromApplication
+            ? "婉拒後這個合作案就結束了，品牌可以重新邀請你。確定要婉拒嗎？"
+            : "婉拒後品牌需要重新發出邀約，確定要婉拒嗎？"}
           onConfirm={() => creatorCollabAction(collabId, "decline")}
         />
       </div>
@@ -64,12 +72,26 @@ function InviteReply({ collabId }: { collabId: string }) {
   );
 }
 
+/** 品牌還沒付款前，創作者可以退出合作（transition_collaboration 的 cancel）；付款之後資料庫不允許。 */
+function CreatorLeave({ collabId, devPaymentEnabled }: { collabId: string; devPaymentEnabled: boolean }) {
+  return (
+    <div className="space-y-3">
+      <ConfirmAction
+        label="退出合作" danger confirmLabel="確定退出"
+        message="退出後這個合作案就結束了，不能復原；品牌可以重新邀請你或改找其他創作者。確定要退出嗎？"
+        onConfirm={() => creatorCollabAction(collabId, "cancel")}
+      />
+      {devPaymentEnabled && <DevMarkPaid collabId={collabId} />}
+    </div>
+  );
+}
+
 type BrandPaymentProps = {
-  collabId: string; status: "invited" | "awaiting_payment"; devPaymentEnabled: boolean;
+  collabId: string; status: "invited" | "awaiting_payment"; fromApplication: boolean; devPaymentEnabled: boolean;
   payment: PaymentAvailability; summary: PaymentSummary;
 };
 
-function BrandPayment({ collabId, status, devPaymentEnabled, payment, summary }: BrandPaymentProps) {
+function BrandPayment({ collabId, status, fromApplication, devPaymentEnabled, payment, summary }: BrandPaymentProps) {
   const [changeMethod, setChangeMethod] = useState(false);
   const atm = status === "awaiting_payment" ? summary.atm : null;
   const cancelMessage = atm
@@ -96,7 +118,7 @@ function BrandPayment({ collabId, status, devPaymentEnabled, payment, summary }:
           </button>
         )}
         <ConfirmAction
-          label={status === "invited" ? "撤回邀約" : "取消合作"} danger confirmLabel="確定取消"
+          label={status !== "invited" ? "取消合作" : fromApplication ? "撤回錄取" : "撤回邀約"} danger confirmLabel="確定取消"
           message={cancelMessage}
           onConfirm={() => brandCollabAction(collabId, "cancel")}
         />

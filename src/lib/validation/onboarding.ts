@@ -60,6 +60,9 @@ export function suggestHandle(ig: string): string {
   return normalizeIgUsername(ig).toLowerCase().replace(/[^a-z0-9_.]/g, "").slice(0, 30);
 }
 
+/** 粉絲數上限：與資料庫 creator_profiles_follower_count_max、create/update_creator_account 的 invalid follower_count 一致。 */
+export const MAX_FOLLOWER_COUNT = 100_000_000;
+
 export type BrandInput = { brandName: string; industry: string; logoPath: string | null };
 
 export function validateBrandInput(i: BrandInput): Record<string, string> | null {
@@ -89,7 +92,9 @@ export function validateCreatorInput(i: CreatorInput): Record<string, string> | 
   else if (len(name) < 1 || len(name) > 40) e.displayName = "請填寫顯示名稱（40 字以內）";
   if (!HANDLE_RE.test(cleanText(i.handle))) e.handle = "網址只能用小寫英文、數字、底線和點，3–30 字";
   if (!IG_RE.test(normalizeIgUsername(i.igUsername))) e.igUsername = "請填寫正確的 IG 帳號";
-  if (!/^\d{1,9}$/.test(cleanText(i.followerCount))) e.followerCount = "請填寫粉絲數（整數）";
+  const followers = cleanText(i.followerCount);
+  if (!/^\d{1,9}$/.test(followers)) e.followerCount = "請填寫粉絲數（整數）";
+  else if (Number(followers) > MAX_FOLLOWER_COUNT) e.followerCount = "粉絲數不能超過 1 億";
   const region = cleanText(i.region);
   if (hasBidi(region)) e.region = BAD_CHAR_MESSAGE;
   else if (len(region) < 1 || len(region) > 30) e.region = "請選擇地區";

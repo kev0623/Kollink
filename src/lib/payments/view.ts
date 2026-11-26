@@ -1,11 +1,10 @@
-// 付款單 → 畫面要的摘要（使用者自己的 client 讀 payments；RLS 只給參與者與管理員）。
+// 付款單 → 畫面要的摘要。
 import { todayTw } from "@/lib/briefs/dates";
 import { RECENT_ORDER_MS } from "./limits";
 
-/** payments 的可讀欄位（authenticated 讀不到 raw_notify、created_by、refund_note）。 */
-export const PAYMENT_COLUMNS =
-  "status, payment_method, provider_env, amount_twd, atm_bank_code, atm_v_account, atm_expire_date, refund_required, created_at";
-
+// 付款資料只經由 rpc get_my_payment_details(p_collab_id) 讀取：品牌與管理員拿到完整欄位，
+// 創作者拿到同樣的列但 atm_* 是 null（資料庫已不授權 authenticated 直接讀 ATM 欄位）。
+// supabase gen types 把 RETURNS TABLE 欄位都標成非 null，所以自己定義可為 null 的型別。
 export type PaymentRow = {
   status: string | null;
   payment_method: string | null;

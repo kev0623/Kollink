@@ -49,7 +49,8 @@ select set_config('request.jwt.claims',
 select throws_ok(
   $$select public.record_payment_success('PL0001', 4500, 'T1', '{}'::jsonb)$$,
   '42501', null, '一般使用者不能呼叫付款成功函式');
-select is((select count(*)::int from public.payments where merchant_trade_no = 'PL0001'), 1, '合作案參與者看得到付款紀錄');
+-- 20261129000100_security_hardening.sql（L5）：authenticated 讀不到 merchant_trade_no，改用合作案過濾
+select is((select count(*)::int from public.payments where collaboration_id = '00000000-0000-0000-0000-00000000cc01'), 1, '合作案參與者看得到付款紀錄');
 
 -- 系統
 set local role service_role;

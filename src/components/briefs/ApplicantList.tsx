@@ -120,7 +120,7 @@ function ApplicantItem({ a, briefId, brief }: { a: Applicant; briefId: string; b
           <p className="mb-3 text-sm font-semibold text-ink">錄取 {a.displayName}：設定合作條件</p>
           <OfferForm
             action={acceptApplicationAction} hidden={{ applicationId: a.id, briefId }} withTitle={false}
-            defaults={acceptDefaults(a.proposedPrice, brief)} submitLabel="錄取並建立合作案"
+            defaults={acceptDefaults(a.proposedPrice, brief)} submitLabel="錄取並建立合作案" proposedPrice={a.proposedPrice}
             onCancel={() => setAccepting(false)}
           />
         </div>

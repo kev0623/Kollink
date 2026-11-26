@@ -29,7 +29,7 @@ export function CollabDetail({ data, side, uid, nowMs, devPaymentEnabled, paymen
         adminCancelled={events.some((e) => e.action === "admin_cancel")}
       />
       <SubmissionList submissions={submissions} />
-      <EventList events={events} chatHref={c.conversationId ? messagesHref(side, c.conversationId) : null} />
+      <EventList events={events} chatHref={c.conversationId ? messagesHref(side, c.conversationId) : null} fromApplication={c.briefId !== null} />
     </div>
   );
 }

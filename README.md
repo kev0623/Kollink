@@ -87,7 +87,23 @@ returning user_id;
 
 管理員若同時是某個合作案的品牌或創作者，那個合作案只能以參與者身分操作，後台不會顯示管理員動作（請另一位管理員處理）。管理員也不能處理自己（核准、停權自己的創作者資料、標記自己的訊息已檢視會回 `admin is subject`）。
 
-本機開發：登入頁的「測試管理員」（`dev-admin@kollink.test`，見上方「測試快速登入」）。
+### 管理員兩步驟驗證（TOTP）
+
+資安修正起，管理員除了 Email 驗證碼，還要通過第二步驟（驗證器 App 的 6 位數驗證碼，Supabase 的 aal2）才能操作後台：資料庫的 `is_admin()`／`admin_actor()` 檢查 JWT 的 `aal` 是 `aal2`，直接呼叫 API 也一樣。
+
+- 第一次：登入後會被導到 `/admin/mfa`，用 Google Authenticator、1Password 等掃描 QR Code（或手動輸入密鑰），輸入 6 位數完成綁定，再進後台。
+- 之後每次登入：Email 驗證碼通過後，在 `/admin/mfa` 輸入驗證器上的 6 位數。
+- 還沒通過第二步驟的管理員帳號，在資料庫裡等於一般帳號（有 profile 的照自己的角色操作）。
+- 備用 SQL 用 `service_role`（system 身分），不受第二步驟影響：SQL Editor 本身以 `postgres` 身分執行，備用 SQL 之所以有效，是因為開頭做了 `set local role service_role` 並設定 claims。
+- **遺失驗證器**：在 Supabase Studio 的 SQL Editor 刪掉該使用者的 MFA 因子（直接複製，只改 Email）。刪完後對方再次登入會重新綁定：
+  ```sql
+  delete from auth.mfa_factors
+   where user_id = (select id from auth.users where email = lower('填入管理員的 Email'))
+  returning id, factor_type, status;
+  ```
+- 正式環境要先在 Dashboard 開啟 TOTP（見「正式環境設定」第 7a 項）。本機的 `supabase/config.toml` 已開啟（`[auth.mfa.totp]`）；本機不要 `supabase config push`。
+
+本機開發：登入頁的「測試管理員」（`dev-admin@kollink.test`，見上方「測試快速登入」）。測試管理員也要過 TOTP：dev-login 不會偽造第二步驟，第一次進 `/admin/mfa` 綁定，E2E 腳本自己用密鑰算 6 位數驗證碼（RFC 6238）。
 
 ### 審核創作者
 
@@ -286,6 +302,8 @@ CLI 3.x 的 `db push` 預設推到本機，一定要加 `--remote`。**不要執
 
 雲端新專案不會自動把 public 資料表授權給 API 角色（本機會），所以權限一律寫在 migration 裡（見 `20261124000100_explicit_api_grants.sql`）。之後新增資料表時，要在同一個 migration 寫明 `grant`。
 
+**新增函式也一樣：** 資安修正（`20261129000100_security_hardening.sql`）起，postgres 建立的函式（任何 schema）**預設不再給 PUBLIC 執行**，也不會自動給 anon／authenticated。每個新函式都要在同一個 migration 先 `revoke execute ... from public, anon, authenticated, service_role`，再明確 `grant execute` 給需要的角色（例如 RLS policy 用的 helper 要 grant 給 authenticated），否則 API 會回 permission denied。trigger 函式不需要 grant。
+
 創作者頭像與作品的 Storage bucket `creator-media` 由 migration `20261124000300_creator_media.sql` 建立，執行上面的 `npx supabase db push --remote` 就會一起建好，不用在後台手動建立 bucket 或 policy。這個 bucket 是公開的：未審核創作者的圖片網址如果被猜到也看得到（路徑含 UUID，很難猜），這是已接受的取捨。
 
 招募封面的 Storage bucket `brief-covers` 由 migration `20261124000600_brief_covers.sql` 建立（公開、5 MB、只接受 JPG／PNG／WebP，只有品牌能上傳到自己的資料夾），同樣隨 `db push --remote` 一起建好。
@@ -339,7 +357,7 @@ select count(*) as refund_required from public.payments where refund_required;  
 
 本機的 `config.toml` 不會自動套用到正式專案，上線前在 Supabase 後台逐項設定：
 
-1. Authentication → Providers → Email：開啟「Confirm email」（`enable_confirmations`）；Email OTP 長度 6、有效期限 900 秒（`otp_expiry = 900`）。注意後台預設是 8 碼、3600 秒，一定要改。
+1. Authentication → Providers → Email（本次資安版本上線時，OTP 長度要等新版網站上線後才改，見「資安修正（全系統體檢）上線」第 7 步）：開啟「Confirm email」（`enable_confirmations`）；Email OTP 長度 **8**、有效期限 **600 秒**（資安修正：碼越長、越短命，暴力猜測越難）。後台預設是 8 碼、3600 秒，有效期限一定要改。登入頁接受 6 到 8 位數，所以本機（6 碼）與正式環境（8 碼）都能用。
 2. Authentication → Sign In / Providers：關閉匿名登入（anonymous sign-ins）。
 3. 密碼登入封鎖：真正的保證是 migration 裡的 `null_encrypted_password` trigger（推送 migration 即生效，不受方案限制）。另外在 Authentication → Hooks 新增 Postgres hook「Password verification attempt」指向 `public.hook_reject_password`，作為第二層防護（方案允許才有）。
 4. Authentication → URL Configuration：Site URL 填正式網址；Redirect URLs 加入下面這行（`<site>` 換成正式網址）：
@@ -348,9 +366,97 @@ select count(*) as refund_required from public.payments where refund_required;  
    ```
 5. Authentication → Emails：要先完成第 6 項的自訂 SMTP 才能改範本（預設範本寄的是登入連結，不是 6 碼驗證碼，登入頁會無法使用）。「Magic Link」與「Confirm signup」兩個範本都換成 `supabase/templates/otp.html`（主旨分別為 `Kollink 登入驗證碼`、`Kollink 註冊驗證碼`）。
 6. Authentication → SMTP Settings：設定自訂 SMTP（例如 Resend）。內建寄信上限約每小時 2 封，不能用於正式環境。
-7. Authentication → Attack Protection：建議開啟 CAPTCHA（Turnstile 或 hCaptcha），並在登入頁加上對應元件。
+7. Authentication → Attack Protection：建議開啟 CAPTCHA（Turnstile 或 hCaptcha），並在登入頁加上對應元件（需要前端整合，見下方「資安待辦」，先不要只開後台設定，否則登入會失敗）。
+7a. Authentication → Multi-Factor：開啟 **TOTP**（Enroll 與 Verify 都要開）。管理員的兩步驟驗證靠這個設定；沒開的話管理員無法綁定驗證器，進不了 `/admin`。
 8. Google OAuth：Providers → Google 填入用戶端 ID／密鑰；Google Cloud Console 的重新導向 URI 加上 `https://<專案>.supabase.co/auth/v1/callback`。
 9. 排程清理沒被引用的 Storage 物件：`brand-logos`（沒被 `brand_profiles.logo_path` 引用）、`creator-media`（沒被 `creator_profiles.avatar_path`、`creator_portfolio_items.image_path` 引用）`brief-covers`（沒被 `briefs.cover_path` 引用）與 `deliverables`（沒被任何 `collaboration_submissions.file_paths` 引用的，例如上傳後沒有交稿），都只刪超過 24 小時的，見 `docs/superpowers/plans/2026-11-22-foundation-followups.md`。
+
+## 資安修正（全系統體檢）上線
+
+這個版本含兩個 migration（`20261129000100_security_hardening.sql`、`20261129000200_admin_mfa.sql`）與網站程式，**必須一起上線**：
+
+- migration 之後，舊版網站的合作案詳情會因為讀不到 ATM 欄位而出錯（現在改用 `get_my_payment_details`）。
+- migration 之後，沒有通過 TOTP 的管理員在資料庫裡不是管理員；舊版網站沒有 `/admin/mfa`，管理員會進不了後台。
+
+**部署順序（依序；下面的指令與 SQL 都請直接複製貼上，不要手打）：**
+
+1. 確認 Vercel 的 Production 環境變數有 `NEXT_PUBLIC_SUPABASE_URL` 與 `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`（CSP 在建置時就固定，缺了的話網站連不上 Supabase）。
+2. 推 migration 前的只讀檢查（只回一列）。在終端機執行：
+   ```bash
+   npx supabase db query --remote --read-only "select (select rolbypassrls from pg_roles where rolname = 'postgres') as bypassrls, has_table_privilege('postgres', 'storage.objects', 'select') as can_read_storage, (select max(version) from supabase_migrations.schema_migrations) as last_migration, (select count(*) from pg_policies where policyname in ('brand_logos_insert_own','brand_logos_update_own','creator_media_insert_own','creator_media_update_own','brief_covers_insert_own','brief_covers_update_own','profiles_select','brand_profiles_select','creator_favorites_insert_own')) as old_policies, (select count(*) from pg_proc where pronamespace = 'public'::regnamespace and proname in ('storage_quota_ok','storage_upload_quota_ok','can_view_user','get_my_payment_details','is_admin_account','creator_profiles_log_stats')) as new_fns_existing, (select count(*) from public.creator_profiles where follower_count > 100000000) as followers_over_cap, (select count(*) from public.admins) as admins, (select count(*) from auth.mfa_factors f join public.admins a on a.user_id = f.user_id where f.status = 'verified') as admin_totp;"
+   ```
+   或把下面的 SQL 貼到 Supabase Studio 的 SQL Editor：
+   ```sql
+select (select rolbypassrls from pg_roles where rolname = 'postgres') as bypassrls,
+       has_table_privilege('postgres', 'storage.objects', 'select') as can_read_storage,
+       (select max(version) from supabase_migrations.schema_migrations) as last_migration,
+       (select count(*) from pg_policies where policyname in ('brand_logos_insert_own','brand_logos_update_own','creator_media_insert_own','creator_media_update_own','brief_covers_insert_own','brief_covers_update_own','profiles_select','brand_profiles_select','creator_favorites_insert_own')) as old_policies,
+       (select count(*) from pg_proc where pronamespace = 'public'::regnamespace and proname in ('storage_quota_ok','storage_upload_quota_ok','can_view_user','get_my_payment_details','is_admin_account','creator_profiles_log_stats')) as new_fns_existing,
+       (select count(*) from public.creator_profiles where follower_count > 100000000) as followers_over_cap,
+       (select count(*) from public.admins) as admins,
+       (select count(*) from auth.mfa_factors f join public.admins a on a.user_id = f.user_id where f.status = 'verified') as admin_totp;
+   ```
+   預期結果：
+   - `can_read_storage` = `true`。**若是 `false` 就中止，不要推 migration**：Storage 的計數 helper 讀不到 `storage.objects`，推了之後每一次上傳都會 permission denied。
+   - `bypassrls` = `true`（若是 `false`，Storage 數量上限會悄悄失效）。
+   - `last_migration` = `20261128000400`。
+   - `old_policies` = `9`。
+   - `new_fns_existing` = `0`。
+   - `followers_over_cap` = `0`。
+   - `admins` ≥ `1`。
+3. Supabase Dashboard → Authentication → Multi-Factor：開啟 **TOTP**（Enroll 與 Verify 都要開）。**這時先不要改 Email OTP 長度**（舊版網站只接受 6 碼）。
+4. 確認要推的 migration，再推送：
+   ```bash
+   npx supabase db push --remote --dry-run
+   ```
+   清單必須只有 `20261129000100` 與 `20261129000200`，確認後：
+   ```bash
+   npx supabase db push --remote --yes
+   ```
+5. **馬上**合併 PR（資料庫與網站必須一起上線：新版網站上線前，合作案詳情頁會出錯，管理員也沒有後台權限）。
+6. 每位管理員馬上開 `/admin`，到 `/admin/mfa` 綁定驗證器（第一次綁定只需要 Email 登入），確認 `/admin` 進得去。另外確認：品牌帳號看待付款的合作案有付款資訊、創作者畫面沒有 ATM 帳號細節、上傳一張圖成功。
+7. 到這裡才改：Authentication → Providers → Email 的 OTP 長度改為 8、有效期限 600 秒；改完用 8 位數驗證碼登入一次。
+8. 之後、金流正式上線前：在 Vercel 預覽環境用綠界測試環境走信用卡（含 3D 驗證）與 ATM 取號；若 CSP 擋住導向，放寬 `form-action`（見下方「資安待辦」）。
+
+**卡住時：**
+
+- **不要回滾 migration。**
+- `db push` 之後 Vercel 部署失敗：先用下面的暫時 SQL（SQL Editor）讓舊版網站的合作案頁面恢復運作：
+  ```sql
+  grant select (atm_bank_code, atm_v_account, atm_expire_date) on public.payments to authenticated;
+  ```
+  新版網站上線後馬上收回：
+  ```sql
+  revoke select (atm_bank_code, atm_v_account, atm_expire_date) on public.payments from authenticated;
+  ```
+- 這段期間管理員用 service_role 備用 SQL（見上面各節）處理後台工作。
+- **絕對不要在 `db push` 之前部署新版網站**（會導致登入失敗）。
+- 如果只套用了 `20261129000100`（第二個沒推成功）：合併 PR 前先重跑步驟 4 的 `db push`。
+
+**這個版本的行為變更：**
+
+- 品牌錄取報名時，金額**低於創作者報名時的報價**：合作案先進入「等待創作者確認」（`invited`），創作者接受後才進入待付款，婉拒則結束；品牌在對方確認前可以撤回。金額等於或高於報價、或創作者沒有報價：照舊直接進入待付款。創作者在品牌付款前都可以退出合作。
+- Storage 上傳數量上限（每位使用者在該 bucket 的物件數）：`brand-logos` 40、`creator-media` 120、`brief-covers` 300；`deliverables` 每個合作案 200（`src/lib/upload-limits.ts` 與 migration 一致）。**計數的是目前存在的物件**，換圖時舊檔沒有刪除，所以實際上是累計上限；要靠下方第 9 項的清孤兒檔排程把舊檔清掉。
+- 創作者改粉絲數、互動率時，只要狀態不是待審（`pending`），都會寫一筆 `creator_stats_changed` 操作紀錄（停權或被退回期間改的也算）。
+- 管理員在後台頁面被要求第二步驟時，驗證完會回到原本要去的後台頁面（只接受 `/admin` 底下的站內路徑）。
+
+**救援：** 遺失驗證器見「管理員兩步驟驗證」。管理員全部進不了後台時，用 SQL Editor 的 service_role 備用 SQL（上面各節）仍然可以處理（system 身分，不看 aal）。
+
+**其他設定：** 新增資料庫函式時，postgres 建立的函式預設不再給 PUBLIC 執行：每個新函式都要自己 `grant execute` 給需要的角色（見「正式環境（Hosted Supabase）設定」的「新增函式也一樣」）。
+
+### 資安待辦（之後再做）
+
+- Supabase CAPTCHA（Turnstile 或 hCaptcha）：後台開啟的同時，`AuthForm` 的 `signInWithOtp`／`verifyOtp` 要傳 `captchaToken`。
+- 流量限制：`apply_to_brief`、`save_brief`、收藏（`setFavoriteAction`）還沒有每人每分鐘／每日上限（邀請已限制 24 小時 30 次）；可用資料庫計數（同 `send_message`）或 Vercel Firewall。
+- 帳號列舉：註冊時 `handle taken` 會告訴對方網址已被使用（註冊必要，接受）；收藏不存在的創作者已改成一律 42501。
+- Session cookie 不是 HttpOnly：`@supabase/ssr` 的瀏覽器 client 需要讀它（Realtime、Storage）。補償措施是 CSP 的 `connect-src` 只放行 Supabase；XSS 仍然可以偷走 session，所以不要新增 `dangerouslySetInnerHTML`。
+- 交稿檔案（deliverables）的 MIME sniffing：只檢查宣告的 Content-Type，內容沒有驗證（PDF 可能內嵌腳本）；檔案從 Supabase 網域用 1 小時 signed URL 開啟，不在網站的來源下執行。可以縮短 signed URL 時間或加上 `download`。
+- CSP 的 `script-src` 有 `'unsafe-inline'`（cacheComponents／PPR 不能每請求產生 nonce）；之後可評估只對動態的 `/admin`、`/brand/collabs` 改用 nonce，或 `experimental.sri`。
+- 綠界 `form-action`：只放行 `payment(-stage).ecpay.com.tw`。**還沒有驗證 3D 驗證（可能導向銀行網域）與 ATM 的跨網域導向鏈**；上線前在 Vercel 預覽環境用綠界測試環境走一次；若被擋，把 `form-action` 放寬為 `https:`，其他指令不變。
+- 停權前已建立的付款單：創作者被停權時，品牌之前在綠界建立的付款單（例如 ATM 取號後才轉帳）仍會完成付款，合作案照樣進入待交稿，變成「進行中的合作案、創作者已停權」。管理員需要在付款異常或合作案列表留意，必要時用平台取消＋退款處理。
+- 邀請與開啟對話各自是每個品牌 24 小時 30 次（`invite_creator`、`start_conversation`），合起來一天最多可以接觸 60 位創作者；要更嚴格時改成共用一個計數。
+- Storage 數量上限是累計物件數（見上方「這個版本的行為變更」），需要清孤兒檔的排程（「正式環境設定」第 9 項）；沒有排程的話，常換圖的使用者最終會被擋。
+- 登入頁的 Email OTP 6–8 碼輸入只有單元測試（`src/lib/auth/otp-code.test.ts`），沒有在瀏覽器走完整的寄信流程（本機內建寄信每小時 2 封）；正式環境設定 8 碼後要實際登入一次確認。
 
 ## 部署（Vercel）
 

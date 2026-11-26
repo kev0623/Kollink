@@ -49,7 +49,8 @@ select is((select is_self from public.get_public_creator('mei')), false, '訪客
 select is((select count(*)::int from public.get_public_creator('ming')), 0, '訪客讀不到待審核的創作者');
 select is((select count(*)::int from public.get_public_creator('nobody')), 0, '不存在的 handle 沒有資料');
 select is((select count(*)::int from public.creator_portfolio_items), 2, '訪客只看得到已審核創作者的作品');
-select is((select count(*)::int from public.creator_rates), 0, '訪客看不到報價');
+-- 20261129000100_security_hardening.sql：anon 不再有 creator_rates 的 select 權限（原本靠沒有 anon policy 回 0 筆）
+select throws_ok($$select count(*) from public.creator_rates$$, '42501', null, '訪客看不到報價');
 select throws_ok($$select public.update_creator_public_profile(null, '{}', '{}', null, null, null)$$,
   '42501', null, '訪客不能修改公開頁');
 select throws_ok(
