@@ -1,7 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { createAnonClient } from "@/lib/supabase/anon";
 import { relativeRedirect } from "@/lib/auth/relative-redirect";
 import { postLoginPath } from "@/lib/auth/after-login";
 import { isRole } from "@/lib/auth/post-login";
@@ -19,7 +18,7 @@ type Flow = { state: string; nonce: string; cv: string; next: string | null; rol
 
 /**
  * GET /auth/line/callback：LINE 授權後導回。state（固定時間比較、只能用一次）→ 換 token → 自己驗 ID token →
- * 依 resolveLineAccount 決定：已綁定就登入；否則寄 Email 驗證碼、通過後才綁定（/auth/line/link）。
+ * 依 resolveLineAccount 決定：已綁定就登入；否則到 /login?line=verify 由瀏覽器用 Email 驗證碼登入，通過後才綁定（/auth/line/link）。
  */
 export async function GET(request: NextRequest) {
   const config = readLineConfig();
@@ -98,23 +97,25 @@ export async function GET(request: NextRequest) {
     return done(relativeRedirect(path, 303, { ...responseHeaders, "Cache-Control": "private, no-store" }));
   }
 
-  // 尚未綁定：寄 Email 驗證碼（沿用 Email 登入的信件範本）；驗證通過後由 /auth/line/link 綁定
-  const kind = decision.kind === "verify_existing" ? "existing" : "new";
-  const { error: otpErr } = await createAnonClient().auth.signInWithOtp({
-    email: email as string,
-    options: { shouldCreateUser: kind === "new" },
-  });
-  if (otpErr) {
-    logLine("send_otp", String(otpErr.status ?? "error"));
-    return fail(otpErr.status === 429 ? "line_otp_rate" : "line_failed");
+  // 尚未綁定、有 Email：不在伺服器寄驗證碼（Supabase 的寄信／驗證頻率限制是以 IP 計算，伺服器送出會共用 Vercel 的 IP）。
+  // 把 LINE ID 與 Email 加密存進 cookie，導到 /login?line=verify，由瀏覽器自己寄驗證碼與驗證（與 Email 登入相同），
+  // 通過後 POST /auth/line/link 綁定。
+  const res = done(relativeRedirect("/login?line=verify", 303, { "Cache-Control": "private, no-store" }));
+  // 這個瀏覽器若已經登入別的帳號，proxy 會把 /login 導走，使用者就到不了輸入驗證碼的畫面；
+  // 而且綁定時要確認「目前的 session 就是剛用驗證碼登入的帳號」，所以先登出原本的 session（只登出這個裝置）。
+  if (request.cookies.getAll().some((c) => c.name.startsWith("sb-"))) {
+    const supabase = await createClient();
+    const { error: outErr } = await supabase.auth.signOut({ scope: "local" });
+    if (outErr) {
+      for (const c of request.cookies.getAll()) if (c.name.startsWith("sb-")) res.cookies.set(c.name, "", { path: "/", maxAge: 0 });
+    }
   }
   const linkCookie = seal(
     "link",
-    { sub, email, kind, uid: decision.kind === "verify_existing" ? decision.userId : null, next, role },
+    { sub, email, kind: decision.kind === "verify_existing" ? "existing" : "new", uid: decision.kind === "verify_existing" ? decision.userId : null, next, role },
     config.channelSecret,
     now + LINE_COOKIE_TTL,
   );
-  const res = done(relativeRedirect(`/login?line=${kind}`, 303, { "Cache-Control": "private, no-store" }));
   res.cookies.set(LINE_LINK_COOKIE, linkCookie, lineCookieOptions(secure));
   return res;
 }

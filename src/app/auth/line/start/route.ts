@@ -30,7 +30,9 @@ export async function GET(request: NextRequest) {
     if (next) q.set("next", next);
     if (role) q.set("role", role);
     const s = q.toString();
-    return NextResponse.redirect(`${origin}/auth/line/start${s ? `?${s}` : ""}`, 303);
+    const canonical = NextResponse.redirect(`${origin}/auth/line/start${s ? `?${s}` : ""}`, 303);
+    canonical.headers.set("Cache-Control", "private, no-store");
+    return canonical;
   }
 
   const state = randomToken();

@@ -4,19 +4,20 @@ import { seal } from "@/lib/auth/line/sealed-cookie";
 import { claims, makeIdToken, TEST_CHANNEL_ID, TEST_CHANNEL_SECRET, TEST_SUB } from "@/lib/auth/line/test-helpers";
 
 const m = vi.hoisted(() => ({
-  rpc: vi.fn(), getUserById: vi.fn(), generateLink: vi.fn(), verifyOtp: vi.fn(), signOut: vi.fn(), signInWithOtp: vi.fn(), postLoginPath: vi.fn(),
+  rpc: vi.fn(), getUserById: vi.fn(), generateLink: vi.fn(), verifyOtp: vi.fn(), signOut: vi.fn(), getUser: vi.fn(), signInWithOtp: vi.fn(), postLoginPath: vi.fn(),
 }));
 vi.mock("server-only", () => ({}));
 vi.mock("@/lib/supabase/admin", () => ({
   createAdminClient: () => ({ rpc: m.rpc, auth: { admin: { getUserById: m.getUserById, generateLink: m.generateLink } } }),
 }));
-vi.mock("@/lib/supabase/server", () => ({ createClient: async () => ({ auth: { verifyOtp: m.verifyOtp, signOut: m.signOut } }) }));
+vi.mock("@/lib/supabase/server", () => ({ createClient: async () => ({ auth: { verifyOtp: m.verifyOtp, signOut: m.signOut, getUser: m.getUser } }) }));
 vi.mock("@/lib/supabase/anon", () => ({ createAnonClient: () => ({ auth: { signInWithOtp: m.signInWithOtp } }) }));
 vi.mock("@/lib/auth/after-login", () => ({ postLoginPath: m.postLoginPath }));
 
 import { GET as start } from "./start/route";
 import { GET as callback } from "./callback/route";
 import { POST as link } from "./link/route";
+import { GET as pending } from "./pending/route";
 
 const SITE = "https://kollink.vercel.app";
 const fetchMock = vi.fn();
@@ -55,8 +56,9 @@ async function begin(query = "") {
   return { res, auth, flow, state: auth.searchParams.get("state")!, nonce: auth.searchParams.get("nonce")! };
 }
 
-function cb(query: string, cookie?: string) {
-  return callback(new NextRequest(`${SITE}/auth/line/callback${query}`, { headers: cookie ? { cookie: `kl_line_flow=${cookie}` } : {} }));
+function cb(query: string, cookie?: string, extraCookie = "") {
+  const c = [cookie ? `kl_line_flow=${cookie}` : "", extraCookie].filter(Boolean).join("; ");
+  return callback(new NextRequest(`${SITE}/auth/line/callback${query}`, { headers: c ? { cookie: c } : {} }));
 }
 
 function tokenResponse(nonce: string, extra: Record<string, unknown> = {}) {
@@ -92,9 +94,10 @@ describe("GET /auth/line/start", () => {
     expect(flow.value).not.toContain(state);
     expect(res.headers.get("cache-control")).toContain("no-store");
   });
-  it("請求主機跟 SITE_URL 不同：先換到 SITE_URL（next 清理過、role 白名單）", async () => {
+  it("請求主機跟 SITE_URL 不同：先換到 SITE_URL（next 清理過、role 白名單、no-store）", async () => {
     const res = await start(new NextRequest("https://kollink-git-x.vercel.app/auth/line/start?next=%2F%2Fevil.com&role=admin"));
     expect(res.headers.get("location")).toBe(`${SITE}/auth/line/start`);
+    expect(res.headers.get("cache-control")).toContain("no-store");
     expect(cookieFrom(res, "kl_line_flow")).toBeNull();
   });
 });
@@ -168,36 +171,46 @@ describe("GET /auth/line/callback", () => {
     expect(m.signInWithOtp).not.toHaveBeenCalled();
     expect(m.generateLink).not.toHaveBeenCalled();
   });
-  it("Email 已有帳號：不登入，寄驗證碼（不建立帳號），帶綁定 cookie 去輸入驗證碼", async () => {
+  it("Email 已有帳號：不登入、伺服器不寄信，帶加密綁定 cookie 到 /login?line=verify", async () => {
     const { flow, state, nonce } = await begin();
     tokenResponse(nonce);
     m.rpc.mockResolvedValueOnce({ data: [{ linked_user_id: null, email_user_id: "user-2" }], error: null });
     const res = await cb(`?code=c&state=${state}`, flow.value);
-    expect(res.headers.get("location")).toBe("/login?line=existing");
-    expect(m.signInWithOtp).toHaveBeenCalledWith({ email: "someone@example.com", options: { shouldCreateUser: false } });
+    expect(res.headers.get("location")).toBe("/login?line=verify");
+    expect(res.headers.get("cache-control")).toContain("no-store");
+    expect(m.signInWithOtp).not.toHaveBeenCalled();
     expect(m.generateLink).not.toHaveBeenCalled();
     expect(m.verifyOtp).not.toHaveBeenCalled();
+    expect(m.signOut).not.toHaveBeenCalled();
     const linkCookie = cookieFrom(res, "kl_line_link")!;
     expect(linkCookie.header).toMatch(/HttpOnly/i);
+    expect(linkCookie.header).toMatch(/Path=\/auth\/line(;|$)/);
     expect(linkCookie.value).not.toContain("someone");
     expect(cookieFrom(res, "kl_line_flow")?.header).toMatch(/Max-Age=0/);
   });
-  it("新的 Email：一樣先寄驗證碼（可以建立帳號）", async () => {
+  it("新的 Email：同一個中性的 /login?line=verify（不透露帳號是否存在）", async () => {
     const { flow, state, nonce } = await begin("?role=creator");
     tokenResponse(nonce);
     m.rpc.mockResolvedValueOnce({ data: [{ linked_user_id: null, email_user_id: null }], error: null });
     const res = await cb(`?code=c&state=${state}`, flow.value);
-    expect(res.headers.get("location")).toBe("/login?line=new");
-    expect(m.signInWithOtp).toHaveBeenCalledWith({ email: "someone@example.com", options: { shouldCreateUser: true } });
+    expect(res.headers.get("location")).toBe("/login?line=verify");
+    expect(m.signInWithOtp).not.toHaveBeenCalled();
   });
-  it("寄信太頻繁：line_otp_rate", async () => {
+  it("這個瀏覽器已經登入別的帳號：先登出（否則 proxy 會把 /login 導走）", async () => {
     const { flow, state, nonce } = await begin();
     tokenResponse(nonce);
     m.rpc.mockResolvedValueOnce({ data: [{ linked_user_id: null, email_user_id: null }], error: null });
-    m.signInWithOtp.mockResolvedValueOnce({ error: { status: 429 } });
-    const res = await cb(`?code=c&state=${state}`, flow.value);
-    expect(res.headers.get("location")).toBe("/login?error=line_otp_rate");
-    expect(cookieFrom(res, "kl_line_link")).toBeNull();
+    const res = await cb(`?code=c&state=${state}`, flow.value, "sb-127-auth-token=abc");
+    expect(m.signOut).toHaveBeenCalledWith({ scope: "local" });
+    expect(res.headers.get("location")).toBe("/login?line=verify");
+  });
+  it("登出失敗時直接清掉 Supabase cookie", async () => {
+    const { flow, state, nonce } = await begin();
+    tokenResponse(nonce);
+    m.rpc.mockResolvedValueOnce({ data: [{ linked_user_id: null, email_user_id: null }], error: null });
+    m.signOut.mockResolvedValueOnce({ error: { message: "x" } });
+    const res = await cb(`?code=c&state=${state}`, flow.value, "sb-127-auth-token=abc");
+    expect(cookieFrom(res, "sb-127-auth-token")?.header).toMatch(/Max-Age=0/);
   });
   it("記錄不含 Email、LINE ID、授權碼", async () => {
     const { flow, state } = await begin();
@@ -209,64 +222,100 @@ describe("GET /auth/line/callback", () => {
   });
 });
 
-describe("POST /auth/line/link", () => {
+describe("GET /auth/line/pending", () => {
+  const now = () => Math.floor(Date.now() / 1000);
+  const get = (cookie: string | null, site = "same-origin") =>
+    pending(new NextRequest(`${SITE}/auth/line/pending`, { headers: { "sec-fetch-site": site, ...(cookie ? { cookie: `kl_line_link=${cookie}` } : {}) } }));
+  it("回傳這個瀏覽器自己的 LINE Email（不含 LINE ID、帳號 id）", async () => {
+    const c = seal("link", { sub: TEST_SUB, email: "someone@example.com", kind: "existing", uid: "user-2", next: null, role: null }, TEST_CHANNEL_SECRET, now() + 600);
+    const res = await get(c);
+    const body = await res.json();
+    expect(body).toEqual({ email: "someone@example.com" });
+    expect(res.headers.get("cache-control")).toContain("no-store");
+  });
+  it("沒有 cookie、過期、用途不對：expired", async () => {
+    expect(await (await get(null)).json()).toEqual({ error: "expired" });
+    const flow = seal("flow", { sub: TEST_SUB, email: "someone@example.com" }, TEST_CHANNEL_SECRET, now() + 600);
+    expect(await (await get(flow)).json()).toEqual({ error: "expired" });
+  });
+  it("跨站請求：403", async () => {
+    expect((await get(null, "cross-site")).status).toBe(403);
+  });
+});
+
+describe("POST /auth/line/link（只綁定）", () => {
   const now = () => Math.floor(Date.now() / 1000);
   const linkCookie = (over: Record<string, unknown> = {}) =>
     seal("link", { sub: TEST_SUB, email: "someone@example.com", kind: "existing", uid: "user-2", next: null, role: null, ...over }, TEST_CHANNEL_SECRET, now() + 600);
-  const req = (body: unknown, { cookie = linkCookie(), origin = SITE }: { cookie?: string | null; origin?: string } = {}) =>
+  const req = ({ cookie = linkCookie(), origin = SITE as string | null }: { cookie?: string | null; origin?: string | null } = {}) =>
     new NextRequest(`${SITE}/auth/line/link`, {
-      method: "POST", body: JSON.stringify(body),
-      headers: { "content-type": "application/json", origin, ...(cookie ? { cookie: `kl_line_link=${cookie}` } : {}) },
+      method: "POST",
+      headers: { ...(origin ? { origin } : {}), ...(cookie ? { cookie: `kl_line_link=${cookie}` } : {}) },
     });
 
-  it("跨站（Origin 不同）：403", async () => {
-    const res = await link(req({ action: "verify", code: "123456" }, { origin: "https://evil.example" }));
-    expect(res.status).toBe(403);
-    expect(m.verifyOtp).not.toHaveBeenCalled();
+  it("沒有 Origin 或跨站：403，不讀 session", async () => {
+    expect((await link(req({ origin: null }))).status).toBe(403);
+    expect((await link(req({ origin: "https://evil.example" }))).status).toBe(403);
+    expect(m.getUser).not.toHaveBeenCalled();
   });
   it("沒有或過期的綁定 cookie：expired", async () => {
-    expect(await (await link(req({ action: "verify", code: "123456" }, { cookie: null }))).json()).toEqual({ error: "expired" });
-    const flowCookie = seal("flow", { sub: TEST_SUB, email: "x@y.co" }, TEST_CHANNEL_SECRET, now() + 600);
-    expect(await (await link(req({ action: "verify", code: "123456" }, { cookie: flowCookie }))).json()).toEqual({ error: "expired" });
+    expect(await (await link(req({ cookie: null }))).json()).toEqual({ error: "expired" });
+    expect(m.getUser).not.toHaveBeenCalled();
   });
-  it("驗證碼格式不對：不呼叫 Supabase", async () => {
-    expect(await (await link(req({ action: "verify", code: "12" }))).json()).toEqual({ error: "format" });
-    expect(m.verifyOtp).not.toHaveBeenCalled();
-  });
-  it("驗證碼錯誤：不綁定", async () => {
-    m.verifyOtp.mockResolvedValueOnce({ data: { user: null }, error: { status: 403 } });
-    expect(await (await link(req({ action: "verify", code: "123456" }))).json()).toEqual({ error: "code" });
+  it("沒有 session（還沒輸入驗證碼）：401，不綁定，保留 cookie", async () => {
+    m.getUser.mockResolvedValueOnce({ data: { user: null }, error: null });
+    const res = await link(req());
+    expect(res.status).toBe(401);
     expect(m.rpc).not.toHaveBeenCalled();
+    expect(cookieFrom(res, "kl_line_link")).toBeNull();
   });
-  it("驗證通過：綁定 LINE、清掉 cookie、回傳登入後路徑（管理員一樣走 postLoginPath 的兩步驟驗證）", async () => {
-    m.verifyOtp.mockResolvedValueOnce({ data: { user: { id: "user-2", email: "Someone@Example.com" } }, error: null });
-    m.rpc.mockResolvedValueOnce({ data: "linked", error: null });
-    m.postLoginPath.mockResolvedValueOnce("/admin/mfa");
-    const res = await link(req({ action: "verify", code: "12345678" }));
-    expect(m.verifyOtp).toHaveBeenCalledWith({ email: "someone@example.com", token: "12345678", type: "email" });
-    expect(m.rpc).toHaveBeenCalledWith("line_link_identity", { p_user_id: "user-2", p_line_sub: TEST_SUB });
-    expect(await res.json()).toEqual({ redirect: "/admin/mfa" });
+  it("登入的帳號 Email 不同：409、登出、清 cookie、不綁定", async () => {
+    m.getUser.mockResolvedValueOnce({ data: { user: { id: "user-2", email: "other@example.com" } }, error: null });
+    const res = await link(req());
+    expect(res.status).toBe(409);
+    expect(await res.json()).toEqual({ error: "mismatch" });
+    expect(m.signOut).toHaveBeenCalledWith({ scope: "local" });
+    expect(m.rpc).not.toHaveBeenCalled();
     expect(cookieFrom(res, "kl_line_link")?.header).toMatch(/Max-Age=0/);
   });
-  it("驗證通過的帳號不是查詢當下那個：登出、不綁定", async () => {
-    m.verifyOtp.mockResolvedValueOnce({ data: { user: { id: "someone-else", email: "someone@example.com" } }, error: null });
-    const res = await link(req({ action: "verify", code: "123456" }));
+  it("Email 相同但不是查詢當下的帳號（uid 不符）：409、登出", async () => {
+    m.getUser.mockResolvedValueOnce({ data: { user: { id: "someone-else", email: "someone@example.com" } }, error: null });
+    const res = await link(req());
     expect(res.status).toBe(409);
     expect(m.signOut).toHaveBeenCalled();
     expect(m.rpc).not.toHaveBeenCalled();
   });
-  it("新帳號：驗證碼建立的帳號就綁定它，帶入選的身分", async () => {
-    m.verifyOtp.mockResolvedValueOnce({ data: { user: { id: "new-user", email: "someone@example.com" } }, error: null });
+  it("同時寫入的競爭（conflict）：可以重試，保留 cookie", async () => {
+    m.getUser.mockResolvedValueOnce({ data: { user: { id: "user-2", email: "someone@example.com" } }, error: null });
+    m.rpc.mockResolvedValueOnce({ data: "conflict", error: null });
+    const res = await link(req());
+    expect(await res.json()).toEqual({ error: "failed" });
+    expect(cookieFrom(res, "kl_line_link")).toBeNull();
+  });
+  it("成功：綁定、清 cookie、回登入後路徑（管理員一樣經過 postLoginPath → /admin/mfa）", async () => {
+    m.getUser.mockResolvedValueOnce({ data: { user: { id: "user-2", email: "Someone@Example.com" } }, error: null });
+    m.rpc.mockResolvedValueOnce({ data: "linked", error: null });
+    m.postLoginPath.mockResolvedValueOnce("/admin/mfa");
+    const res = await link(req());
+    expect(m.rpc).toHaveBeenCalledWith("line_link_identity", { p_user_id: "user-2", p_line_sub: TEST_SUB });
+    expect(await res.json()).toEqual({ redirect: "/admin/mfa" });
+    expect(res.headers.get("cache-control")).toContain("no-store");
+    expect(cookieFrom(res, "kl_line_link")?.header).toMatch(/Max-Age=0/);
+    expect(m.verifyOtp).not.toHaveBeenCalled();
+    expect(m.signInWithOtp).not.toHaveBeenCalled();
+  });
+  it("新帳號（cookie 沒有 uid）：綁定剛建立的帳號，帶入選的身分", async () => {
+    m.getUser.mockResolvedValueOnce({ data: { user: { id: "new-user", email: "someone@example.com" } }, error: null });
     m.rpc.mockResolvedValueOnce({ data: "linked", error: null });
     m.postLoginPath.mockResolvedValueOnce("/onboarding/creator");
-    const res = await link(req({ action: "verify", code: "123456" }, { cookie: linkCookie({ kind: "new", uid: null, role: "creator" }) }));
+    const res = await link(req({ cookie: linkCookie({ kind: "new", uid: null, role: "creator" }) }));
     expect(m.rpc).toHaveBeenCalledWith("line_link_identity", { p_user_id: "new-user", p_line_sub: TEST_SUB });
     expect(m.postLoginPath).toHaveBeenCalledWith(expect.anything(), "creator", null);
     expect(await res.json()).toEqual({ redirect: "/onboarding/creator" });
   });
-  it("重寄驗證碼", async () => {
-    const res = await link(req({ action: "resend" }));
-    expect(await res.json()).toEqual({ ok: true });
-    expect(m.signInWithOtp).toHaveBeenCalledWith({ email: "someone@example.com", options: { shouldCreateUser: false } });
+  it("這個帳號已綁定別的 LINE：不覆蓋，但照常登入", async () => {
+    m.getUser.mockResolvedValueOnce({ data: { user: { id: "user-2", email: "someone@example.com" } }, error: null });
+    m.rpc.mockResolvedValueOnce({ data: "user_has_other", error: null });
+    expect(await (await link(req())).json()).toEqual({ redirect: "/brand" });
   });
 });

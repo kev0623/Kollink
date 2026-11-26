@@ -152,18 +152,32 @@ Supabase 的自訂 OIDC 登入不能用在 LINE 網頁登入（LINE 網頁登入
 - `GET /auth/line/callback`：比對 state（只能用一次）→ 伺服器向 LINE 換 token → 用 Channel secret 驗 ID token（只接受 HS256，並檢查 iss、aud、exp、iat、nonce）→ 決定帳號：
   1. 這個 LINE 已經綁定帳號 → 直接登入（伺服器用 Supabase 管理金鑰產生一次性的登入 token，立刻在伺服器換成 session，token 不會出現在網址）。
   2. LINE 沒有提供 Email → 不建立帳號，登入頁顯示「LINE 沒有提供 Email…」。
-  3. 其他情況（Email 已有帳號，或是新的 Email）→ **先寄 Email 驗證碼**，使用者在 `/login` 輸入驗證碼（`POST /auth/line/link`）後才綁定 LINE。LINE 不保證 Email 已驗證，所以不能只憑 LINE 給的 Email 就登入既有帳號，也不能先替那個 Email 建帳號（否則別人用填了你 Email 的 LINE 可以先搶註）。
+  3. 其他情況（Email 已有帳號，或是新的 Email，畫面一律相同、不透露帳號是否存在）→ 把 LINE ID 與 Email 加密存進 10 分鐘的 cookie，導到 `/login?line=verify`。這個瀏覽器若已登入別的帳號，先登出（否則 proxy 會把 `/login` 導走，綁定時也無法確認 session 是誰的）。
+- `/login?line=verify`：畫面向 `GET /auth/line/pending` 取得這個瀏覽器自己的 LINE Email 並顯示，**在瀏覽器**用 Supabase 寄驗證碼與驗證（跟 Email 登入完全相同，Supabase 的頻率限制算在使用者自己的 IP，不會因為伺服器共用 IP 而互相影響）。
+- `POST /auth/line/link`：只負責綁定。必須同源（Origin），目前的 session（剛用驗證碼登入的帳號）Email 必須等於 LINE 的 Email（既有帳號還要是同一個 user id），才寫入綁定；不符就登出並清掉暫存 cookie。
+- LINE 不保證 Email 已驗證，所以不能只憑 LINE 給的 Email 就登入既有帳號，也不能先替那個 Email 建帳號（否則別人用填了你 Email 的 LINE 可以先搶註）；一律要先通過寄到該 Email 的驗證碼。
 - 綁定存在 `public.line_identities`（一個帳號最多綁一個 LINE、一個 LINE 只能綁一個帳號）。這張表 API 角色完全不能讀寫，只能透過 `line_login_lookup`、`line_link_identity` 兩個函式（只授權給 service_role）。
 - 新帳號照樣走「選身分 → 建立資料」；管理員用 LINE 登入後一樣要通過兩步驟驗證（TOTP）。
 - 目前沒有「解除綁定」的畫面；要解除時在 SQL Editor 執行 `delete from public.line_identities where user_id = '填入使用者 id';`。刪除帳號時綁定會一起刪除。
 
-**部署順序：** 這次有新的 migration（`20261130000100_line_identities.sql`，只新增資料表與函式，舊版網站不受影響）。先執行 `npx supabase db push --remote`，成功後再合併。推之前的只讀檢查（必須是 0，代表還沒有同名的表）：
+**部署順序：** 這次有新的 migration（`20261130000100_line_identities.sql`，只新增資料表與函式，舊版網站不受影響）。先預覽，清單應該**只有** `20261130000100_line_identities.sql`：
+
+```
+npx supabase db push --remote --dry-run
+```
+
+確認後執行 `npx supabase db push --remote`，成功後再合併。推之前的只讀檢查（必須是 0，代表還沒有同名的表）：
 
 ```sql
 select count(*) from information_schema.tables where table_schema = 'public' and table_name = 'line_identities';
 ```
 
 **營運者設定步驟**（每一個值都請直接複製貼上，不要手打）：
+
+> 注意：
+> - **一定要先設定自訂 SMTP（Resend）**（「正式環境設定」第 6 項）。LINE 登入第一次要寄驗證碼；Supabase 內建寄信整個專案每小時只有約 2 封。
+> - 正式頻道與本機測試**分開兩個 LINE Login 頻道**：正式頻道只登記正式網址；本機用另一個停在 Developing 的頻道。**正式頻道的 Channel secret 不要放進 `.env.local`**。
+> - LINE 變數只設在 Vercel 的 **Production**，`LINE_CHANNEL_SECRET` 勾 Sensitive；`NEXT_PUBLIC_` 開頭的變數改了一定要重新部署。
 
 1. LINE Developers Console（https://developers.line.biz/console/ ）→ 建立或選擇 Provider（名稱用營運者名稱）→「Create a new channel」→ **LINE Login**：
    - Region：Taiwan；App types：勾 **Web app**；Channel name 不能包含「LINE」字樣，例如：
@@ -177,11 +191,15 @@ select count(*) from information_schema.tables where table_schema = 'public' and
      ```
      https://kollink.vercel.app/terms
      ```
-2. 頻道的「LINE Login」分頁 → Callback URL（可以填多行；正式站一行、本機測試一行）：
+2. 正式頻道的「LINE Login」分頁 → Callback URL 只填這一行：
    ```
    https://kollink.vercel.app/auth/line/callback
+   ```
+   本機測試用的另一個頻道（同一個 Provider 下再建一個 LINE Login 頻道，保持 Developing）只填：
+   ```
    http://localhost:3000/auth/line/callback
    ```
+   本機的 `.env.local` 只放這個測試頻道的 Channel ID／secret。
 3. 頻道的「Basic settings」→ OpenID Connect →「Email address permission」→ Apply：勾選同意條款，上傳一張截圖，畫面要看得出「會取得使用者的 Email 以及用途」。可以用登入頁（`https://kollink.vercel.app/login`）底下「繼續即表示你同意《服務條款》與《隱私權政策》」那一段，加上 `/privacy` 第二節「帳號資料」寫到 LINE 的那一行一起截圖。核准後狀態會顯示「Applied」。**沒有 Email 權限時 LINE 不會給 Email，所有新使用者都會看到「LINE 沒有提供 Email」。**
 4. 頻道建立後是「Developing」，只有在頻道「Roles」加入的 Admin／Tester 能登入。測試完成後點最上方的「Developing」改成「Published」（**改了不能改回**）。
 5. 「Basic settings」裡的 **Channel ID** 與 **Channel secret**：只貼到 Vercel，不要貼進程式、文件或對話。
@@ -195,16 +213,21 @@ select count(*) from information_schema.tables where table_schema = 'public' and
    `SITE_URL` 用來組 LINE 的回呼網址（不會看請求的 Host 標頭）；只設 `SITE_URL` 不會開啟綠界付款（付款還需要 `ECPAY_*`）。
 7. 重新部署：Deployments → 最新一筆 Production → ⋯ → Redeploy。
 8. 測試（用無痕視窗、頻道 Developing 時用已加入 Tester 的 LINE 帳號）：
-   - [ ] `/signup` 選「創作者」→「使用 LINE 登入」→ LINE 同意畫面要列出 Email → 回到網站顯示「為了確認 LINE 提供的 Email 是你的…」→ 收信輸入驗證碼 → 進入填寫創作者資料。
+   - [ ] `/signup` 選「創作者」→「使用 LINE 登入」→ LINE 同意畫面要列出 Email → 回到網站顯示「我們寄了一組驗證碼到 LINE 提供的 Email（你的信箱）…」→ 收信輸入驗證碼 → 進入填寫創作者資料。
    - [ ] 登出後再用 LINE 登入 → 不需要驗證碼，直接進入。
-   - [ ] 用已經以 Email 註冊過的信箱的 LINE 帳號登入 → 顯示「這個 Email 已經有 Kollink 帳號…」→ 輸入驗證碼 → 進到原本的帳號（不會多一個帳號）。
+   - [ ] 用已經以 Email 註冊過的信箱的 LINE 帳號登入 → 同樣的驗證碼畫面 → 輸入驗證碼 → 進到原本的帳號（不會多一個帳號）。
+   - [ ] 已經登入的瀏覽器再按「使用 LINE 登入」（未綁定的 LINE）→ 會先登出、出現驗證碼畫面。
    - [ ] 在 LINE 同意畫面取消 Email 權限（或用沒有 Email 的 LINE 帳號）→ 顯示「LINE 沒有提供 Email…」，沒有建立帳號。
    - [ ] 在 LINE 同意畫面按取消 → 顯示「你取消了 LINE 登入…」。
    - [ ] 管理員帳號綁定 LINE 後用 LINE 登入 → 停在兩步驟驗證畫面。
+   - [ ] 第一次真的用 LINE 登入成功後再確認一次：程式只接受 LINE 網頁登入目前使用的 HS256 簽章；如果 LINE 之後改用 ES256，登入會安全地失敗（顯示「LINE 登入沒有完成」），需要更新 `src/lib/auth/line/id-token.ts`。
 
 之後加上自訂網域時：LINE Callback URL 加一行 `https://新網域/auth/line/callback`，Vercel 的 `SITE_URL` 改成新網域，重新部署。
 
-**已知限制／之後再做：**`/auth/line/start` 沒有每個 IP 的頻率限制（它只設定暫存 cookie，不會寄信或建帳號；寄驗證碼受 Supabase 的寄信頻率限制）；需要時用 Vercel Firewall 對 `/auth/line/` 加規則。沒有解除綁定的畫面。
+**已知限制／之後再做：**
+- `/auth/line/start` 沒有每個 IP 的頻率限制（它只設定暫存 cookie，不會寄信或建帳號）；需要時用 Vercel Firewall 對 `/auth/line/` 加規則。
+- LINE 綁定到帳號時寄通知信給帳號擁有者（「你的帳號已綁定 LINE」）。
+- 設定頁加「LINE 已綁定／解除綁定」；目前解除綁定只能用上面的 SQL。
 
 ## 管理後台（/admin）
 

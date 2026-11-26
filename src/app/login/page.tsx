@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { AuthForm } from "@/components/auth/AuthForm";
 import { LineLinkForm } from "@/components/auth/LineLinkForm";
-import { isLineLinkKind, LINE_LINK_NOTICE, lineErrorMessage } from "@/lib/auth/line/messages";
+import { isLineVerifyState, lineErrorMessage } from "@/lib/auth/line/messages";
 import { AuthShell } from "@/components/auth/AuthShell";
 import { DevLoginBox } from "@/components/auth/DevLoginBox";
 import { safeNextPath } from "@/lib/auth/safe-next";
@@ -38,14 +38,7 @@ async function Login({ searchParams }: { searchParams: SP }) {
   const next = safeNextPath(typeof sp.next === "string" ? sp.next : null);
   const lineEnabled = process.env.NEXT_PUBLIC_LINE_AUTH_ENABLED === "true";
   // LINE 登入後要用 Email 驗證碼確認（/auth/line/callback 導過來）
-  if (lineEnabled && isLineLinkKind(sp.line)) {
-    return (
-      <>
-        <Notice tone="info" className="mb-4">{LINE_LINK_NOTICE[sp.line]}</Notice>
-        <LineLinkForm onCancelHref="/login" />
-      </>
-    );
-  }
+  if (lineEnabled && isLineVerifyState(sp.line)) return <LineLinkForm onCancelHref="/login" />;
   const lineError = lineErrorMessage(sp.error);
   return (
     <>

@@ -1,7 +1,7 @@
 -- LINE 登入：20261130000100_line_identities.sql。id 前綴 …0000000e6xxx。
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(24);
+select plan(25);
 
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-0000000e6001', 'line-a@test.local'),
@@ -18,6 +18,7 @@ select ok(not has_table_privilege('service_role', 'public.line_identities', 'SEL
 select ok(not has_table_privilege('service_role', 'public.line_identities', 'INSERT'), 'service_role 也不能直接寫');
 select ok(not has_function_privilege('anon', 'public.line_login_lookup(text, text)', 'EXECUTE'), 'anon 不能查');
 select ok(not has_function_privilege('authenticated', 'public.line_login_lookup(text, text)', 'EXECUTE'), 'authenticated 不能查');
+select ok(not has_function_privilege('anon', 'public.line_link_identity(uuid, text)', 'EXECUTE'), 'anon 不能綁定');
 select ok(not has_function_privilege('authenticated', 'public.line_link_identity(uuid, text)', 'EXECUTE'), 'authenticated 不能綁定');
 select ok(has_function_privilege('service_role', 'public.line_login_lookup(text, text)', 'EXECUTE'), 'service_role 可以查');
 select ok(has_function_privilege('service_role', 'public.line_link_identity(uuid, text)', 'EXECUTE'), 'service_role 可以綁定');
