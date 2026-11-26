@@ -21,6 +21,8 @@ import {
   WebGLRenderer,
 } from "three";
 
+import { stepRope } from "./rope";
+import { SHAPES, type Shape } from "./shapes";
 import type { ThreadVariant } from "./types";
 
 export type { ThreadVariant };
@@ -52,7 +54,6 @@ type Tuning = {
   radiusPx: number; // 線的半徑（CSS px）
   knotPx: number; // 結的大小（CSS px）
   slack: number; // 繩長 ÷ 兩端距離
-  far: number; // 遠景細線數
   dprCap: number;
   glowAlpha: number;
 };
@@ -60,13 +61,13 @@ type Tuning = {
 function tuningFor(variant: ThreadVariant, mobile: boolean): Tuning {
   if (variant === "hero") {
     return mobile
-      ? { points: 32, tubular: 96, radial: 6, radiusPx: 1.8, knotPx: 8, slack: 1.24, far: 5, dprCap: 1.5, glowAlpha: 0.42 }
-      : { points: 48, tubular: 160, radial: 8, radiusPx: 2.3, knotPx: 11, slack: 1.08, far: 8, dprCap: 2, glowAlpha: 0.42 };
+      ? { points: 32, tubular: 96, radial: 6, radiusPx: 1.8, knotPx: 8, slack: 1.24, dprCap: 1.5, glowAlpha: 0.42 }
+      : { points: 48, tubular: 160, radial: 8, radiusPx: 2.3, knotPx: 11, slack: 1.08, dprCap: 2, glowAlpha: 0.42 };
   }
   if (variant === "quiet") {
-    return { points: 28, tubular: mobile ? 80 : 112, radial: 6, radiusPx: 1.6, knotPx: 8, slack: mobile ? 1.05 : 1.1, far: mobile ? 0 : 4, dprCap: 1.5, glowAlpha: 0.24 };
+    return { points: 28, tubular: mobile ? 80 : 112, radial: 6, radiusPx: 1.6, knotPx: 8, slack: mobile ? 1.05 : 1.1, dprCap: 1.5, glowAlpha: 0.24 };
   }
-  return { points: 20, tubular: mobile ? 72 : 120, radial: 6, radiusPx: 1.2, knotPx: 6, slack: 1.025, far: 0, dprCap: 1.5, glowAlpha: 0.22 };
+  return { points: 20, tubular: mobile ? 72 : 120, radial: 6, radiusPx: 1.2, knotPx: 6, slack: 1.025, dprCap: 1.5, glowAlpha: 0.22 };
 }
 
 // 結與兩端位置（以可見範圍的半寬 hw、半高 hh 的比例表示）
@@ -254,8 +255,8 @@ class TubeBuffer {
 export function createThreadScene(canvas: HTMLCanvasElement, opts: ThreadSceneOptions): ThreadSceneHandle {
   const { variant, mobile, reducedMotion } = opts;
   const tune = tuningFor(variant, mobile);
-  const deviceDpr = typeof window === "undefined" ? 1 : window.devicePixelRatio || 1;
-  const dpr = Math.min(deviceDpr, tune.dprCap);
+  const readDpr = () => Math.min(typeof window === "undefined" ? 1 : window.devicePixelRatio || 1, tune.dprCap);
+  let dpr = readDpr();
 
   const renderer = new WebGLRenderer({ canvas, alpha: true, antialias: dpr < 2, powerPreference: "low-power" });
   renderer.setPixelRatio(dpr);
@@ -321,30 +322,52 @@ export function createThreadScene(canvas: HTMLCanvasElement, opts: ThreadSceneOp
   });
 
   // ---- 遠景細線（其他正在發生的媒合）----
+  // 構圖與 SVG 後備相同（shapes.ts）：只在文字欄以外（右側、上方），不會從內文後面穿過。
+  // 每條放在不同深度，layout() 依畫面大小把 viewBox 座標投影到那個深度（等同 SVG 的 slice）。
+  const farShape: Shape | null = variant === "hero" ? (mobile ? SHAPES.heroTall : SHAPES.heroWide) : variant === "quiet" && !mobile ? SHAPES.quietWide : null;
+  const FAR_SAMPLES = 64;
   const farGroup = new Group();
   const farGeos: BufferGeometry[] = [];
+  const farDepth: number[] = [];
   const rand = mulberry32(20261127);
   const farPhase: number[] = [];
-  for (let i = 0; i < tune.far; i++) {
-    const z = -6 - rand() * 6;
-    const spanY = 3.2 + (-z) * 0.32;
-    const spanX = spanY * 2.2;
-    const y0 = (rand() * 2 - 1) * spanY * 0.9;
-    const pts: Vector3[] = [];
-    const n = 4;
-    for (let k = 0; k < n; k++) {
-      const s = k / (n - 1);
-      pts.push(new Vector3(-spanX + s * spanX * 2, y0 + (rand() * 2 - 1) * spanY * 0.35 - Math.sin(s * Math.PI) * spanY * 0.15, z + (rand() - 0.5)));
-    }
-    const curve = new CatmullRomCurve3(pts, false, "centripetal");
-    const geo = new BufferGeometry().setFromPoints(curve.getPoints(80));
+  for (let i = 0; i < (farShape?.far.length ?? 0); i++) {
+    const geo = new BufferGeometry();
+    geo.setAttribute("position", new BufferAttribute(new Float32Array(FAR_SAMPLES * 3), 3));
     farGeos.push(geo);
+    farDepth.push(-6 - rand() * 6);
     const line = new Line(geo, farMat);
+    line.frustumCulled = false;
     line.renderOrder = 0;
     farPhase.push(rand() * Math.PI * 2);
     farGroup.add(line);
   }
   scene.add(farGroup);
+
+  function layoutFar(width: number, height: number) {
+    if (!farShape) return;
+    const [, , vbW, vbH] = farShape.viewBox.split(" ").map(Number);
+    const sc = Math.max(width / vbW, height / vbH);
+    const tanHalf = Math.tan((camera.fov * Math.PI) / 360);
+    farShape.far.forEach(([p0, p1, p2, p3], i) => {
+      const z = farDepth[i];
+      const hhz = (camera.position.z - z) * tanHalf;
+      const hwz = hhz * camera.aspect;
+      const arr = (farGeos[i].getAttribute("position") as BufferAttribute).array as Float32Array;
+      for (let k = 0; k < FAR_SAMPLES; k++) {
+        const t = k / (FAR_SAMPLES - 1);
+        const u = 1 - t;
+        const bx = u * u * u * p0[0] + 3 * u * u * t * p1[0] + 3 * u * t * t * p2[0] + t * t * t * p3[0];
+        const by = u * u * u * p0[1] + 3 * u * u * t * p1[1] + 3 * u * t * t * p2[1] + t * t * t * p3[1];
+        const nx = ((bx - vbW / 2) * sc) / (width / 2);
+        const ny = -((by - vbH / 2) * sc) / (height / 2);
+        arr[k * 3] = nx * hwz;
+        arr[k * 3 + 1] = ny * hhz;
+        arr[k * 3 + 2] = z;
+      }
+      farGeos[i].getAttribute("position").needsUpdate = true;
+    });
+  }
 
   // ---- 繩索（verlet）----
   const N = tune.points;
@@ -356,6 +379,7 @@ export function createThreadScene(canvas: HTMLCanvasElement, opts: ThreadSceneOp
   let hh = 1;
   let unitsPerPx = 0.01;
   let initialized = false;
+  let restMidY = 0;
   const anchorBase = { a: new Vector3(), b: new Vector3() };
   const anchorNow = { a: new Vector3(), b: new Vector3() };
   const mid = new Vector3();
@@ -370,6 +394,8 @@ export function createThreadScene(canvas: HTMLCanvasElement, opts: ThreadSceneOp
   let raf = 0;
   let running = false;
   let disposed = false;
+  // context 遺失後 rAF 不再重啟（ThreadCanvas 會退回 SVG）
+  let contextLost = false;
   let firstFrameSent = false;
   let simTime = 0;
   let introStart = -1;
@@ -413,21 +439,30 @@ export function createThreadScene(canvas: HTMLCanvasElement, opts: ThreadSceneOp
       k.mesh.scale.setScalar(ks);
       k.halo.scale.setScalar(ks * 12);
     }
+    layoutFar(width, height);
+    // 先在背後模擬 3 秒讓繩子靜下來（另一組陣列）：記下靜止時的中點高度給游標推力用；
+    // 第一次 layout 時直接用它當初始形狀，開場畫的是已經垂好的線，不是還在甩動的線
+    const sag = dist * Math.sqrt(Math.max(0, tune.slack - 1)) * 0.55;
+    const sp = Array.from({ length: N }, (_, i) => {
+      const s = i / (N - 1);
+      const v = new Vector3().lerpVectors(anchorBase.a, anchorBase.b, s);
+      v.y -= sag * 4 * s * (1 - s);
+      return v;
+    });
+    const sq = sp.map((v) => v.clone());
+    const still = { x: 0, y: 0, strength: 0 };
+    for (let i = 0; i < 180; i++) {
+      stepRope(sp, sq, { dt: STEP, t: -3 + i * STEP, hh, rest: restLen, a: anchorBase.a, b: anchorBase.b, pointer: still, radius: 1, restMidY: 0 });
+    }
+    restMidY = sp[N >> 1].y;
     if (!initialized) {
-      // 初始形狀：兩端之間略為下垂的弧
-      const sag = dist * Math.sqrt(Math.max(0, tune.slack - 1)) * 0.55;
       for (let i = 0; i < N; i++) {
-        const s = i / (N - 1);
-        pos[i].lerpVectors(anchorBase.a, anchorBase.b, s);
-        pos[i].y -= sag * 4 * s * (1 - s);
-        prev[i].copy(pos[i]);
+        pos[i].copy(sp[i]);
+        prev[i].copy(sq[i]);
       }
       anchorNow.a.copy(anchorBase.a);
       anchorNow.b.copy(anchorBase.b);
       initialized = true;
-      // 先在背後模擬 3 秒讓繩子靜下來：開場畫的是已經垂好的線，不是還在甩動的線
-      simTime = -3;
-      for (let i = 0; i < 180; i++) step(STEP);
       simTime = 0;
     }
   }
@@ -449,68 +484,17 @@ export function createThreadScene(canvas: HTMLCanvasElement, opts: ThreadSceneOp
     pointer.sy += (pointer.y * hh - pointer.sy) * (1 - Math.exp(-dt / 0.08));
     const radius = (mobile ? 90 : 140) * unitsPerPx;
 
-    const g = -0.9 * hh; // 重力要夠，多出來的長度才會垂成柔順的弧
-    const dt2 = dt * dt;
-    const t = simTime;
-    for (let i = 1; i < N - 1; i++) {
-      const p = pos[i];
-      const q = prev[i];
-      const s = i / (N - 1);
-      const env = Math.sin(s * Math.PI);
-      // 呼吸：低頻的風，線不會完全停下
-      // 加一道緩慢移動的 S 形波，讓線像絲一樣有起伏，而不是一條單純的下垂弧線
-      const wave = Math.sin(s * Math.PI * 2 + t * 0.32) * 0.75 + Math.sin(t * 0.55 + s * 3.1) * 0.3;
-      const wy = wave * 0.45 * hh * env;
-      const wz = Math.sin(t * 0.4 + s * 3.7 + 1.3) * 0.25 * hh * env;
-      const vx = (p.x - q.x) * 0.985;
-      const vy = (p.y - q.y) * 0.985;
-      const vz = (p.z - q.z) * 0.985;
-      q.copy(p);
-      p.x += vx;
-      p.y += vy + (g + wy) * dt2;
-      p.z += vz + wz * dt2;
-      // 游標輕推：越靠近推得越多（平方衰減），每步只推一點，靠繩長約束與重力拉回，不會瞬間跳開或被拉長
-      if (pointer.strength > 0.01) {
-        const dx = p.x - pointer.sx;
-        const dy = p.y - pointer.sy;
-        const d = Math.hypot(dx, dy);
-        if (d < radius && d > 1e-5) {
-          const f = (radius - d) / radius;
-          const push = f * f * 0.022 * pointer.strength * radius;
-          p.x += (dx / d) * push;
-          p.y += (dy / d) * push;
-        }
-      }
-    }
-    pos[0].copy(anchorNow.a);
-    pos[N - 1].copy(anchorNow.b);
-    // 約束解 8 次：次數太少時繩子會被重力與游標拉長，看起來像橡皮筋
-    for (let it = 0; it < 8; it++) {
-      for (let i = 0; i < N - 1; i++) {
-        const a = pos[i];
-        const b = pos[i + 1];
-        const dx = b.x - a.x;
-        const dy = b.y - a.y;
-        const dz = b.z - a.z;
-        const d = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1e-6;
-        const diff = (d - rest) / d;
-        const wa = i === 0 ? 0 : i + 1 === N - 1 ? 1 : 0.5;
-        const wb = i === 0 ? 1 : i + 1 === N - 1 ? 0 : 0.5;
-        a.x += dx * diff * wa;
-        a.y += dy * diff * wa;
-        a.z += dz * diff * wa;
-        b.x -= dx * diff * wb;
-        b.y -= dy * diff * wb;
-        b.z -= dz * diff * wb;
-      }
-    }
-    // 彎曲剛性：輕微平滑，讓多出來的長度變成柔順的弧，而不是小折角
-    for (let i = 1; i < N - 1; i++) {
-      const p = pos[i];
-      p.x += ((pos[i - 1].x + pos[i + 1].x) * 0.5 - p.x) * 0.08;
-      p.y += ((pos[i - 1].y + pos[i + 1].y) * 0.5 - p.y) * 0.08;
-      p.z += ((pos[i - 1].z + pos[i + 1].z) * 0.5 - p.z) * 0.08;
-    }
+    stepRope(pos, prev, {
+      dt,
+      t: simTime,
+      hh,
+      rest,
+      a: anchorNow.a,
+      b: anchorNow.b,
+      pointer: { x: pointer.sx, y: pointer.sy, strength: pointer.strength },
+      radius,
+      restMidY,
+    });
   }
 
   const samples: Vector3[] = Array.from({ length: tune.tubular + 1 }, () => new Vector3());
@@ -601,7 +585,8 @@ export function createThreadScene(canvas: HTMLCanvasElement, opts: ThreadSceneOp
       knots[1].mesh.rotation.z = -simTime * 0.25;
       farGroup.children.forEach((c, i) => {
         c.position.y = Math.sin(simTime * 0.05 + farPhase[i]) * 0.25;
-        c.position.x = Math.sin(simTime * 0.03 + farPhase[i] * 1.7) * 0.4;
+        // 只往右飄：線的左端不會飄進文字欄
+        c.position.x = (Math.sin(simTime * 0.03 + farPhase[i] * 1.7) + 1) * 0.2;
       });
     }
   }
@@ -618,10 +603,17 @@ export function createThreadScene(canvas: HTMLCanvasElement, opts: ThreadSceneOp
 
   // reduced motion：先在背後模擬到靜止，只畫一張
   function renderStatic() {
-    if (disposed || !initialized) return;
+    if (disposed || contextLost || !initialized) return;
     for (let i = 0; i < 240; i++) step(STEP);
     render(0);
   }
+
+  function onLost() {
+    contextLost = true;
+    running = false;
+    cancelAnimationFrame(raf);
+  }
+  canvas.addEventListener("webglcontextlost", onLost);
 
   function frame(now: number) {
     if (!running) return;
@@ -662,12 +654,18 @@ export function createThreadScene(canvas: HTMLCanvasElement, opts: ThreadSceneOp
       if (reducedMotion) renderStatic();
     },
     resize(width, height) {
+      // 視窗在不同 DPR 的螢幕之間移動、或瀏覽器縮放時，devicePixelRatio 會變
+      const next = readDpr();
+      if (next !== dpr) {
+        dpr = next;
+        renderer.setPixelRatio(dpr);
+      }
       renderer.setSize(width, height, false);
       layout(width, height);
       if (reducedMotion) renderStatic();
     },
     start() {
-      if (disposed || running) return;
+      if (disposed || contextLost || running) return;
       if (reducedMotion) {
         renderStatic();
         return;
@@ -691,8 +689,9 @@ export function createThreadScene(canvas: HTMLCanvasElement, opts: ThreadSceneOp
       haloGeo.dispose();
       farGeos.forEach((g) => g.dispose());
       [coreMat, glowMat, knotMat, farMat, ...haloMats].forEach((m) => m.dispose());
+      canvas.removeEventListener("webglcontextlost", onLost);
       renderer.dispose();
-      renderer.forceContextLoss();
+      if (!contextLost) renderer.forceContextLoss();
     },
   };
 }

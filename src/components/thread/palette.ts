@@ -42,11 +42,15 @@ export type SceneEnv = {
   memory?: number;
 };
 
-/** 規格 §6.3：reduced motion、省流量、低階裝置（≤ 2 核或 < 2GB）不載入 three（只留 SVG）。 */
+/**
+ * 規格 §6.3：reduced motion、省流量、低階裝置不載入 three（只留 SVG）。
+ * 低階只在讀得到 deviceMemory（Chromium）時判斷：記憶體 < 2GB，或同時 ≤ 2 核。
+ * WebKit 把 hardwareConcurrency 固定報小數字，只看核心數會把所有 iPhone 都當成低階。
+ */
 export function shouldLoadScene(env: SceneEnv): boolean {
   if (env.reducedMotion || env.saveData) return false;
-  if (env.cores !== undefined && env.cores > 0 && env.cores <= 2) return false;
-  if (env.memory !== undefined && env.memory > 0 && env.memory < 2) return false;
+  const { cores, memory } = env;
+  if (memory !== undefined && memory > 0 && (memory < 2 || (cores !== undefined && cores > 0 && cores <= 2))) return false;
   return true;
 }
 

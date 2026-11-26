@@ -28,11 +28,18 @@ describe("shouldLoadScene", () => {
     expect(shouldLoadScene({ ...ok, reducedMotion: true })).toBe(false);
     expect(shouldLoadScene({ ...ok, saveData: true })).toBe(false);
   });
-  it("低階裝置（≤ 2 核或記憶體 < 2GB）不載入；讀不到時照常載入", () => {
-    expect(shouldLoadScene({ ...ok, cores: 2 })).toBe(false);
+  it("讀得到記憶體（Chromium）時：< 2GB 或 ≤ 2 核不載入", () => {
     expect(shouldLoadScene({ ...ok, memory: 1 })).toBe(false);
+    expect(shouldLoadScene({ ...ok, cores: 8, memory: 1 })).toBe(false);
+    expect(shouldLoadScene({ ...ok, cores: 2, memory: 4 })).toBe(false);
     expect(shouldLoadScene({ ...ok, cores: 8, memory: 8 })).toBe(true);
+    expect(shouldLoadScene({ ...ok, cores: 4, memory: 2 })).toBe(true);
+  });
+  it("讀不到記憶體（iOS／Safari、Firefox）時只看核心數不算低階：照常載入", () => {
+    expect(shouldLoadScene({ ...ok, cores: 2, memory: undefined })).toBe(true);
+    expect(shouldLoadScene({ ...ok, cores: 2 })).toBe(true);
     expect(shouldLoadScene({ ...ok, cores: 0, memory: undefined })).toBe(true);
+    expect(shouldLoadScene(ok)).toBe(true);
   });
 });
 
