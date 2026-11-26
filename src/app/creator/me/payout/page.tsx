@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { requireRole } from "@/lib/auth/current-user";
@@ -5,6 +6,8 @@ import { formatDateTimeTw } from "@/lib/briefs/dates";
 import { maskAccount } from "@/lib/payout-account";
 import { createClient } from "@/lib/supabase/server";
 import { PayoutAccountForm } from "./PayoutAccountForm";
+
+export const metadata: Metadata = { title: "收款帳戶" };
 
 export default function CreatorPayoutPage() {
   return (

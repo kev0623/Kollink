@@ -1,5 +1,8 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { SITE_NAME, SITE_TAGLINE } from "@/lib/site";
+
+export const metadata: Metadata = { title: { absolute: `${SITE_NAME}｜${SITE_TAGLINE}` } };
 
 export default function Home() {
   return (

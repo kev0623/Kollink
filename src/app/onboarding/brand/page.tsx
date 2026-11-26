@@ -1,6 +1,9 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { BrandOnboardingForm } from "../BrandOnboardingForm";
+
+export const metadata: Metadata = { title: "建立品牌資料" };
 
 export default function BrandOnboardingPage() {
   return (

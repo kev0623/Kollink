@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import Link from "next/link";
 import { Plus } from "lucide-react";
@@ -12,6 +13,8 @@ import { formatNumber } from "@/lib/format";
 type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> };
 
 // 頁面殼是靜態的；searchParams 與 session 都在 <Suspense> 內讀（cacheComponents）
+export const metadata: Metadata = { title: "我的招募" };
+
 export default function BrandBriefsPage({ searchParams }: Props) {
   return (
     <div>

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -10,6 +11,8 @@ import { isUuid } from "@/lib/briefs/query";
 import { detailDataOf, displayStatusOf } from "@/lib/briefs/view";
 
 type Props = { params: Promise<{ id: string }> };
+
+export const metadata: Metadata = { title: "招募詳情" };
 
 export default function OpportunityPage({ params }: Props) {
   return (

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
@@ -19,6 +20,8 @@ import { Stepper } from "@/components/collabs/Stepper";
 import { SubmissionList } from "@/components/collabs/SubmissionList";
 
 type Props = { params: Promise<{ id: string }> };
+
+export const metadata: Metadata = { title: "合作案詳情（後台）" };
 
 export default function AdminCollabPage({ params }: Props) {
   return (

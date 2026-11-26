@@ -1,13 +1,20 @@
 import { Suspense } from "react";
 import { getCurrentUser } from "@/lib/auth/current-user";
+import { ThemeSelect } from "@/components/theme/ThemeSelect";
+import { HelpLink } from "./HelpLink";
 import { SignOutButton } from "./SignOutButton";
 
-/** 側邊欄底部：頭像、角色、登出。會讀 session，所以放在 <Suspense> 內。 */
+/** 側邊欄底部：頭像、角色、主題、協助、登出。會讀 session，所以頭像放在 <Suspense> 內。 */
 export function SideFooter() {
   return (
-    <Suspense fallback={<div className="h-12 w-12 rounded-full bg-line" />}>
-      <Who />
-    </Suspense>
+    <div className="flex w-full flex-col items-center gap-2 border-t border-line pt-3">
+      <Suspense fallback={<div aria-hidden="true" className="h-10 w-10 rounded-full bg-subtle" />}>
+        <Who />
+      </Suspense>
+      <ThemeSelect compact />
+      <HelpLink compact />
+      <SignOutButton />
+    </div>
   );
 }
 
@@ -16,15 +23,11 @@ async function Who() {
   const name = me?.brand?.brandName ?? me?.profile?.displayName ?? "";
   const role = me?.profile?.role === "brand" ? "品牌" : "創作者";
   return (
-    <div className="flex flex-col items-center gap-2 pt-4">
-      <div
-        aria-hidden="true"
-        className="flex h-12 w-12 items-center justify-center rounded-full bg-ink text-lg font-semibold text-on-ink"
-      >
+    <div className="flex flex-col items-center gap-1">
+      <div aria-hidden="true" className="flex h-10 w-10 items-center justify-center rounded-full border border-thread bg-subtle text-base font-bold text-ink">
         {name.slice(0, 1)}
       </div>
-      <span className="rounded-btn bg-ink px-2 py-0.5 text-xs font-medium text-on-ink">{role}</span>
-      <SignOutButton />
+      <span className="text-[11px] text-muted">{role}</span>
     </div>
   );
 }

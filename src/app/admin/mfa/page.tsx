@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { MfaForm } from "@/components/admin/MfaForm";
@@ -12,6 +13,8 @@ type SP = Promise<Record<string, string | string[] | undefined>>;
 
 // 管理員第二步驟（TOTP）。刻意放在 (console) 群組之外：後台 layout 會呼叫 requireAdmin()，
 // 還沒通過第二步驟的管理員會被導到這裡，不能再被同一個守門擋回去。
+export const metadata: Metadata = { title: "管理員驗證" };
+
 export default function AdminMfaPage({ searchParams }: { searchParams: SP }) {
   return (
     <main className="mx-auto max-w-md px-4 py-8 md:py-16">

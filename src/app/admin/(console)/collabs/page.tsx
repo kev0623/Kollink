@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import { requireAdmin } from "@/lib/auth/current-user";
 import { loadAdminCollabs } from "@/lib/admin/load";
@@ -8,6 +9,8 @@ import { Pagination } from "@/components/admin/Pagination";
 import { SearchForm } from "@/components/admin/SearchForm";
 
 type Props = { searchParams: Promise<SearchParams> };
+
+export const metadata: Metadata = { title: "合作案（後台）" };
 
 export default function AdminCollabsPage({ searchParams }: Props) {
   return (

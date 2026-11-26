@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { requireRole } from "@/lib/auth/current-user";
@@ -5,6 +6,8 @@ import { loadOwnPublicProfile } from "@/lib/creators/own-profile";
 import { PublicProfileForm } from "./PublicProfileForm";
 import { PortfolioForm } from "./PortfolioForm";
 import { RatesForm } from "./RatesForm";
+
+export const metadata: Metadata = { title: "公開頁" };
 
 export default function CreatorProfileEditPage() {
   return (

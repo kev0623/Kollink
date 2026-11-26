@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import { requireAdmin } from "@/lib/auth/current-user";
 import { loadAdminPayments, loadAnomalies, loadPayouts } from "@/lib/admin/load";
@@ -9,6 +10,8 @@ import { PaymentRows } from "@/components/admin/PaymentRows";
 import { PayoutList } from "@/components/admin/PayoutList";
 
 type Props = { searchParams: Promise<SearchParams> };
+
+export const metadata: Metadata = { title: "款項" };
 
 export default function AdminPaymentsPage({ searchParams }: Props) {
   return (

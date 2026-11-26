@@ -1,4 +1,7 @@
+import type { Metadata } from "next";
 import { RolePicker } from "@/components/auth/RolePicker";
+
+export const metadata: Metadata = { title: "選擇身分" };
 
 export default function OnboardingPage() {
   return (

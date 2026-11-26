@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
@@ -14,6 +15,8 @@ type Props = {
 };
 
 // params 與 searchParams 都是請求時才知道的值：在 <Suspense> 內讀（dynamic-routes.md「Without generateStaticParams」）
+export const metadata: Metadata = { title: "編輯招募" };
+
 export default function EditBriefPage({ params, searchParams }: Props) {
   return (
     <div className="max-w-3xl">

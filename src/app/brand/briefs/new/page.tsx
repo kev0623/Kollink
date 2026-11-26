@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import Link from "next/link";
 import { BriefForm } from "@/components/briefs/BriefForm";
@@ -7,6 +8,8 @@ import { parseBriefStep } from "@/lib/briefs/query";
 import { EMPTY_BRIEF_INPUT } from "@/lib/validation/brief";
 
 type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> };
+
+export const metadata: Metadata = { title: "刊登招募" };
 
 export default function NewBriefPage({ searchParams }: Props) {
   return (

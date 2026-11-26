@@ -25,7 +25,7 @@ export function ThemeSelect({ compact = false }: { compact?: boolean }) {
         id={id}
         value={pref}
         onChange={(e) => applyThemePref(parseThemePref(e.target.value), true)}
-        className={`h-11 rounded-input border border-line-strong bg-surface text-base text-ink ${compact ? "w-[76px] px-1 text-center text-sm" : "px-3"}`}
+        className={`h-11 rounded-input border border-line-strong bg-surface text-base text-ink ${compact ? "w-[80px] px-1 text-center" : "px-3"}`}
       >
         {THEME_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
       </select>

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { requireAdmin } from "@/lib/auth/current-user";
@@ -10,6 +11,8 @@ import { ReviewButton } from "@/components/admin/ReviewButton";
 import { emptyClassName } from "@/components/admin/styles";
 
 type Props = { searchParams: Promise<SearchParams> };
+
+export const metadata: Metadata = { title: "違規訊息" };
 
 export default function AdminMessagesPage({ searchParams }: Props) {
   return (

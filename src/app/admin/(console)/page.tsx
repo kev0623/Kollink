@@ -1,7 +1,10 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { requireAdmin } from "@/lib/auth/current-user";
 import { loadOverview } from "@/lib/admin/load";
+
+export const metadata: Metadata = { title: "後台總覽" };
 
 export default function AdminHomePage() {
   return (

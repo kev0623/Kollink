@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import { requireRole } from "@/lib/auth/current-user";
 import { loadPopularStyleTags, searchSquare } from "@/lib/creators/square";
@@ -7,6 +8,8 @@ import { SquareView } from "@/components/square/SquareView";
 type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> };
 
 // 頁面殼（標題、骨架）是靜態的；searchParams 與 session 都在 <Suspense> 內讀（cacheComponents）
+export const metadata: Metadata = { title: "創作者廣場" };
+
 export default function BrandSquarePage({ searchParams }: Props) {
   return (
     <div>

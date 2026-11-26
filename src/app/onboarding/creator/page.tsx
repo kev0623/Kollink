@@ -1,4 +1,7 @@
+import type { Metadata } from "next";
 import { CreatorOnboardingForm } from "../CreatorOnboardingForm";
+
+export const metadata: Metadata = { title: "建立創作者資料" };
 
 export default function CreatorOnboardingPage() {
   return (

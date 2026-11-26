@@ -1,8 +1,11 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import Link from "next/link";
 import { CollabDetailSection } from "@/components/collabs/CollabPages";
 
 type Props = { params: Promise<{ id: string }> };
+
+export const metadata: Metadata = { title: "合作案詳情" };
 
 export default function BrandCollabPage({ params }: Props) {
   return (

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { AuthForm } from "@/components/auth/AuthForm";
@@ -7,6 +8,8 @@ import { safeNextPath } from "@/lib/auth/safe-next";
 import { SITE_NAME } from "@/lib/site";
 
 type SP = Promise<Record<string, string | string[] | undefined>>;
+
+export const metadata: Metadata = { title: "註冊" };
 
 export default function SignupPage({ searchParams }: { searchParams: SP }) {
   return (
