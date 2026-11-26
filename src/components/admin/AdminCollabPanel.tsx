@@ -30,7 +30,7 @@ type Props = {
 export function AdminCollabPanel({ collabId, status, amount, actions, lost, payout, paid }: Props) {
   // 取消成功後 actions.cancel 變 false、NoteAction 會被卸載，所以結果提示放在面板這一層
   const [cancelNotice, setCancelNotice] = useState<string | null>(null);
-  const none = !actions.offlinePayment && !actions.payout && !actions.cancel && !actions.lostPayment;
+  const none = !actions.offlinePayment && !actions.payout && !actions.cancel && !(actions.lostPayment && lost.length > 0);
   return (
     <section aria-labelledby="admin-panel-title" className="space-y-6 rounded-card border border-line-strong bg-surface p-5 md:p-8">
       <h2 id="admin-panel-title" className="text-lg font-bold text-ink">平台處理</h2>
