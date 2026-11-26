@@ -378,6 +378,40 @@ curl -i -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/cron/a
 
 ### 計畫 9（管理後台）上線
 
+0. 推送前的唯讀檢查（都不會改資料）：
+
+   ```bash
+   # 預覽會套用哪些 migration：必須剛好列出 20261128000100、000200、000300、000400（只預覽，不會套用）
+   npx supabase db push --remote --dry-run
+   ```
+
+   ```sql
+   -- 應回傳 2 列：creator_profiles_status_check、payment_anomalies_source_check（migration 會先 drop 再重建）
+   select conname from pg_constraint
+   where conname in ('creator_profiles_status_check', 'payment_anomalies_source_check');
+
+   -- 只能出現 pending、approved、suspended
+   select status, count(*) from public.creator_profiles group by 1;
+
+   -- 目前待撥款的合作案（上線空窗期的處理方式見下方）
+   select id, status from public.collaborations where status = 'awaiting_payout';
+   ```
+
+   部署空窗期不要使用舊的撥款 SQL（現在會報 `invalid transition`）：撥款一律在部署後經由 `/admin`，且創作者必須已填收款帳戶。
+
 1. 合併前：`npx supabase db push --remote`（`20261128000100_admin_core.sql`、`20261128000200_admin_money.sql`、`20261128000300_admin_review_fixes.sql`、`20261128000400_admin_refund_participant_guard.sql`，依序）。migration 會改 `transition_collaboration`：之後撥款只能經由後台或 `admin_mark_payout`（舊的撥款 SQL 會報 `invalid transition`）；`admin_mark_payout` 現在要帶帳號末四碼。
 2. 合併後：照「管理後台 → 新增管理員」把營運人員的帳號加進 `admins`，用該帳號登入確認進得了 `/admin`。
 3. 通知所有已審核的創作者到「我的 → 收款帳戶」填寫（沒有帳戶時不能撥款）。目前 `awaiting_payout` 的合作案在創作者填好前會顯示「創作者還沒填收款帳戶」。
+4. 推送後的匿名檢查（用 anon 的 publishable key，`<PROJECT_REF>`、`<PUBLISHABLE_KEY>`、`<handle>` 換成實際值，直接複製貼上）：
+
+   ```bash
+   URL="https://<PROJECT_REF>.supabase.co"; KEY="<PUBLISHABLE_KEY>"
+   # 1) 必須被拒絕（permission denied，HTTP 401/403，不可回傳 true/false）
+   curl -s -X POST "$URL/rest/v1/rpc/is_admin" -H "apikey: $KEY" -H "Content-Type: application/json" -d '{}'
+   # 2) 必須被拒絕
+   curl -s -X POST "$URL/rest/v1/rpc/admin_overview" -H "apikey: $KEY" -H "Content-Type: application/json" -d '{}'
+   # 3) 必須仍回傳已審核創作者的資料列（不是空陣列）
+   curl -s "$URL/rest/v1/creator_profiles?status=eq.approved&select=handle&limit=3" -H "apikey: $KEY"
+   ```
+
+   最後用瀏覽器（未登入）開 `/c/<已審核創作者的 handle>`，確認頁面正常顯示。

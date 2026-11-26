@@ -251,7 +251,8 @@ export function sourceLabel(c: { briefId: string | null; briefTitle: string | nu
 export type ActionCardCopy = { mine: boolean; title: string; body: string };
 
 /** 「現在要做什麼」卡片的標題與說明。輪到對方時一定寫「你不用做任何事」。 */
-export function actionCardCopy(s: CollabStatus, side: CollabSide): ActionCardCopy {
+/** adminCancelled：事件紀錄裡有平台取消（admin_cancel）時才指向下方紀錄，其餘取消用中性文字。 */
+export function actionCardCopy(s: CollabStatus, side: CollabSide, adminCancelled = false): ActionCardCopy {
   const none = "你不用做任何事。";
   const mine = turnOf(s) === side;
   switch (s) {
@@ -282,7 +283,7 @@ export function actionCardCopy(s: CollabStatus, side: CollabSide): ActionCardCop
     case "declined":
       return { mine: false, title: "已婉拒", body: "創作者婉拒了這次邀約。" };
     case "cancelled":
-      return { mine: false, title: "已取消", body: "這個合作案已取消，原因見下方的紀錄。" };
+      return { mine: false, title: "已取消", body: adminCancelled ? "這個合作案已由平台取消，原因見下方的紀錄。" : "合作已取消。" };
   }
 }
 

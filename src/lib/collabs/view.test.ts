@@ -163,7 +163,8 @@ describe("平台取消（計畫 9）", () => {
     expect(eventText(ev({ action: "admin_cancel", note: "雙方同意取消" }))).toBe("平台取消合作：雙方同意取消");
     expect(eventText(ev({ action: "refund_scheduled" }))).toBe("平台會退回已託管的款項");
   });
-  it("已取消的卡片不再寫「品牌已取消」（也可能是平台取消）", () => {
-    expect(actionCardCopy("cancelled", "creator").body).toBe("這個合作案已取消，原因見下方的紀錄。");
+  it("已取消的卡片：一般取消用中性文字，平台取消才指向紀錄", () => {
+    expect(actionCardCopy("cancelled", "creator").body).toBe("合作已取消。");
+    expect(actionCardCopy("cancelled", "creator", true).body).toBe("這個合作案已由平台取消，原因見下方的紀錄。");
   });
 });

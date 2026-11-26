@@ -181,8 +181,8 @@
     - 列表用 inner join，`profiles` 列不存在時整個合作案會從列表消失。
   - 最終審查留下的項目（程式與畫面）：
     - `src/app/api/cron/auth.ts` 沒有 `import "server-only"`。
-    - `/api/dev/mark-paid` 會回傳原始資料庫錯誤、沒有 CSRF 防護（僅限本機開發）。→ 已修（計畫 9）
-    - dev-login route 對沒有 body 的 POST 會當掉（僅限本機開發）。
+    - `/api/dev/mark-paid` 會回傳原始資料庫錯誤、沒有 CSRF 防護（僅限本機開發）。
+    - dev-login route 對沒有 body 的 POST 會當掉（僅限本機開發）。→ 已修（計畫 9，`src/app/auth/dev-login/route.ts` 的 `formData().catch`）
     - `PublishForm` 的 client 錯誤訊息在編輯輸入時不會消失。
     - `OfferForm` 重新送出時，上一次的伺服器錯誤會閃一下。
     - 合作案分頁列在窄螢幕沒有 `overflow-x-auto`。
@@ -278,6 +278,10 @@
   - `NoteAction` 的 aria 屬性與開啟後的焦點管理待補。
   - handle 或 IG 為空時畫面會顯示單獨的 `@`。
   - 「綠界已扣款但沒收到通知」的環境取自部署的 `ECPAY_ENV`，不是從該筆付款單判斷。
+  - `resolve_payment_anomaly` 沒有參與者檢查（管理員是該合作案參與者時仍可處理），也沒有 audit 與處理者紀錄。
+  - `mark_message_reviewed` 只擋管理員自己的訊息；管理員是對話的一方時，仍可審核對方的訊息。
+  - `admin_list_collaborations` 的 `test_paid` 沒有排除 `refund_required` 的付款單。
+  - `admin_get_payout_account` 在 RSC 渲染期間執行；若之後行為改變（例如 prefetch 預先載入），可能產生多餘的查看 audit 紀錄。
 
 ### 10. 審核逾期自動通過
 - `transition_collaboration` 的 system 身分要求「透過 PostgREST 以 service_role 呼叫」；**pg_cron 以 postgres 身分執行會被判定為「不是參與者」**。可以改用 Next route 搭配 Cron 和 secret，再以 service_role 呼叫 RPC；或另外寫一個只授權給 service_role 的 `auto_approve_due()` definer 函式。

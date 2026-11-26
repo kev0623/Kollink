@@ -26,6 +26,7 @@ export function CollabDetail({ data, side, uid, nowMs, devPaymentEnabled, paymen
       <ActionCard
         c={c} side={side} uid={uid} latest={latest} nowMs={nowMs}
         devPaymentEnabled={devPaymentEnabled} payment={payment} summary={summary}
+        adminCancelled={events.some((e) => e.action === "admin_cancel")}
       />
       <SubmissionList submissions={submissions} />
       <EventList events={events} chatHref={c.conversationId ? messagesHref(side, c.conversationId) : null} />
