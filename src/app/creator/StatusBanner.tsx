@@ -1,39 +1,48 @@
 import type { CurrentUser } from "@/lib/auth/current-user";
+import { CopyButton } from "@/components/ui/CopyButton";
+import { Notice } from "@/components/ui/Notice";
+import { SupportLink } from "@/components/ui/SupportLink";
 import { ResubmitButton } from "./ResubmitButton";
 
+function Code({ code }: { code: string }) {
+  return (
+    <span className="mt-2 inline-flex flex-wrap items-center gap-2">
+      <b className="rounded-input border border-line-strong bg-surface px-3 py-1 font-mono text-base tracking-[0.3em] text-ink">{code}</b>
+      <CopyButton text={code} label="複製驗證碼" />
+    </span>
+  );
+}
+
 export function StatusBanner({ me }: { me: CurrentUser }) {
-  if (me.creator?.status === "pending") {
+  const s = me.creator?.status;
+  if (s === "pending") {
     return (
-      <div className="mb-6 rounded-card border border-line bg-surface p-5 text-sm">
-        <p className="font-bold">審核中，通常 1–2 個工作天。</p>
+      <Notice tone="info" title="審核中，通常 1–2 個工作天" className="mb-6">
         {me.verificationCode && (
-          <p className="mt-1">
-            請把驗證碼 <b className="rounded-btn bg-ink px-2 py-0.5 tracking-widest text-on-ink">{me.verificationCode}</b> 暫時加到 IG 自我介紹，審核通過後就可以刪掉。
-          </p>
+          <>
+            <p>請把驗證碼暫時加到 IG 自我介紹，審核通過後就可以刪掉。</p>
+            <Code code={me.verificationCode} />
+          </>
         )}
-      </div>
+      </Notice>
     );
   }
-  if (me.creator?.status === "rejected") {
+  if (s === "rejected") {
     return (
-      <div role="status" className="mb-6 rounded-card border border-danger bg-surface p-5 text-sm">
-        <p className="font-bold">審核沒有通過，請修正後重新送審。</p>
-        {me.creator.reviewNote && <p className="mt-1 whitespace-pre-wrap break-words">原因：{me.creator.reviewNote}</p>}
-        {me.verificationCode && (
-          <p className="mt-1">
-            驗證碼 <b className="rounded-btn bg-ink px-2 py-0.5 tracking-widest text-on-ink">{me.verificationCode}</b> 要在 IG 自我介紹裡。
-          </p>
-        )}
-        <ResubmitButton />
-      </div>
+      <Notice tone="danger" title="審核沒有通過，請修正後重新送審" className="mb-6">
+        {me.creator?.reviewNote && <p className="whitespace-pre-wrap break-words">原因：{me.creator.reviewNote}</p>}
+        {me.verificationCode && (<><p className="mt-1">驗證碼要在 IG 自我介紹裡。</p><Code code={me.verificationCode} /></>)}
+        <div className="mt-3"><ResubmitButton /></div>
+      </Notice>
     );
   }
-  if (me.creator?.status === "suspended") {
+  if (s === "suspended") {
     return (
-      <div role="status" className="mb-6 rounded-card border border-line bg-surface p-5 text-sm">
-        <p className="font-bold">帳號已暫停，請聯絡客服。</p>
-        {me.creator.reviewNote && <p className="mt-1 whitespace-pre-wrap break-words">原因：{me.creator.reviewNote}</p>}
-      </div>
+      <Notice tone="danger" title="帳號已暫停" className="mb-6">
+        {me.creator?.reviewNote && <p className="whitespace-pre-wrap break-words">原因：{me.creator.reviewNote}</p>}
+        <p className="mt-1">暫停期間不能報名、接案或傳訊息。對暫停有疑問，請聯絡客服：</p>
+        <SupportLink subject="帳號暫停" />
+      </Notice>
     );
   }
   return null;

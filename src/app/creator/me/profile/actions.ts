@@ -14,7 +14,7 @@ function failure(error: { code?: string; message?: string }, values?: FormValues
 }
 
 function revalidateProfile(handle: string) {
-  revalidatePath("/creator/me/profile");
+  revalidatePath("/creator/me");
   revalidatePath(`/c/${handle}`);
 }
 

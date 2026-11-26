@@ -5,6 +5,8 @@ import { paymentAvailability } from "@/lib/payments/config";
 import { isUuid } from "@/lib/briefs/query";
 import { loadCollabDetail, loadMyCollabs } from "@/lib/collabs/load";
 import { nowMs, parseCollabTab, type CollabSide } from "@/lib/collabs/view";
+import { needsPayoutPrompt } from "@/lib/creators/payout-prompt";
+import { loadHasPayoutAccount } from "@/lib/creators/payout-status";
 import { CollabDetail } from "./CollabDetail";
 import { CollabList, CollabTabs } from "./CollabList";
 
@@ -30,10 +32,11 @@ export async function CollabDetailSection({ side, params }: { side: CollabSide; 
   if (!isUuid(id)) notFound();
   const data = await loadCollabDetail(id);
   if (!data || data.collab.side !== side) notFound();
+  const payoutPrompt = side === "creator" && needsPayoutPrompt(data.collab.status, await loadHasPayoutAccount(me.id));
   // requireRole 之後才能讀現在時間（getCurrentUser 已 await connection()）
   return (
     <CollabDetail
-      data={data} side={side} uid={me.id} nowMs={nowMs()}
+      data={data} side={side} uid={me.id} nowMs={nowMs()} payoutPrompt={payoutPrompt}
       devPaymentEnabled={isDevLoginEnabled()} payment={paymentAvailability()}
     />
   );

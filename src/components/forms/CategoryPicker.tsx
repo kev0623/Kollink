@@ -3,14 +3,16 @@ import { useState } from "react";
 import { chip } from "@/components/ui/styles";
 import { CATEGORIES } from "@/lib/options";
 
-export function CategoryPicker({ name, initial, error }: { name: string; initial: string[]; error?: string }) {
+export function CategoryPicker({ name, initial, error, onChange }: { name: string; initial: string[]; error?: string; onChange?: (selected: string[]) => void }) {
   const [selected, setSelected] = useState<string[]>(initial);
   function toggle(c: string) {
-    setSelected((s) => (s.includes(c) ? s.filter((x) => x !== c) : s.length >= 5 ? s : [...s, c]));
+    const next = selected.includes(c) ? selected.filter((x) => x !== c) : selected.length >= 5 ? selected : [...selected, c];
+    setSelected(next);
+    onChange?.(next);
   }
   return (
     <fieldset>
-      <legend className="text-sm font-semibold text-ink">內容領域（1–5 個）</legend>
+      <legend className="text-sm font-bold text-ink">內容領域（1–5 個）</legend>
       <div className="mt-2 flex flex-wrap gap-2">
         {CATEGORIES.map((c) => {
           const on = selected.includes(c);

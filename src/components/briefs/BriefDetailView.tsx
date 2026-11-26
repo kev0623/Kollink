@@ -29,7 +29,7 @@ export function BriefDetailView({ brief: b, today, match, aside, headingLevel = 
               <BrandMark name={b.brandName} logoPath={b.brandLogoPath} size="sm" />
               <p className="min-w-0 truncate text-sm font-semibold text-ink">{b.brandName}</p>
             </div>
-            <Title className="mt-3 break-words text-2xl font-bold text-ink md:text-[28px]">{b.title}</Title>
+            <Title className="mt-3 break-words font-serif text-2xl font-bold text-ink md:text-[28px]">{b.title}</Title>
             <p className="mt-2 text-xl font-bold text-accent">{rewardLabel(b)}</p>
             {b.collabTypes.length > 0 && (
               <ul aria-label="合作形式" className="mt-3 flex flex-wrap gap-2">
@@ -48,7 +48,7 @@ export function BriefDetailView({ brief: b, today, match, aside, headingLevel = 
             </div>
             {b.applicantCount !== null && (
               <div>
-                <dt className="text-xs text-muted">已報名</dt>
+                <dt className="text-xs text-muted">報名人數</dt>
                 <dd className="mt-0.5 font-semibold text-ink">{formatNumber(b.applicantCount)} 人</dd>
               </div>
             )}

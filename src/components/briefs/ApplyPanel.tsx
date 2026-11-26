@@ -2,7 +2,9 @@
 
 import { useActionState, useState } from "react";
 import { applyToBriefAction, withdrawApplicationAction, type ApplyFormState } from "@/app/creator/actions";
-import { Field, inputClass } from "@/components/forms/Field";
+import { Field } from "@/components/forms/Field";
+import { ErrorText } from "@/components/ui/ErrorText";
+import { btn, input, textarea } from "@/components/ui/styles";
 import { MESSAGE_MAX, textLength } from "@/lib/validation/brief";
 import { proposedPriceLabel, type ApplicationStatus } from "@/lib/briefs/view";
 import { ConfirmAction } from "./ConfirmAction";
@@ -19,7 +21,7 @@ type Props = {
 
 // 手機：固定在底部（底部導覽列上方）；桌面：右欄、捲動時固定在上方
 const shell = "sticky bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-[5] max-h-[70vh] overflow-y-auto rounded-card border border-line bg-surface p-4 md:bottom-auto md:top-6 md:max-h-none md:p-5";
-const primary = "h-11 w-full rounded-btn bg-ink px-6 font-semibold text-on-ink disabled:opacity-60";
+const primary = `${btn.primary} w-full`;
 
 export function ApplyPanel({ briefId, approved, ended, isMatch, application }: Props) {
   if (application) {
@@ -34,7 +36,7 @@ export function ApplyPanel({ briefId, approved, ended, isMatch, application }: P
         {application.status === "applied" && (
           <div className="mt-3">
             <ConfirmAction
-              label="撤回報名" danger confirmLabel="確定撤回"
+              label="撤回報名" danger icon="undo" confirmLabel="確定撤回"
               message="撤回後不能再報名這則招募，確定要撤回嗎？"
               onConfirm={() => withdrawApplicationAction(application.id, briefId)}
             />
@@ -84,8 +86,8 @@ function ApplyForm({ briefId, isMatch }: { briefId: string; isMatch: boolean }) 
         <p role="status" className="text-sm font-semibold text-ink">你的條件不完全符合，仍要報名嗎？</p>
         <p className="mt-1 text-xs text-muted">條件是給品牌的參考，不是硬性限制。</p>
         <div className="mt-3 flex gap-2">
-          <button type="button" onClick={() => setStage("form")} className="h-10 flex-1 rounded-btn bg-ink text-sm font-semibold text-on-ink">仍要報名</button>
-          <button type="button" onClick={() => setStage("idle")} className="h-10 flex-1 rounded-btn border border-line text-sm font-semibold text-ink">取消</button>
+          <button type="button" onClick={() => setStage("form")} className={`${btn.primary} flex-1 px-4`}>仍要報名</button>
+          <button type="button" onClick={() => setStage("idle")} className={`${btn.secondary} flex-1 px-4`}>取消</button>
         </div>
       </aside>
     );
@@ -96,21 +98,20 @@ function ApplyForm({ briefId, isMatch }: { briefId: string; isMatch: boolean }) 
         <input type="hidden" name="briefId" value={briefId} />
         <Field label="給品牌的話（選填）" error={fe.message} hint="500 字以內">
           {(c) => (
-            <textarea {...c} name="message" rows={4} value={message} onChange={(e) => setMessage(e.target.value)}
-              className="w-full rounded-input border border-line bg-surface px-3 py-2 outline-none focus:ring-2 focus:ring-ink" />
+            <textarea {...c} name="message" rows={4} value={message} onChange={(e) => setMessage(e.target.value)} className={textarea} />
           )}
         </Field>
         <p aria-live="polite" className={`-mt-2 text-right text-xs ${tooLong ? "font-semibold text-danger" : "text-muted"}`}>
           {count}/{MESSAGE_MAX}{tooLong ? "，超過上限" : ""}
         </p>
         <Field label="提出不同的報價（NT$，選填）" error={fe.proposedPrice} hint="留空代表依招募預算">
-          {(c) => <input {...c} name="proposedPrice" inputMode="numeric" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="例如 8000" className={inputClass} />}
+          {(c) => <input {...c} name="proposedPrice" inputMode="numeric" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="例如 8000" className={input} />}
         </Field>
-        {state.formError && <p role="alert" className="text-sm text-danger">{state.formError}</p>}
+        <ErrorText message={state.formError} />
         <div className="flex gap-2">
-          <button disabled={pending || tooLong} className={primary}>{pending ? "送出中…" : "送出報名"}</button>
+          <button disabled={pending || tooLong} className={`${btn.primary} flex-1`}>{pending ? "送出中…" : "送出報名"}</button>
           <button type="button" onClick={() => setStage("idle")} disabled={pending}
-            className="h-11 shrink-0 rounded-btn border border-line px-4 font-semibold text-ink">取消</button>
+            className={`${btn.secondary} shrink-0 px-4`}>取消</button>
         </div>
       </form>
     </aside>

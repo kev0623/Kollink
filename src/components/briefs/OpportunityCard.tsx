@@ -10,7 +10,7 @@ import { BriefCover } from "./BriefCover";
 export function OpportunityCard({ o, today }: { o: Opportunity; today: string }) {
   const applied = o.myStatus !== null;
   return (
-    <article className="relative flex h-full flex-col overflow-hidden rounded-card border border-line bg-surface focus-within:ring-2 focus-within:ring-ink hover:border-ink">
+    <article className="relative flex h-full flex-col overflow-hidden rounded-card border border-line bg-surface focus-within:ring-2 focus-within:ring-focus hover:border-line-strong">
       <BriefCover coverPath={o.coverPath} brandName={o.brandName} brandLogoPath={o.brandLogoPath} />
       {applied && (
         <span className="absolute right-3 top-3 rounded-full bg-ink px-2.5 py-0.5 text-xs font-semibold text-on-ink">
@@ -39,7 +39,7 @@ export function OpportunityCard({ o, today }: { o: Opportunity; today: string })
         <dl className="mt-auto grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
           <div className="min-w-0"><dt className="sr-only">門檻</dt><dd className="truncate text-muted">{audienceLabel(o.minFollowers)}</dd></div>
           <div className="min-w-0"><dt className="sr-only">地區</dt><dd className="truncate text-muted">{o.region ?? "地區不限"}</dd></div>
-          <div><dt className="sr-only">已報名</dt><dd className="text-muted">已報名 {formatNumber(o.applicantCount)} 人</dd></div>
+          <div><dt className="sr-only">報名人數</dt><dd className="text-muted">{formatNumber(o.applicantCount)} 人報名</dd></div>
           <div><dt className="sr-only">截止</dt><dd className="font-semibold text-ink">{deadlineLabel(o.deadline, today)}</dd></div>
         </dl>
       </div>
