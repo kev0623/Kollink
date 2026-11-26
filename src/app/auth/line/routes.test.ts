@@ -7,6 +7,8 @@ const m = vi.hoisted(() => ({
   rpc: vi.fn(), getUserById: vi.fn(), generateLink: vi.fn(), verifyOtp: vi.fn(), signOut: vi.fn(), getUser: vi.fn(), signInWithOtp: vi.fn(), postLoginPath: vi.fn(),
 }));
 vi.mock("server-only", () => ({}));
+// route handler 開頭的 connection() 在測試環境沒有 request scope：換成不做事的版本，其餘沿用真的 next/server
+vi.mock("next/server", async (orig) => ({ ...(await orig<typeof import("next/server")>()), connection: async () => {} }));
 vi.mock("@/lib/supabase/admin", () => ({
   createAdminClient: () => ({ rpc: m.rpc, auth: { admin: { getUserById: m.getUserById, generateLink: m.generateLink } } }),
 }));

@@ -1,4 +1,4 @@
-import { type NextRequest, NextResponse } from "next/server";
+import { connection, type NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { relativeRedirect } from "@/lib/auth/relative-redirect";
@@ -22,6 +22,8 @@ type Flow = { state: string; nonce: string; cv: string; next: string | null; rol
  * 依 resolveLineAccount 決定：已綁定就登入；否則到 /login?line=verify 由瀏覽器用 Email 驗證碼登入，通過後才綁定（/auth/line/link）。
  */
 export async function GET(request: NextRequest) {
+  // 一律每次請求才執行：沒設定 LINE 時這個 handler 不會讀 request，Next 會在 build 時把回應預先產生並放到 CDN
+  await connection();
   const config = readLineConfig();
   if (!config) return toLoginError("line_unavailable");
   const origin = lineOrigin(process.env.SITE_URL, request.nextUrl);
