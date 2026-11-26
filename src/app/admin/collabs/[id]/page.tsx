@@ -43,24 +43,25 @@ async function Section({ params }: Props) {
   const now = nowMs();
   // 管理員也是這個合作案的參與者：只能用參與者身分（資料庫也會擋），這裡不顯示管理員動作
   const participant = c.side !== "admin";
-  const { items: payments } = await loadAdminPayments("all", 1, id);
+  const [{ items: payments }, record] = await Promise.all([
+    loadAdminPayments("all", 1, id),
+    c.status === "completed" ? loadPayoutRecord(id) : Promise.resolve(null),
+  ]);
   const summary = summarizePayments(data.payments, now);
   const actions = adminCollabActions(c.status);
   let payout: PayoutPanel | null = null;
   if (!participant && actions.payout) {
-    const account = await loadPayoutAccount(id);
+    // 與 admin_mark_payout 的檢查相同：需退款的款項不算測試付款
+    const testPaid = payments.some((p) => p.status === "paid" && p.env === "stage" && !p.refundRequired);
+    const refundPending = payments.some((p) => p.refundRequired);
+    // 完整帳號的讀取會寫 audit：只有撥款真的能進行時才讀
+    const account = testPaid || refundPending ? null : await loadPayoutAccount(id);
     payout = {
-      // 與 admin_mark_payout 的檢查相同：需退款的款項不算測試付款
-      blocker: payoutBlocker({
-        testPaid: payments.some((p) => p.status === "paid" && p.env === "stage" && !p.refundRequired),
-        refundPending: payments.some((p) => p.refundRequired),
-        hasAccount: account !== null,
-      }),
+      blocker: payoutBlocker({ testPaid, refundPending, hasAccount: account !== null }),
       account,
       changedRecently: accountChangedRecently(account?.updatedAt ?? null, now),
     };
   }
-  const record = c.status === "completed" ? await loadPayoutRecord(id) : null;
   const lost = lostPaymentCandidates(payments).map((p) => ({ merchantTradeNo: p.merchantTradeNo, amount: p.amount }));
   return (
     <div className="space-y-6">
@@ -91,7 +92,7 @@ async function Section({ params }: Props) {
       )}
       <section aria-labelledby="payments-title" className="space-y-2">
         <h2 id="payments-title" className="text-lg font-bold text-ink">付款單</h2>
-        <PaymentRows items={payments} withCollab={false} empty="還沒有付款單" />
+        <PaymentRows items={payments} withCollab={false} empty="還沒有付款單" participant={participant} />
       </section>
       <SubmissionList submissions={data.submissions} />
       <EventList events={data.events} chatHref={null} />

@@ -18,3 +18,6 @@ export function validateAdminNote(note: string, label = "說明"): string | null
   if ([...note].length > ADMIN_NOTE_MAX) return `${label}最多 ${ADMIN_NOTE_MAX} 字`;
   return null;
 }
+
+/** 綠界交易編號（TS 的補登 Server Action 與補登表單共用；SQL 端是 admin_record_lost_payment 的 invalid provider_trade_no）。 */
+export const PROVIDER_TRADE_NO_RE = /^[A-Za-z0-9]{1,20}$/;

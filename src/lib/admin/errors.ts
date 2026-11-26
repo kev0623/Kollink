@@ -7,7 +7,7 @@ type DbError = { code?: string; message?: string };
 export const ADMIN_STALE_MESSAGE = "資料已經更新";
 
 /** 撥款前創作者剛改了收款帳戶：畫面要重新載入帳號讓管理員重新確認（不是一般錯誤）。 */
-export const PAYOUT_ACCOUNT_CHANGED_MESSAGE = "創作者剛更新了收款帳戶，請重新確認帳號後再撥款";
+export const PAYOUT_ACCOUNT_CHANGED_MESSAGE = "創作者剛更新了收款帳戶。請確認你剛才轉帳的帳號，再重新撥款。";
 
 const MESSAGES: Record<string, string> = {
   "not authenticated": "登入已逾時，請重新登入",

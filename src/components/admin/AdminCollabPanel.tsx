@@ -24,7 +24,7 @@ type Props = {
 
 /** 合作案詳情的管理員動作（「平台」卡片）：人工標記已付款、補登通知遺失的付款、撥款、平台取消。 */
 export function AdminCollabPanel({ collabId, amount, actions, lost, payout, paid }: Props) {
-  const none = !actions.offlinePayment && !actions.payout && !actions.cancel && lost.length === 0;
+  const none = !actions.offlinePayment && !actions.payout && !actions.cancel && !actions.lostPayment;
   return (
     <section aria-labelledby="admin-panel-title" className="space-y-4 rounded-card border-2 border-ink bg-surface p-4 md:p-6">
       <h2 id="admin-panel-title" className="text-lg font-bold text-ink">平台處理</h2>

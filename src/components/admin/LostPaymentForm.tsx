@@ -2,7 +2,10 @@
 
 import { useId, useState, useTransition } from "react";
 import { recordLostPaymentAction } from "@/app/admin/actions";
-import { validateAdminNote } from "@/lib/admin/notes";
+import { useRouter } from "next/navigation";
+import { isStaleStateMessage } from "@/lib/briefs/errors";
+import { PROVIDER_TRADE_NO_RE, validateAdminNote } from "@/lib/admin/notes";
+import { parseAmount } from "@/lib/validation/collab";
 import { formatTwd } from "@/lib/format";
 import { inputClassName } from "./styles";
 
@@ -11,6 +14,7 @@ import { inputClassName } from "./styles";
  * 填綠界交易編號與後台顯示的金額（與付款單金額不符時資料庫記錄為付款異常，不會標記已付款）。
  */
 export function LostPaymentForm({ collabId, merchantTradeNo, amount }: { collabId: string; merchantTradeNo: string; amount: number }) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [ptn, setPtn] = useState("");
   const [amt, setAmt] = useState("");
@@ -32,6 +36,8 @@ export function LostPaymentForm({ collabId, merchantTradeNo, amount }: { collabI
     );
   }
   function submit() {
+    if (!PROVIDER_TRADE_NO_RE.test(ptn.trim())) return setError("綠界交易編號是 1–20 位英數字");
+    if (parseAmount(amt) === null) return setError("請填綠界後台顯示的金額（整數）");
     const err = validateAdminNote(memo.trim(), "說明");
     if (err) return setError(err);
     setError(null);
@@ -41,6 +47,10 @@ export function LostPaymentForm({ collabId, merchantTradeNo, amount }: { collabI
         if (res.ok) {
           setOpen(false);
           setNotice(res.notice ?? null);
+        } else if (isStaleStateMessage(res.error)) {
+          setOpen(false);
+          setNotice("狀態已更新，已為你重新整理");
+          router.refresh();
         } else {
           setError(res.error);
         }

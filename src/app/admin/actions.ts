@@ -5,7 +5,7 @@ import { requireAdmin } from "@/lib/auth/current-user";
 import { createClient } from "@/lib/supabase/server";
 import { isUuid } from "@/lib/briefs/query";
 import { adminErrorMessage, paymentResultNotice } from "@/lib/admin/errors";
-import { cleanAdminNote, validateAdminNote } from "@/lib/admin/notes";
+import { cleanAdminNote, PROVIDER_TRADE_NO_RE, validateAdminNote } from "@/lib/admin/notes";
 import { readEcpayConfig } from "@/lib/payments/config";
 import { parseAmount } from "@/lib/validation/collab";
 
@@ -17,7 +17,6 @@ export type AdminActionResult = { ok: true; notice?: string } | { ok: false; err
 const BAD_INPUT = "資料格式不正確，請重新整理頁面";
 const CREATOR_ACTIONS: readonly string[] = ["approve", "reject", "suspend", "unsuspend"];
 const TRADE_NO_RE = /^KL[A-Za-z0-9]{1,18}$/;
-const PROVIDER_TRADE_NO_RE = /^[A-Za-z0-9]{1,20}$/;
 
 function revalidateAdmin() {
   revalidatePath("/admin", "layout");

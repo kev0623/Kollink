@@ -3,6 +3,7 @@
 import { useId, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { isStaleStateMessage } from "@/lib/briefs/errors";
+import { PAYOUT_ACCOUNT_CHANGED_MESSAGE } from "@/lib/admin/errors";
 import { ADMIN_NOTE_MAX, validateAdminNote } from "@/lib/admin/notes";
 import { textLength } from "@/lib/validation/brief";
 
@@ -45,7 +46,8 @@ export function NoteAction({ label, message, fieldLabel, noteName, confirmLabel,
           setNotice(res.notice ?? null);
         } else if (isStaleStateMessage(res.error)) {
           setOpen(false);
-          setNotice("狀態已更新，已為你重新整理");
+          // 撥款前帳戶被改：要讓管理員重新確認轉帳的帳號，不是一般的「狀態已更新」
+          setNotice(res.error === PAYOUT_ACCOUNT_CHANGED_MESSAGE ? res.error : "狀態已更新，已為你重新整理");
           router.refresh();
         } else {
           setError(res.error);

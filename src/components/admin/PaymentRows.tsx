@@ -7,7 +7,7 @@ import { RefundAction } from "./RefundAction";
 import { emptyClassName } from "./styles";
 
 /** 付款單列表（合作案詳情與「款項」頁共用）。withCollab：顯示合作案連結（款項頁）。 */
-export function PaymentRows({ items, withCollab, empty }: { items: AdminPayment[]; withCollab: boolean; empty: string }) {
+export function PaymentRows({ items, withCollab, empty, participant = false }: { items: AdminPayment[]; withCollab: boolean; empty: string; participant?: boolean }) {
   if (items.length === 0) return <p className={emptyClassName}>{empty}</p>;
   return (
     <ul className="divide-y divide-line overflow-hidden rounded-card border border-line bg-surface">
@@ -43,7 +43,7 @@ export function PaymentRows({ items, withCollab, empty }: { items: AdminPayment[
             {p.adminNote && (<><dt className="text-muted">人工說明</dt><dd className="min-w-0 whitespace-pre-wrap break-words">{p.adminNote}</dd></>)}
             {p.refundNote && (<><dt className="text-muted">退款說明</dt><dd className="min-w-0 whitespace-pre-wrap break-words">{p.refundNote}</dd></>)}
           </dl>
-          {p.refundRequired && <RefundAction paymentId={p.id} />}
+          {p.refundRequired && !participant && <RefundAction paymentId={p.id} />}
         </li>
       ))}
     </ul>
