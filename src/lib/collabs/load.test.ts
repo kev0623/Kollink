@@ -105,3 +105,18 @@ describe("loadCollabDetail", () => {
     await expect(loadCollabDetail(ID)).rejects.toThrow("denied");
   });
 });
+
+describe("loadMyCollabsForTotals", () => {
+  it("合併進行中與已完成兩個分頁；滿 200 筆時標記可能被截斷", async () => {
+    const { loadMyCollabsForTotals } = await import("./load");
+    const row = (i: number, status: string) => ({ id: `id-${i}`, title: "t", amount_twd: 1, status, updated_at: "2026-11-01T00:00:00Z", my_side: "creator" });
+    rpc.mockImplementation(async (_n: string, a: { p_tab: string }) => ({
+      data: a.p_tab === "completed" ? Array.from({ length: 200 }, (_, i) => row(i, "completed")) : [row(999, "invited")], error: null,
+    }));
+    const r = await loadMyCollabsForTotals();
+    expect(r.items).toHaveLength(201);
+    expect(r.maybeTruncated).toBe(true);
+    rpc.mockImplementation(async () => ({ data: [], error: null }));
+    expect((await loadMyCollabsForTotals()).maybeTruncated).toBe(false);
+  });
+});
