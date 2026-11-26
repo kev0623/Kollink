@@ -16,6 +16,8 @@
 | 取消後才到的付款（B1） | 記錄為已付款、`refund_required = true`，寫入 audit（`payment_requires_refund`），回覆綠界 `1|OK`；實際退款留給計畫 8。 |
 | 付款金額 | 必須同時等於付款單金額和合作案報價；不接受空值。 |
 | 資料表權限寫在 migration | 雲端新專案不會自動授權 public 資料表給 anon / authenticated / service_role（本機會）。`20261124000100_explicit_api_grants.sql` 補齊現有權限；之後每個新增資料表的 migration 都要自己寫 `grant`，否則本機測試會過、雲端會 permission denied。 |
+| 函式權限寫在 migration | 資安修正（`20261129000100_security_hardening.sql`）起，postgres 建立的函式預設不再給 PUBLIC 執行（全域 default privileges）。每個新函式都要先 `revoke execute ... from public, anon, authenticated, service_role` 再明確 `grant`（policy helper 要 grant 給 authenticated）；trigger 函式不用。 |
+| 低於報價的錄取要創作者同意 | 資安修正：`accept_application_with_collab` 的金額低於報名報價時，合作案從 `invited` 開始（創作者接受才進待付款、品牌可撤回）；否則直接 `awaiting_payment`。創作者在付款前都可以退出（`cancel`）。 |
 | 綠界通知 | 檢查 MerchantID（新環境變數 `ECPAY_MERCHANT_ID`）；`SimulatePaid=1` 的模擬付款只回覆收到、不記錄；金額只接受純整數。 |
 | 報價只能經由函式寫入 | 計畫 3 起 `creator_rates` 收回 anon / authenticated 的 INSERT、UPDATE、DELETE，只能用 `set_creator_rates`；取消勾選的合作形式，報價由 `update_creator_public_profile` 一併刪除。 |
 | 公開頁不快取 | `/c/[handle]` 每次請求以使用者自己的 client 讀取，因為審核狀態目前在 Studio 用 SQL 改、App 無法觸發 revalidate。找不到時回應碼是 200 + `noindex`（串流後才 `notFound()`，soft 404）。 |
@@ -282,6 +284,14 @@
   - `mark_message_reviewed` 只擋管理員自己的訊息；管理員是對話的一方時，仍可審核對方的訊息。
   - `admin_list_collaborations` 的 `test_paid` 沒有排除 `refund_required` 的付款單。
   - `admin_get_payout_account` 在 RSC 渲染期間執行；若之後行為改變（例如 prefetch 預先載入），可能產生多餘的查看 audit 紀錄。
+
+### 資安修正（全系統體檢）的後續事項
+- 停權前建立的付款單仍會完成：創作者停權後，之前建立的綠界付款單（例如 ATM 晚轉帳）照樣入帳，合作案變成「進行中、創作者已停權」。目前靠管理員人工處理（平台取消＋退款）；之後可評估付款通知時檢查創作者狀態並轉成付款異常。
+- 邀請（`invite_creator`）與開啟對話（`start_conversation`）各自 24 小時 30 次，合起來每個品牌一天最多接觸 60 位創作者。
+- 綠界 CSP `form-action` 只放行綠界網域，3D 驗證與 ATM 的跨網域導向鏈沒有驗證；上線前在預覽環境用測試環境確認。
+- 部署後立刻讓每位管理員綁定 TOTP（第一次綁定只需要 aal1）；沒綁定前進不了後台。
+- Storage 數量上限（brand-logos 40、creator-media 120、brief-covers 300、deliverables 每案 200）計的是目前存在的物件，等於累計上限；需要清孤兒檔的排程（README「正式環境設定」第 9 項）。
+- Email OTP 6–8 碼輸入只有單元測試，沒有在瀏覽器走過完整寄信流程。
 
 ### 10. 審核逾期自動通過
 - `transition_collaboration` 的 system 身分要求「透過 PostgREST 以 service_role 呼叫」；**pg_cron 以 postgres 身分執行會被判定為「不是參與者」**。可以改用 Next route 搭配 Cron 和 secret，再以 service_role 呼叫 RPC；或另外寫一個只授權給 service_role 的 `auto_approve_due()` definer 函式。

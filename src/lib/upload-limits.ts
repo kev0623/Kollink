@@ -6,10 +6,10 @@ export const IMAGE_EXTENSIONS = ["jpg", "jpeg", "png", "webp"] as const;
 
 /** 每位使用者在各 bucket 的物件數上限（deliverables 是每個合作案資料夾）。與資料庫 storage_upload_quota_ok／can_upload_deliverable 一致。 */
 export const UPLOAD_QUOTA = {
-  "brand-logos": 20,
-  "creator-media": 60,
-  "brief-covers": 100,
-  deliverables: 60,
+  "brand-logos": 40,
+  "creator-media": 120,
+  "brief-covers": 300,
+  deliverables: 200,
 } as const;
 
 export type UploadBucket = keyof typeof UPLOAD_QUOTA;

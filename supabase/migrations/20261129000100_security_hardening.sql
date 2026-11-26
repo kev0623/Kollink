@@ -10,7 +10,7 @@
 create or replace function public.clean_text(p text) returns text
 language plpgsql immutable set search_path = '' as $$
 begin
-  -- \u8cc7\u5b89\u4fee\u6b63\uff1a\u8d85\u9577\u8f38\u5165\u76f4\u63a5\u62d2\u7d55\uff0c\u4e0d\u8dd1 regex
+  -- 資安修正：超長輸入直接拒絕，不跑 regex
   if octet_length(p) > 200000 then
     raise exception 'text too long' using errcode = '22023';
   end if;
@@ -26,7 +26,7 @@ revoke execute on function public.clean_text(text) from public, anon, authentica
 create or replace function public.has_bidi(p text) returns boolean
 language plpgsql immutable set search_path = '' as $$
 begin
-  -- \u8cc7\u5b89\u4fee\u6b63\uff1a\u8d85\u9577\u8f38\u5165\u76f4\u63a5\u62d2\u7d55\uff08\u8207 clean_text \u76f8\u540c\uff09
+  -- 資安修正：超長輸入直接拒絕（與 clean_text 相同）
   if octet_length(p) > 200000 then
     raise exception 'text too long' using errcode = '22023';
   end if;
@@ -246,6 +246,9 @@ grant execute on function public.invite_creator(uuid, text, text, integer) to au
 
 -- ===================================================================================
 -- 3b. (M3) 錄取報名時創作者必須是 approved
+--     (M1) 錄取金額低於創作者報名時的報價：合作案從 invited 開始，要創作者接受（或婉拒）才進入待付款；
+--          品牌可以撤回（invited → cancel）。金額 ≥ 報價、或創作者沒有報價：照舊直接進 awaiting_payment。
+--          回傳值仍是合作案 id。畫面：src/lib/validation/collab.ts 的 needsCreatorConsent 規則相同。
 -- ===================================================================================
 -- 來源：20261125000100_collab_create.sql
 create or replace function public.accept_application_with_collab(
@@ -258,6 +261,7 @@ declare
   v_brief_title text;
   v_creator_id uuid;
   v_app_status text;
+  v_proposed integer;
   v_deliverables text;
   v_conversation uuid;
   v_id uuid;
@@ -265,8 +269,8 @@ begin
   if v_uid is null then
     raise exception 'not authenticated' using errcode = '42501';
   end if;
-  select a.brief_id, b.title, a.creator_id, a.status
-    into v_brief_id, v_brief_title, v_creator_id, v_app_status
+  select a.brief_id, b.title, a.creator_id, a.status, a.proposed_price_twd
+    into v_brief_id, v_brief_title, v_creator_id, v_app_status, v_proposed
     from public.brief_applications a
     join public.briefs b on b.id = a.brief_id
    where a.id = p_application_id and b.brand_id = v_uid
@@ -291,7 +295,11 @@ begin
     insert into public.collaborations
       (brand_id, creator_id, brief_id, conversation_id, title, deliverables, amount_twd, status)
     values
-      (v_uid, v_creator_id, v_brief_id, v_conversation, v_brief_title, v_deliverables, p_amount_twd, 'awaiting_payment')
+      (v_uid, v_creator_id, v_brief_id, v_conversation, v_brief_title, v_deliverables, p_amount_twd,
+       -- 資安修正（M1）：低於創作者報價 → invited（需要創作者同意）；否則照舊 awaiting_payment
+       case when v_proposed is not null and p_amount_twd < v_proposed
+            then 'invited'::public.collab_status
+            else 'awaiting_payment'::public.collab_status end)
     returning id into v_id;
   exception when unique_violation then
     raise exception 'collaboration exists' using errcode = '23505';
@@ -691,12 +699,13 @@ revoke execute on function public.storage_quota_ok(text, text, integer) from pub
 
 -- policy 用：目前使用者在公開 bucket 自己資料夾（<uid>/）的物件數是否還沒到上限。
 -- insert policy 已要求第一層資料夾 = auth.uid()，所以使用者在該 bucket 的所有物件都在這個資料夾，換資料夾繞不過。
--- 上限：brand-logos 20、creator-media 60、brief-covers 100（Part B 的上傳錯誤文字要一致）。
+-- 上限：brand-logos 40、creator-media 120、brief-covers 300（與 src/lib/upload-limits.ts 一致）。
+-- 計數的是目前存在的物件，換圖時舊檔沒有刪掉就會一直算在內（等於終身累計）；之後要有清孤兒檔的排程。
 create function public.storage_upload_quota_ok(p_bucket text) returns boolean
 language sql volatile security definer set search_path = '' as $$
   select auth.uid() is not null
      and public.storage_quota_ok(p_bucket, auth.uid()::text || '/',
-           case p_bucket when 'brand-logos' then 20 when 'creator-media' then 60 when 'brief-covers' then 100 else 0 end);
+           case p_bucket when 'brand-logos' then 40 when 'creator-media' then 120 when 'brief-covers' then 300 else 0 end);
 $$;
 revoke execute on function public.storage_upload_quota_ok(text) from public, anon, authenticated, service_role;
 grant execute on function public.storage_upload_quota_ok(text) to authenticated;
@@ -780,7 +789,7 @@ create policy brief_covers_update_own on storage.objects
   );
 
 -- ===================================================================================
--- 8. (L4) 品牌只能讀已出現在交稿紀錄裡的檔案；5. (L1) deliverables 每個合作案資料夾最多 60 個物件
+-- 8. (L4) 品牌只能讀已出現在交稿紀錄裡的檔案；5. (L1) deliverables 每個合作案資料夾最多 200 個物件（同樣是累計數）
 -- ===================================================================================
 -- 來源：20261125000400_collab_review_fixes.sql
 create or replace function public.can_read_deliverable(p_name text) returns boolean
@@ -803,7 +812,7 @@ language sql stable security definer set search_path = '' as $$
 $$;
 
 -- 來源：20261125000400_collab_review_fixes.sql
--- 資安修正（L1）：多一個條件「這個合作案資料夾少於 60 個物件」（storage_quota_ok 會鎖住資料夾再計數），所以改成 volatile
+-- 資安修正（L1）：多一個條件「這個合作案資料夾少於 200 個物件」（storage_quota_ok 會鎖住資料夾再計數），所以改成 volatile
 create or replace function public.can_upload_deliverable(p_name text) returns boolean
 language sql volatile security definer set search_path = '' as $$
   select auth.uid() is not null and exists (
@@ -815,7 +824,7 @@ language sql volatile security definer set search_path = '' as $$
        and c.creator_id = auth.uid()
        and c.status = 'awaiting_submission'
        and public.deliverable_path_ok(c.id, c.creator_id, p_name)
-       and public.storage_quota_ok('deliverables', c.id::text || '/', 60)
+       and public.storage_quota_ok('deliverables', c.id::text || '/', 200)
   );
 $$;
 
@@ -834,7 +843,8 @@ exception when check_violation then
 end;
 $$;
 
--- 已核准（更新前是 approved）的創作者改粉絲數或互動率：寫一筆 audit_logs（不改狀態）。
+-- 已送審的創作者（更新前的狀態不是 pending：approved、rejected、suspended 都算）改粉絲數或互動率：
+-- 寫一筆 audit_logs（不改狀態）。停權或被退回期間改的數字也會留下紀錄，恢復或重新送審時管理員看得到。
 -- collaboration_id 是 null（只有管理員讀得到）；subject_id = 創作者；note 只放「欄位 舊值→新值」。
 create function public.creator_profiles_log_stats() returns trigger
 language plpgsql security definer set search_path = '' as $$
@@ -842,9 +852,10 @@ declare
   v_parts text[] := '{}';
   v_self boolean := auth.uid() is not distinct from new.user_id;
 begin
-  if old.status = 'approved' then
+  if old.status <> 'pending' then
     if new.follower_count is distinct from old.follower_count then
-      v_parts := v_parts || ('follower_count ' || old.follower_count::text || '→' || new.follower_count::text);
+      v_parts := v_parts || ('follower_count ' || coalesce(old.follower_count::text, 'null')
+                             || '→' || coalesce(new.follower_count::text, 'null'));
     end if;
     if new.engagement_rate is distinct from old.engagement_rate then
       v_parts := v_parts || ('engagement_rate ' || coalesce(old.engagement_rate::text, 'null')

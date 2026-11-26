@@ -250,20 +250,34 @@ export function sourceLabel(c: { briefId: string | null; briefTitle: string | nu
 
 export type ActionCardCopy = { mine: boolean; title: string; body: string };
 
-/** 「現在要做什麼」卡片的標題與說明。輪到對方時一定寫「你不用做任何事」。 */
-/** adminCancelled：事件紀錄裡有平台取消（admin_cancel）時才指向下方紀錄，其餘取消用中性文字。 */
-export function actionCardCopy(s: CollabStatus, side: CollabSide, adminCancelled = false): ActionCardCopy {
+/**
+ * 「現在要做什麼」卡片的標題與說明。輪到對方時寫「你不用做任何事」；
+ * 例外是創作者在待付款時（付款前可以退出，所以改寫成可以退出的說明）。
+ * adminCancelled：事件紀錄裡有平台取消（admin_cancel）時才指向下方紀錄，其餘取消用中性文字。
+ * fromApplication：合作案來自招募報名（briefId 不是 null）。報名的合作案只有在錄取金額低於創作者報價時
+ * 才會是 invited（accept_application_with_collab），卡片改寫成「確認合作條件」。
+ */
+export function actionCardCopy(
+  s: CollabStatus, side: CollabSide, adminCancelled = false, fromApplication = false,
+): ActionCardCopy {
   const none = "你不用做任何事。";
   const mine = turnOf(s) === side;
   switch (s) {
     case "invited":
+      if (fromApplication) {
+        return mine
+          ? { mine, title: "輪到你：確認合作條件", body: "品牌錄取了你的報名，但金額低於你的報價。接受後由品牌付款託管，款項託管後再開始製作。" }
+          : { mine, title: "等待創作者確認", body: `金額低於創作者的報價，對方確認後就輪到你付款。${none}` };
+      }
       return mine
         ? { mine, title: "輪到你：回覆邀約", body: "接受後由品牌確認並付款託管，款項託管後再開始製作。" }
         : { mine, title: "等對方回覆邀約", body: `創作者接受後就輪到你確認並付款。${none}` };
     case "awaiting_payment":
       return mine
         ? { mine, title: "輪到你：確認並付款", body: "選擇信用卡或 ATM 轉帳付款。款項由平台託管，創作者交稿並發佈後才撥款。" }
-        : { mine, title: "等對方付款託管", body: `款項託管後就可以開始製作。${none}` };
+        : side === "creator"
+          ? { mine, title: "等對方付款託管", body: "等待品牌付款，款項託管後就可以開始製作。條件不合適的話，付款前可以退出。" }
+          : { mine, title: "等對方付款託管", body: `款項託管後就可以開始製作。${none}` };
     case "awaiting_submission":
       return mine
         ? { mine, title: "輪到你：交稿", body: "上傳作品檔案，或附上雲端連結與說明。" }
@@ -372,17 +386,20 @@ export function toCollabEvent(r: EventRow): CollabEvent {
   };
 }
 
-/** 事件的一句話（不含日期）。 */
-export function eventText(e: CollabEvent): string {
+/** 事件的一句話（不含日期）。fromApplication：合作案來自招募報名（見 actionCardCopy）。 */
+export function eventText(e: CollabEvent, fromApplication = false): string {
   const who = e.actorName;
   switch (e.action) {
     case "create":
       if (e.actorKind !== "brand") return "建立合作案";
+      if (fromApplication) {
+        return e.toStatus === "invited" ? `${who} 錄取報名（金額低於報價，等待創作者確認）` : `${who} 錄取並建立合作案`;
+      }
       return e.toStatus === "invited" ? `${who} 發出邀約` : `${who} 錄取並建立合作案`;
     case "accept":
-      return `${who} 接受邀約`;
+      return fromApplication ? `${who} 接受合作條件` : `${who} 接受邀約`;
     case "decline":
-      return `${who} 婉拒邀約`;
+      return fromApplication ? `${who} 婉拒合作條件` : `${who} 婉拒邀約`;
     case "cancel":
       // 資安修正：創作者可以在品牌付款前退出
       return e.actorKind === "creator" ? "創作者退出合作" : `${who} 取消合作`;

@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import { MfaForm } from "@/components/admin/MfaForm";
 import { getCurrentUser, getIsAdmin, getIsAdminAccount } from "@/lib/auth/current-user";
 import { homeFor } from "@/lib/auth/post-login";
-import { safeNextPath } from "@/lib/auth/safe-next";
+import { adminNextPath } from "@/lib/auth/admin-next";
 import { createClient } from "@/lib/supabase/server";
 import { SignOutButton } from "@/components/shell/SignOutButton";
 import { SITE_NAME } from "@/lib/site";
@@ -32,9 +32,7 @@ async function Content({ searchParams }: { searchParams: SP }) {
   if (!(await getIsAdminAccount())) redirect(me.profile ? homeFor(me.profile.role) : "/onboarding");
 
   const sp = await searchParams;
-  const requested = safeNextPath(typeof sp.next === "string" ? sp.next : null);
-  const next = requested && (requested === "/admin" || requested.startsWith("/admin/") || requested.startsWith("/admin?"))
-    && !requested.startsWith("/admin/mfa") ? requested : "/admin";
+  const next = adminNextPath(typeof sp.next === "string" ? sp.next : null) ?? "/admin";
   if (await getIsAdmin()) redirect(next);
 
   const supabase = await createClient();

@@ -15,7 +15,7 @@ describe("hasAllowedImageExtension", () => {
 describe("uploadErrorMessage", () => {
   it("403 或 RLS 錯誤：提示可能已達上限", () => {
     expect(uploadErrorMessage({ statusCode: "403", message: "x" }, "creator-media")).toContain(String(UPLOAD_QUOTA["creator-media"]));
-    expect(uploadErrorMessage({ message: "new row violates row-level security policy" }, "brand-logos")).toContain("20");
+    expect(uploadErrorMessage({ message: "new row violates row-level security policy" }, "brand-logos")).toContain("40");
     expect(uploadErrorMessage({ statusCode: 403 }, "deliverables")).toContain("這個合作案");
   });
   it("其他錯誤：通用訊息", () => {

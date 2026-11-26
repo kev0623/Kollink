@@ -2,7 +2,7 @@
 -- 每一項都有「攻擊被擋」與「合法路徑仍可用」。id 前綴 …0000000e5xxx，handle 前綴 sechard_。
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(138);
+select plan(146);
 
 -- ── 測試資料（postgres 身分）──
 -- e5001 品牌 B1、e5002 品牌 B2、e5003 管理員兼品牌 AB
@@ -47,11 +47,16 @@ insert into public.creator_profiles (user_id, handle, ig_username, status, revie
 insert into public.briefs
   (id, brand_id, title, description, collab_types, includes_product, deadline, status, published_at) values
   ('00000000-0000-0000-0000-0000000e5f01', '00000000-0000-0000-0000-0000000e5001',
-   '資安招募', '說明', array['IG 貼文'], true, public.today_tw() + 7, 'open', now());
+   '資安招募', '說明', array['IG 貼文'], true, public.today_tw() + 7, 'open', now()),
+  ('00000000-0000-0000-0000-0000000e5f02', '00000000-0000-0000-0000-0000000e5001',
+   '資安招募二', '說明', array['IG 貼文'], true, public.today_tw() + 7, 'open', now());
 insert into public.brief_applications (id, brief_id, creator_id, proposed_price_twd) values
   ('00000000-0000-0000-0000-0000000e5a01', '00000000-0000-0000-0000-0000000e5f01', '00000000-0000-0000-0000-0000000e5011', 5000),
   ('00000000-0000-0000-0000-0000000e5a02', '00000000-0000-0000-0000-0000000e5f01', '00000000-0000-0000-0000-0000000e5012', 5000),
-  ('00000000-0000-0000-0000-0000000e5a04', '00000000-0000-0000-0000-0000000e5f01', '00000000-0000-0000-0000-0000000e5014', 5000);
+  ('00000000-0000-0000-0000-0000000e5a04', '00000000-0000-0000-0000-0000000e5f01', '00000000-0000-0000-0000-0000000e5014', 5000),
+  ('00000000-0000-0000-0000-0000000e5a05', '00000000-0000-0000-0000-0000000e5f01', '00000000-0000-0000-0000-0000000e5016', 5000),
+  ('00000000-0000-0000-0000-0000000e5a06', '00000000-0000-0000-0000-0000000e5f02', '00000000-0000-0000-0000-0000000e5011', null),
+  ('00000000-0000-0000-0000-0000000e5a07', '00000000-0000-0000-0000-0000000e5f02', '00000000-0000-0000-0000-0000000e5014', 8000);
 insert into public.conversations (id, brand_id, creator_id) values
   ('00000000-0000-0000-0000-0000000e5c01', '00000000-0000-0000-0000-0000000e5001', '00000000-0000-0000-0000-0000000e5015'),
   ('00000000-0000-0000-0000-0000000e5c02', '00000000-0000-0000-0000-0000000e5003', '00000000-0000-0000-0000-0000000e5014'),
@@ -186,13 +191,18 @@ select is((select d.atm_v_account from public.get_my_payment_details('00000000-0
 reset role;
 select ok(not has_function_privilege('anon', 'public.get_my_payment_details(uuid)', 'EXECUTE'), 'anon 不能呼叫 get_my_payment_details');
 
--- ===== 1. (M1) 創作者付款前可以退出 =====
+-- ===== 1. (M1) 低於報價的錄取要創作者同意；創作者付款前可以退出 =====
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000e5001","role":"authenticated"}', true);
 select set_config('sh.app1', public.accept_application_with_collab('00000000-0000-0000-0000-0000000e5a01', 1, 'IG 貼文 10 篇')::text, true);
-select is((select status::text from public.collaborations where id = current_setting('sh.app1')::uuid), 'awaiting_payment',
-  '品牌錄取報名：直接待付款');
+select is((select status::text from public.collaborations where id = current_setting('sh.app1')::uuid), 'invited',
+  '錄取金額低於創作者報價：合作案從 invited 開始（要創作者確認）');
+select throws_ok(
+  $$select * from public.create_payment_order(current_setting('sh.app1')::uuid, 'credit')$$,
+  '55000', 'collaboration not awaiting payment', '創作者確認前品牌不能建付款單');
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000e5011","role":"authenticated"}', true);
+select is(public.transition_collaboration(current_setting('sh.app1')::uuid, 'accept'), 'awaiting_payment'::public.collab_status,
+  '創作者接受低於報價的條件：進入待付款');
 select throws_ok(
   $$select public.transition_collaboration(current_setting('sh.app1')::uuid, 'decline')$$,
   '22023', null, '待付款不能婉拒（只能退出）');
@@ -208,9 +218,20 @@ select throws_ok(
   $$select public.transition_collaboration('00000000-0000-0000-0000-0000000e5d04', 'cancel')$$,
   '22023', null, '已付款（待交稿）後創作者不能退出');
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000e5001","role":"authenticated"}', true);
-select lives_ok(
-  $$select public.accept_application_with_collab('00000000-0000-0000-0000-0000000e5a04', 5000, 'IG 貼文 1 篇')$$,
-  '品牌可以錄取別人');
+select set_config('sh.app4', public.accept_application_with_collab('00000000-0000-0000-0000-0000000e5a04', 6000, 'IG 貼文 1 篇')::text, true);
+select is((select status::text from public.collaborations where id = current_setting('sh.app4')::uuid),
+  'awaiting_payment', '品牌可以錄取別人；金額高於報價：直接待付款');
+select set_config('sh.app5', public.accept_application_with_collab('00000000-0000-0000-0000-0000000e5a05', 5000, 'IG 貼文 1 篇')::text, true);
+select is((select status::text from public.collaborations where id = current_setting('sh.app5')::uuid),
+  'awaiting_payment', '金額等於報價：直接待付款');
+select set_config('sh.app6', public.accept_application_with_collab('00000000-0000-0000-0000-0000000e5a06', 1, 'IG 貼文 1 篇')::text, true);
+select is((select status::text from public.collaborations where id = current_setting('sh.app6')::uuid),
+  'awaiting_payment', '創作者沒有報價：直接待付款');
+select set_config('sh.app7', public.accept_application_with_collab('00000000-0000-0000-0000-0000000e5a07', 7999, 'IG 貼文 1 篇')::text, true);
+select is((select status::text from public.collaborations where id = current_setting('sh.app7')::uuid), 'invited',
+  '低於報價 1 元也要創作者確認');
+select is(public.transition_collaboration(current_setting('sh.app7')::uuid, 'cancel'), 'cancelled'::public.collab_status,
+  '品牌可以撤回等待創作者確認的錄取');
 select set_config('sh.inv', public.invite_creator('00000000-0000-0000-0000-0000000e5011', '重新邀請', 'IG 貼文 1 篇', 5000)::text, true);
 select is((select status::text from public.collaborations where id = current_setting('sh.inv')::uuid), 'invited',
   '品牌可以重新邀請退出的創作者');
@@ -304,6 +325,14 @@ select is(
   (select actor_id::text from public.audit_logs
     where action = 'creator_stats_changed' and subject_id = '00000000-0000-0000-0000-0000000e5011' order by id limit 1),
   '00000000-0000-0000-0000-0000000e5011', 'actor 是創作者本人');
+update public.creator_profiles set follower_count = 777
+ where user_id in ('00000000-0000-0000-0000-0000000e5012', '00000000-0000-0000-0000-0000000e5015');
+select is((select note from public.audit_logs
+            where action = 'creator_stats_changed' and subject_id = '00000000-0000-0000-0000-0000000e5012'),
+  'follower_count 0→777', '停權中的創作者改數字也寫紀錄');
+select is((select note from public.audit_logs
+            where action = 'creator_stats_changed' and subject_id = '00000000-0000-0000-0000-0000000e5015'),
+  'follower_count 0→777', '被退回的創作者改數字也寫紀錄');
 select throws_ok(
   $$update public.creator_profiles set follower_count = 100000001 where user_id = '00000000-0000-0000-0000-0000000e5013'$$,
   '23514', null, '資料表 CHECK 也擋超過 1 億');
@@ -311,14 +340,14 @@ select ok((select convalidated from pg_constraint where conname = 'creator_profi
 
 -- ===== 5. (L1) Storage 副檔名與數量上限 =====
 insert into storage.objects (bucket_id, name)
-select 'brand-logos', '00000000-0000-0000-0000-0000000e5020/pre' || g || '.png' from generate_series(1, 19) g;
+select 'brand-logos', '00000000-0000-0000-0000-0000000e5020/pre' || g || '.png' from generate_series(1, 39) g;
 insert into storage.objects (bucket_id, name)
-select 'creator-media', '00000000-0000-0000-0000-0000000e5011/portfolio-pre' || g || '.jpg' from generate_series(1, 59) g;
+select 'creator-media', '00000000-0000-0000-0000-0000000e5011/portfolio-pre' || g || '.jpg' from generate_series(1, 119) g;
 insert into storage.objects (bucket_id, name)
-select 'brief-covers', '00000000-0000-0000-0000-0000000e5001/cover-pre' || g || '.jpg' from generate_series(1, 99) g;
+select 'brief-covers', '00000000-0000-0000-0000-0000000e5001/cover-pre' || g || '.jpg' from generate_series(1, 299) g;
 insert into storage.objects (bucket_id, name)
 select 'deliverables', '00000000-0000-0000-0000-0000000e5d04/00000000-0000-0000-0000-0000000e5011/' || gen_random_uuid() || '.jpg'
-  from generate_series(1, 59);
+  from generate_series(1, 199);
 set local role authenticated;
 -- brand-logos：onboarding 時還沒有 profile
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000e5020","role":"authenticated"}', true);
@@ -330,10 +359,10 @@ select throws_ok(
   '42501', null, 'brand-logos：不能上傳 html');
 select lives_ok(
   $$insert into storage.objects (bucket_id, name) values ('brand-logos', '00000000-0000-0000-0000-0000000e5020/logo.webp')$$,
-  'brand-logos：沒有 profile 的帳號（onboarding）可以上傳第 20 個');
+  'brand-logos：沒有 profile 的帳號（onboarding）可以上傳第 40 個');
 select throws_ok(
   $$insert into storage.objects (bucket_id, name) values ('brand-logos', '00000000-0000-0000-0000-0000000e5020/logo2.png')$$,
-  '42501', null, 'brand-logos：第 21 個被擋');
+  '42501', null, 'brand-logos：第 41 個被擋');
 select throws_ok(
   $$insert into storage.objects (bucket_id, name) values ('brand-logos', '00000000-0000-0000-0000-0000000e5021/logo3.png')$$,
   '42501', null, 'brand-logos：換資料夾繞不過');
@@ -348,10 +377,10 @@ select throws_ok(
   '42501', null, 'creator-media：副檔名不在白名單');
 select lives_ok(
   $$insert into storage.objects (bucket_id, name) values ('creator-media', '00000000-0000-0000-0000-0000000e5011/avatar-x.JPG')$$,
-  'creator-media：第 60 個可以（副檔名不分大小寫）');
+  'creator-media：第 120 個可以（副檔名不分大小寫）');
 select throws_ok(
   $$insert into storage.objects (bucket_id, name) values ('creator-media', '00000000-0000-0000-0000-0000000e5011/avatar-y.jpg')$$,
-  '42501', null, 'creator-media：第 61 個被擋');
+  '42501', null, 'creator-media：第 121 個被擋');
 -- brief-covers
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000e5001","role":"authenticated"}', true);
 select throws_ok(
@@ -359,24 +388,24 @@ select throws_ok(
   '42501', null, 'brief-covers：副檔名不在白名單');
 select lives_ok(
   $$insert into storage.objects (bucket_id, name) values ('brief-covers', '00000000-0000-0000-0000-0000000e5001/cover-x.jpeg')$$,
-  'brief-covers：第 100 個可以');
+  'brief-covers：第 300 個可以');
 select throws_ok(
   $$insert into storage.objects (bucket_id, name) values ('brief-covers', '00000000-0000-0000-0000-0000000e5001/cover-y.png')$$,
-  '42501', null, 'brief-covers：第 101 個被擋');
--- deliverables：每個合作案資料夾 60 個
+  '42501', null, 'brief-covers：第 301 個被擋');
+-- deliverables：每個合作案資料夾 200 個
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000e5011","role":"authenticated"}', true);
 select lives_ok(
   $$insert into storage.objects (bucket_id, name) values ('deliverables',
     '00000000-0000-0000-0000-0000000e5d04/00000000-0000-0000-0000-0000000e5011/5ec0a2d0-0000-4000-8000-000000000001.jpg')$$,
-  'deliverables：第 60 個可以');
+  'deliverables：第 200 個可以');
 select throws_ok(
   $$insert into storage.objects (bucket_id, name) values ('deliverables',
     '00000000-0000-0000-0000-0000000e5d04/00000000-0000-0000-0000-0000000e5011/5ec0a2d0-0000-4000-8000-000000000002.jpg')$$,
-  '42501', null, 'deliverables：第 61 個被擋');
+  '42501', null, 'deliverables：第 201 個被擋');
 
 -- ===== 8. (L4) 品牌只讀得到已交出的檔案 =====
 select is((select count(*)::int from storage.objects where bucket_id = 'deliverables'
-            and name like '00000000-0000-0000-0000-0000000e5d04/%'), 60, '創作者讀得到自己合作案的全部檔案');
+            and name like '00000000-0000-0000-0000-0000000e5d04/%'), 200, '創作者讀得到自己合作案的全部檔案');
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000e5001","role":"authenticated"}', true);
 select is((select count(*)::int from storage.objects where bucket_id = 'deliverables'
             and name like '00000000-0000-0000-0000-0000000e5d04/%'), 0, '品牌讀不到還沒交出的檔案');
@@ -392,7 +421,7 @@ select is((select array_agg(name) from storage.objects where bucket_id = 'delive
   '品牌讀得到已交出的檔案（signed URL 用）');
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000e5030","role":"authenticated","aal":"aal2"}', true);
 select is((select count(*)::int from storage.objects where bucket_id = 'deliverables'
-            and name like '00000000-0000-0000-0000-0000000e5d04/%'), 60, '管理員讀得到全部');
+            and name like '00000000-0000-0000-0000-0000000e5d04/%'), 200, '管理員讀得到全部');
 
 -- ===== 6. (L2) 管理員兼參與者 =====
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000e5003","role":"authenticated","aal":"aal2"}', true);

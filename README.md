@@ -302,6 +302,8 @@ CLI 3.x 的 `db push` 預設推到本機，一定要加 `--remote`。**不要執
 
 雲端新專案不會自動把 public 資料表授權給 API 角色（本機會），所以權限一律寫在 migration 裡（見 `20261124000100_explicit_api_grants.sql`）。之後新增資料表時，要在同一個 migration 寫明 `grant`。
 
+**新增函式也一樣：** 資安修正（`20261129000100_security_hardening.sql`）起，postgres 建立的函式（任何 schema）**預設不再給 PUBLIC 執行**，也不會自動給 anon／authenticated。每個新函式都要在同一個 migration 先 `revoke execute ... from public, anon, authenticated, service_role`，再明確 `grant execute` 給需要的角色（例如 RLS policy 用的 helper 要 grant 給 authenticated），否則 API 會回 permission denied。trigger 函式不需要 grant。
+
 創作者頭像與作品的 Storage bucket `creator-media` 由 migration `20261124000300_creator_media.sql` 建立，執行上面的 `npx supabase db push --remote` 就會一起建好，不用在後台手動建立 bucket 或 policy。這個 bucket 是公開的：未審核創作者的圖片網址如果被猜到也看得到（路徑含 UUID，很難猜），這是已接受的取捨。
 
 招募封面的 Storage bucket `brief-covers` 由 migration `20261124000600_brief_covers.sql` 建立（公開、5 MB、只接受 JPG／PNG／WebP，只有品牌能上傳到自己的資料夾），同樣隨 `db push --remote` 一起建好。
@@ -382,12 +384,20 @@ select count(*) as refund_required from public.payments where refund_required;  
 2. 同一個地方順便設定 Email OTP：長度 8、有效期限 600 秒（Authentication → Providers → Email）。
 3. `npx supabase db push --remote --dry-run` 確認只會套用 `20261129000100`、`20261129000200`，再 `npx supabase db push --remote`。
 4. **馬上**合併 PR（Vercel 自動部署）。步驟 3 到部署完成之間，合作案詳情頁與後台會暫時出錯，所以不要拖。
-5. 部署後：用管理員帳號登入，確認被導到 `/admin/mfa`、綁定驗證器後進得了 `/admin`；用品牌帳號開一個待付款的合作案，確認付款資訊正常。
+5. 部署後**立刻**用每個管理員帳號登入 `/admin/mfa` 綁定驗證器（第一次綁定只需要 Email 登入的 aal1，所以這時候就能做），確認綁定後進得了 `/admin`；用品牌帳號開一個待付款的合作案，確認付款資訊正常。
 6. 用超過上限的上傳實際驗證一次 Storage 數量限制（計數 helper 以 postgres 身分讀 `storage.objects`；讀不到時會變成計數為 0、上限失效，但不會擋掉正常上傳）。
+7. 在 Vercel 預覽環境用綠界測試環境走一次信用卡（含 3D 驗證）與 ATM 取號，確認 CSP 的 `form-action` 沒有擋掉導向（見下方「資安待辦」）。
+
+**這個版本的行為變更：**
+
+- 品牌錄取報名時，金額**低於創作者報名時的報價**：合作案先進入「等待創作者確認」（`invited`），創作者接受後才進入待付款，婉拒則結束；品牌在對方確認前可以撤回。金額等於或高於報價、或創作者沒有報價：照舊直接進入待付款。創作者在品牌付款前都可以退出合作。
+- Storage 上傳數量上限（每位使用者在該 bucket 的物件數）：`brand-logos` 40、`creator-media` 120、`brief-covers` 300；`deliverables` 每個合作案 200（`src/lib/upload-limits.ts` 與 migration 一致）。**計數的是目前存在的物件**，換圖時舊檔沒有刪除，所以實際上是累計上限；要靠下方第 9 項的清孤兒檔排程把舊檔清掉。
+- 創作者改粉絲數、互動率時，只要狀態不是待審（`pending`），都會寫一筆 `creator_stats_changed` 操作紀錄（停權或被退回期間改的也算）。
+- 管理員在後台頁面被要求第二步驟時，驗證完會回到原本要去的後台頁面（只接受 `/admin` 底下的站內路徑）。
 
 **救援：** 遺失驗證器見「管理員兩步驟驗證」。管理員全部進不了後台時，用 SQL Editor 的 service_role 備用 SQL（上面各節）仍然可以處理（system 身分，不看 aal）。
 
-**其他設定：** 新增資料庫函式時，postgres 建立的函式預設不再給 PUBLIC 執行：要自己 `grant execute` 給需要的角色（這個版本起的預設權限，見 migration）。
+**其他設定：** 新增資料庫函式時，postgres 建立的函式預設不再給 PUBLIC 執行：每個新函式都要自己 `grant execute` 給需要的角色（見「正式環境（Hosted Supabase）設定」的「新增函式也一樣」）。
 
 ### 資安待辦（之後再做）
 
@@ -397,7 +407,11 @@ select count(*) as refund_required from public.payments where refund_required;  
 - Session cookie 不是 HttpOnly：`@supabase/ssr` 的瀏覽器 client 需要讀它（Realtime、Storage）。補償措施是 CSP 的 `connect-src` 只放行 Supabase；XSS 仍然可以偷走 session，所以不要新增 `dangerouslySetInnerHTML`。
 - 交稿檔案（deliverables）的 MIME sniffing：只檢查宣告的 Content-Type，內容沒有驗證（PDF 可能內嵌腳本）；檔案從 Supabase 網域用 1 小時 signed URL 開啟，不在網站的來源下執行。可以縮短 signed URL 時間或加上 `download`。
 - CSP 的 `script-src` 有 `'unsafe-inline'`（cacheComponents／PPR 不能每請求產生 nonce）；之後可評估只對動態的 `/admin`、`/brand/collabs` 改用 nonce，或 `experimental.sri`。
-- 綠界 `form-action`：只放行 `payment(-stage).ecpay.com.tw`。上線前用測試環境確認信用卡（3D 驗證可能導向銀行網域）與 ATM 流程；若被擋，把 `form-action` 放寬為 `https:`，其他指令不變。
+- 綠界 `form-action`：只放行 `payment(-stage).ecpay.com.tw`。**還沒有驗證 3D 驗證（可能導向銀行網域）與 ATM 的跨網域導向鏈**；上線前在 Vercel 預覽環境用綠界測試環境走一次；若被擋，把 `form-action` 放寬為 `https:`，其他指令不變。
+- 停權前已建立的付款單：創作者被停權時，品牌之前在綠界建立的付款單（例如 ATM 取號後才轉帳）仍會完成付款，合作案照樣進入待交稿，變成「進行中的合作案、創作者已停權」。管理員需要在付款異常或合作案列表留意，必要時用平台取消＋退款處理。
+- 邀請與開啟對話各自是每個品牌 24 小時 30 次（`invite_creator`、`start_conversation`），合起來一天最多可以接觸 60 位創作者；要更嚴格時改成共用一個計數。
+- Storage 數量上限是累計物件數（見上方「這個版本的行為變更」），需要清孤兒檔的排程（「正式環境設定」第 9 項）；沒有排程的話，常換圖的使用者最終會被擋。
+- 登入頁的 Email OTP 6–8 碼輸入只有單元測試（`src/lib/auth/otp-code.test.ts`），沒有在瀏覽器走完整的寄信流程（本機內建寄信每小時 2 封）；正式環境設定 8 碼後要實際登入一次確認。
 
 ## 部署（Vercel）
 

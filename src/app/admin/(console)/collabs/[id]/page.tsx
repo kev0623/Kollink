@@ -95,7 +95,7 @@ async function Section({ params }: Props) {
         <PaymentRows items={payments} withCollab={false} empty="還沒有付款單" participant={participant} />
       </section>
       <SubmissionList submissions={data.submissions} />
-      <EventList events={data.events} chatHref={null} />
+      <EventList events={data.events} chatHref={null} fromApplication={c.briefId !== null} />
     </div>
   );
 }

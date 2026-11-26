@@ -1,9 +1,11 @@
 import "server-only";
 import { cache } from "react";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { homeFor, type Role } from "./post-login";
+import { mfaRedirectPath, REQUEST_PATH_HEADER } from "./admin-next";
 
 /** rejected：管理員退回（計畫 9），創作者修正後可以重新送審。 */
 export type CreatorStatus = "pending" | "approved" | "suspended" | "rejected";
@@ -108,14 +110,15 @@ export const getIsAdmin = cache(async (): Promise<boolean> => {
 /**
  * 管理後台的守門（計畫 9）：每個 /admin 頁面與 Server Action 都要呼叫（同 requireRole 的理由）。
  * 未登入導到登入頁；不是管理員導回自己的首頁（沒有 profile 的導到 /onboarding）；
- * 是管理員帳號但還沒通過第二步驟（TOTP，aal2）導到 /admin/mfa。
+ * 是管理員帳號但還沒通過第二步驟（TOTP，aal2）導到 /admin/mfa?next=<原本的頁面>（proxy.ts 放的請求路徑，
+ * 經 adminNextPath 檢查：safeNextPath ＋ 只限 /admin 底下），驗證完回原本的頁面。
  * 管理員不一定有 profile：通常是專用帳號，只在 admins 表裡。
  */
 export async function requireAdmin(): Promise<CurrentUser> {
   const me = await getCurrentUser();
   if (!me) redirect("/login?next=/admin");
   if (await getIsAdmin()) return me;
-  if (await getIsAdminAccount()) redirect("/admin/mfa");
+  if (await getIsAdminAccount()) redirect(mfaRedirectPath((await headers()).get(REQUEST_PATH_HEADER)));
   redirect(me.profile ? homeFor(me.profile.role) : "/onboarding");
 }
 
