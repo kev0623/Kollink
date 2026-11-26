@@ -19,7 +19,7 @@ function MessagesLayout({ list, thread }: { list: React.ReactNode; thread: React
       <h1 className={`text-[32px] font-bold text-ink ${thread ? "hidden md:block" : ""}`}>訊息</h1>
       <LiveRefresh />
       <div className="mt-4 md:grid md:h-[calc(100dvh-10rem)] md:grid-cols-[20rem_minmax(0,1fr)] md:gap-4">
-        <div className={`min-h-0 md:block md:overflow-y-auto ${thread ? "hidden" : ""}`}>{list}</div>
+        <div className={`relative min-h-0 md:block md:overflow-y-auto ${thread ? "hidden" : ""}`}>{list}</div>
         <div className={`min-h-0 min-w-0 flex-col gap-3 md:flex ${thread ? "flex" : "hidden"}`}>
           {thread ?? (
             <p className="flex flex-1 items-center justify-center rounded-card border border-line bg-surface text-sm text-muted">

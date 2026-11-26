@@ -64,7 +64,7 @@ export function ThreadView({ conversationId, meId, side, initialMessages, initia
     if (live === "live") router.refresh();
   }, [live, router]);
 
-  // 最後一則改變（收到或送出新訊息、第一次進入）時捲到最底；載入較早的訊息不會改變最後一則，所以不捲動
+  // 手機的輸入區 sticky 蓋在底部，捲動目標用 scroll-mb-56 讓出輸入區與底部導覽列的高度；最後一則改變（收到或送出新訊息、第一次進入）時捲到最底；載入較早的訊息不會改變最後一則，所以不捲動
   const lastId = messages.length > 0 ? messages[messages.length - 1].id : null;
   useEffect(() => {
     endRef.current?.scrollIntoView({ block: "end" });
@@ -91,7 +91,7 @@ export function ThreadView({ conversationId, meId, side, initialMessages, initia
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3">
-      <div className="min-h-0 flex-1 md:overflow-y-auto">
+      <div className="relative min-h-0 flex-1 md:overflow-y-auto">
         {live === "error" && (
           <p role="status" className="mb-3 rounded-input bg-surface p-3 text-center text-sm text-muted">即時更新已中斷，請重新整理頁面</p>
         )}
@@ -117,7 +117,7 @@ export function ThreadView({ conversationId, meId, side, initialMessages, initia
             )}
           </ol>
         )}
-        <div ref={endRef} />
+        <div ref={endRef} className="scroll-mb-56 md:scroll-mb-0" />
       </div>
       {closed ? (
         <p className="shrink-0 rounded-card border border-line bg-surface p-4 text-center text-sm text-muted">{closedNotice(side)}</p>
