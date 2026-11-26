@@ -467,7 +467,12 @@ isOneToOne: false
                            },
 "get_collaboration":
 { Args: { "p_id": string }; Returns: {
-              "amount_twd": number,"brand_id": string,"brand_logo_path": string,"brand_name": string,"brief_id": string,"brief_title": string,"created_at": string,"creator_avatar_path": string,"creator_handle": string,"creator_id": string,"creator_name": string,"deliverables": string,"id": string,"my_side": string,"published_url": string,"review_due_at": string,"status": string,"title": string,"updated_at": string
+              "amount_twd": number,"brand_id": string,"brand_logo_path": string,"brand_name": string,"brief_id": string,"brief_title": string,"conversation_id": string,"created_at": string,"creator_avatar_path": string,"creator_handle": string,"creator_id": string,"creator_name": string,"deliverables": string,"id": string,"my_side": string,"published_url": string,"review_due_at": string,"status": string,"title": string,"updated_at": string
+            }[]
+                           },
+"get_conversation":
+{ Args: { "p_id": string }; Returns: {
+              "brand_id": string,"brand_logo_path": string,"brand_name": string,"closed": boolean,"creator_avatar_path": string,"creator_handle": string,"creator_id": string,"creator_name": string,"id": string,"my_side": string
             }[]
                            },
 "get_opportunity":
@@ -508,9 +513,19 @@ isOneToOne: false
               "action": string,"actor_kind": string,"actor_name": string,"created_at": string,"from_status": string,"id": number,"note": string,"to_status": string
             }[]
                            },
+"list_messages":
+{ Args: { "p_before_at"?: string,"p_before_id"?: string,"p_conversation_id": string,"p_limit"?: number }; Returns: {
+              "body": string,"created_at": string,"flagged_contact": boolean,"id": string,"sender_id": string
+            }[]
+                           },
 "list_my_collaborations":
 { Args: { "p_tab"?: string }; Returns: {
               "amount_twd": number,"brief_id": string,"counterpart_handle": string,"counterpart_image_path": string,"counterpart_name": string,"id": string,"my_side": string,"my_turn": boolean,"status": string,"title": string,"updated_at": string
+            }[]
+                           },
+"list_my_conversations":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "closed": boolean,"counterpart_handle": string,"counterpart_image_path": string,"counterpart_name": string,"id": string,"last_at": string,"last_body": string,"last_sender_is_me": boolean,"my_side": string,"unread_count": number
             }[]
                            },
 "list_opportunities":
@@ -573,6 +588,9 @@ isOneToOne: false
                            },
 "transition_collaboration":
 { Args: { "p_action": string,"p_collab_id": string,"p_note"?: string,"p_published_url"?: string }; Returns: Database["public"]['Enums']["collab_status"]
+                           },
+"unread_conversation_count":
+{ Args: Record<PropertyKey, never>; Returns: number
                            },
 "update_brand_account":
 { Args: { "p_brand_name": string,"p_industry": string,"p_logo_path": string }; Returns: undefined
