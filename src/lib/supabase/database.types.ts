@@ -538,7 +538,7 @@ isOneToOne: false
         isSetofReturn: false
       } },
 "admin_mark_payout":
-{ Args: { "p_collab_id": string,"p_note": string }; Returns: undefined
+{ Args: { "p_collab_id": string,"p_expected_last4": string,"p_note": string }; Returns: undefined
                            },
 "admin_overview":
 { Args: Record<PropertyKey, never>; Returns: {

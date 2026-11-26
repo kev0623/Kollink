@@ -191,16 +191,16 @@ select throws_ok(
   $$select public.transition_collaboration('00000000-0000-0000-0000-000000000ac3', 'payout')$$,
   '22023', null, '不能直接 payout（要經由 admin_mark_payout）');
 select throws_ok(
-  $$select public.admin_mark_payout('00000000-0000-0000-0000-000000000ac4', '已轉帳')$$,
+  $$select public.admin_mark_payout('00000000-0000-0000-0000-000000000ac4', '已轉帳', '5678')$$,
   '55000', 'test payment cannot be paid out', '測試付款不能撥款');
 select throws_ok(
-  $$select public.admin_mark_payout('00000000-0000-0000-0000-000000000ac5', '已轉帳')$$,
+  $$select public.admin_mark_payout('00000000-0000-0000-0000-000000000ac5', '已轉帳', '5678')$$,
   '55000', 'payout account missing', '創作者沒有收款帳戶');
 select throws_ok(
-  $$select public.admin_mark_payout('00000000-0000-0000-0000-000000000ac3', '')$$,
+  $$select public.admin_mark_payout('00000000-0000-0000-0000-000000000ac3', '', '5678')$$,
   '22023', 'invalid note', '轉帳說明必填');
 select lives_ok(
-  $$select public.admin_mark_payout('00000000-0000-0000-0000-000000000ac3', '11/28 國泰網銀轉帳，交易序號 778899')$$,
+  $$select public.admin_mark_payout('00000000-0000-0000-0000-000000000ac3', '11/28 國泰網銀轉帳，交易序號 778899', '5678')$$,
   '撥款');
 select is(
   (select status::text from public.collaborations where id = '00000000-0000-0000-0000-000000000ac3'),
@@ -214,7 +214,7 @@ select ok(
     where collaboration_id = '00000000-0000-0000-0000-000000000ac3' and action = 'payout'),
   'payout 的 audit 不放轉帳說明（參與者看得到）');
 select throws_ok(
-  $$select public.admin_mark_payout('00000000-0000-0000-0000-000000000ac3', '再一次')$$,
+  $$select public.admin_mark_payout('00000000-0000-0000-0000-000000000ac3', '再一次', '5678')$$,
   '55000', 'collaboration not awaiting payout', '不能重複撥款');
 
 -- ===== 5. 平台取消 =====
