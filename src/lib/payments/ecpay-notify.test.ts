@@ -26,6 +26,7 @@ function makeDeps(overrides: Partial<EcpayNotifyDeps> = {}): EcpayNotifyDeps {
     hashKey: KEY,
     hashIV: IV,
     merchantId: "3002607",
+    env: "prod",
     recordPaymentSuccess: vi.fn().mockResolvedValue("paid"),
     logError: vi.fn(),
     ...overrides,
@@ -39,12 +40,41 @@ describe("handleEcpayNotify", () => {
     const res = await handleEcpayNotify(params, deps);
 
     expect(res).toEqual({ status: 200, body: "1|OK" });
+    const raw = { ...params } as Record<string, string>;
+    delete raw.CheckMacValue;
     expect(deps.recordPaymentSuccess).toHaveBeenCalledWith({
       merchantTradeNo: "PL0001",
       amountTwd: 4500,
       providerTradeNo: "2311221234567890",
-      raw: params,
+      raw,
+      env: "prod",
     });
+  });
+
+  it("keeps only whitelisted fields in raw (no card numbers)", async () => {
+    const deps = makeDeps();
+    await handleEcpayNotify(signed({ card4no: "2222", card6no: "431195", ATMAccNo: "123" }), deps);
+    const raw = vi.mocked(deps.recordPaymentSuccess).mock.calls[0][0].raw;
+    expect(raw).not.toHaveProperty("card4no");
+    expect(raw).not.toHaveProperty("card6no");
+    expect(raw).not.toHaveProperty("ATMAccNo");
+    expect(raw).not.toHaveProperty("CheckMacValue");
+    expect(raw.TradeNo).toBe("2311221234567890");
+  });
+
+  it("replies 1|OK but logs when the database records an anomaly", async () => {
+    const deps = makeDeps({ recordPaymentSuccess: vi.fn().mockResolvedValue("anomaly") });
+    expect(await handleEcpayNotify(signed(), deps)).toEqual({ status: 200, body: "1|OK" });
+    expect(deps.logError).toHaveBeenCalledWith("ecpay notify: payment anomaly recorded", {
+      merchantTradeNo: "PL0001", amountTwd: 4500,
+    });
+  });
+
+  it("rejects a malformed MerchantTradeNo even when signed", async () => {
+    const deps = makeDeps();
+    const res = await handleEcpayNotify(signed({ MerchantTradeNo: "PL-0001" }), deps);
+    expect(res).toEqual({ status: 400, body: "0|Bad MerchantTradeNo" });
+    expect(deps.recordPaymentSuccess).not.toHaveBeenCalled();
   });
 
   it("replies 1|OK for a duplicate notification", async () => {
@@ -93,7 +123,15 @@ describe("handleEcpayNotify", () => {
     },
   );
 
-  it("ignores a simulated payment without recording it", async () => {
+  it("records a simulated payment in the stage environment", async () => {
+    const deps = makeDeps({ env: "stage" });
+    const res = await handleEcpayNotify(signed({ SimulatePaid: "1" }), deps);
+
+    expect(res).toEqual({ status: 200, body: "1|OK" });
+    expect(deps.recordPaymentSuccess).toHaveBeenCalledWith(expect.objectContaining({ env: "stage" }));
+  });
+
+  it("ignores a simulated payment in production without recording it", async () => {
     const deps = makeDeps();
     const res = await handleEcpayNotify(signed({ SimulatePaid: "1" }), deps);
 
@@ -124,8 +162,8 @@ describe("handleEcpayNotify", () => {
     });
   });
 
-  it("rejects a missing or empty TradeNo without recording", async () => {
-    for (const tradeNo of ["", undefined]) {
+  it("rejects a missing, empty or blank TradeNo without recording", async () => {
+    for (const tradeNo of ["", "   ", undefined]) {
       const deps = makeDeps();
       const params: Record<string, string> = {
         MerchantID: "3002607",

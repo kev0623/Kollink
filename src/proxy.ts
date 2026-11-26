@@ -23,7 +23,8 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // 排除靜態檔、圖片、綠界付款通知與 Vercel Cron（伺服器對伺服器，不會帶 cookie，也不需要 session）
-    "/((?!_next/static|_next/image|favicon.ico|api/payments/ecpay/notify|api/cron/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
+    // 排除靜態檔、圖片、綠界（notify、payment-info 是伺服器對伺服器；result 只是把瀏覽器導回合作案詳情，
+    // 導過去的頁面會再經過 proxy）與 Vercel Cron（不會帶 cookie，也不需要 session）
+    "/((?!_next/static|_next/image|favicon.ico|api/payments/ecpay/|api/cron/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
   ],
 };
