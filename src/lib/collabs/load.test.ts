@@ -61,7 +61,7 @@ describe("loadCollabDetail", () => {
     expect(createSignedUrls).toHaveBeenCalledWith([FILE], 3600);
     expect(d?.collab).toMatchObject({ id: ID, side: "brand", amount: 4500 });
     expect(d?.submissions[0]).toMatchObject({
-      round: 1, revisionNotes: ["亮一點"], files: [{ path: FILE, kind: "pdf", label: "PDF 1", url: "https://signed/x" }],
+      round: 1, revisionNotes: ["亮一點"], files: [{ path: FILE, kind: "pdf", label: "第 1 次交稿・PDF 1", url: "https://signed/x" }],
     });
   });
   it("沒有檔案時不簽 URL", async () => {

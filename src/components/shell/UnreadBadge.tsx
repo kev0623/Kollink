@@ -43,7 +43,7 @@ export function UnreadBadge() {
   const text = unreadBadgeText(count);
   if (!text) return null;
   return (
-    <span className="absolute -right-2.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-btn bg-danger px-1 text-[10px] font-semibold leading-none text-on-ink">
+    <span className="absolute -right-2.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-btn bg-primary px-1 text-[10px] font-bold leading-none text-on-primary">
       {text}
       <span className="sr-only">個對話有未讀訊息</span>
     </span>

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { EMPTY_BRIEF_INPUT } from "@/lib/validation/brief";
 import {
-  appendUniqueById, audienceLabel, brandTabOf, briefToInput, displayStatusOf, filterApplicants, matchItems,
+  appendUniqueById, audienceLabel, brandTabOf, briefToInput, displayStatusOf, filterApplicants, matchItems, parseApplicantFilter, sortApplicants,
   deadlineText, previewFromInput, proposedPriceLabel, rewardLabel, toApplicant, toApplicationStatus, toBrief, toBriefStatus,
   toMyApplications, toOpportunityDetail, toOpportunityPage, withCounts,
   type ApplicantRow, type BriefRow, type OpportunityDetailRow, type OpportunityRow,
@@ -162,5 +162,23 @@ describe("deadlineText（倒數標籤只在發佈中顯示）", () => {
   });
   it.each(["draft", "closed"] as const)("%s：任何日期都只顯示日期", (st) => {
     for (const [, d] of cases) expect(deadlineText(st, d, today)).toBe(d.replaceAll("-", "/"));
+  });
+});
+
+describe("parseApplicantFilter（篩選寫進網址，QA m16）", () => {
+  it("認得的值照用，其他退回 all", () => {
+    expect(parseApplicantFilter("applied")).toBe("applied");
+    expect(parseApplicantFilter(["rejected", "x"])).toBe("rejected");
+    expect(parseApplicantFilter("bogus")).toBe("all");
+    expect(parseApplicantFilter(undefined)).toBe("all");
+  });
+});
+
+describe("sortApplicants（同時間報名時順序穩定）", () => {
+  it("新的在前；時間相同時依 id", () => {
+    const a = (id: string, createdAt: string) => ({ id, createdAt }) as Parameters<typeof sortApplicants>[0][number];
+    const list = [a("b", "2026-11-26T01:00:00Z"), a("a", "2026-11-26T01:00:00Z"), a("c", "2026-11-26T02:00:00Z")];
+    expect(sortApplicants(list).map((x) => x.id)).toEqual(["c", "a", "b"]);
+    expect(list.map((x) => x.id)).toEqual(["b", "a", "c"]);
   });
 });

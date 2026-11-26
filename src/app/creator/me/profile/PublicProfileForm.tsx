@@ -1,75 +1,144 @@
 "use client";
-import { useActionState, useState } from "react";
-import { Field, inputClass } from "@/components/forms/Field";
+import { useActionState, useEffect, useRef, useState } from "react";
+import { Field } from "@/components/forms/Field";
 import { AvatarField } from "@/components/forms/AvatarField";
+import { SavedMark, UnsavedBadge } from "@/components/forms/UnsavedBadge";
+import { useUnsavedChanges } from "@/components/forms/useUnsavedChanges";
+import { LeaveDialog } from "@/components/forms/LeaveDialog";
+import { ErrorText } from "@/components/ui/ErrorText";
+import { btn, cardPad, input, textarea } from "@/components/ui/styles";
 import { AUDIENCE_AGES, COLLAB_TYPES } from "@/lib/options";
 import type { FormState } from "@/lib/auth/account-errors";
 import type { OwnProfileFields } from "@/lib/creators/view";
-import { updatePublicProfileAction } from "./actions";
+import { saveAvatarImageAction, updatePublicProfileAction } from "./actions";
 
-const textareaClass = "w-full rounded-input border border-line bg-surface px-3 py-2 outline-none focus:ring-2 focus:ring-ink";
+type Values = { bio: string; styleTags: string; collabTypes: string[]; engagementRate: string; audienceAge: string; avatarPath: string };
 
-export function PublicProfileForm({ userId, displayName, initial }: {
-  userId: string; displayName: string; initial: OwnProfileFields;
+function toValues(p: OwnProfileFields): Values {
+  return {
+    bio: p.bio, styleTags: p.styleTags.join("、"), collabTypes: p.collabTypes,
+    engagementRate: p.engagementRate === null ? "" : String(p.engagementRate),
+    audienceAge: p.audienceAge, avatarPath: p.avatarPath ?? "",
+  };
+}
+
+const snapshot = (v: Values) => JSON.stringify({ ...v, collabTypes: [...v.collabTypes].sort() });
+
+export function PublicProfileForm({ userId, displayName, initial, onCollabTypesChange }: {
+  userId: string; displayName: string; initial: OwnProfileFields; onCollabTypesChange?: (types: string[]) => void;
 }) {
-  const [state, action, pending] = useActionState<FormState, FormData>(updatePublicProfileAction, {});
+  // 受控欄位：伺服器回錯誤時不會被重設；「尚未儲存」也由這裡算
+  const [values, setValues] = useState<Values>(() => toValues(initial));
+  const [savedValues, setSavedValues] = useState<Values>(() => toValues(initial));
+  const saved = snapshot(savedValues);
+  const [savedCount, setSavedCount] = useState(0);
+  const [showSaved, setShowSaved] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [avatarSaving, setAvatarSaving] = useState(false);
+  const [avatarErr, setAvatarErr] = useState<string | null>(null);
+  const valuesRef = useRef(values);
+  useEffect(() => { valuesRef.current = values; }, [values]);
+
+  const [state, action, pending] = useActionState<FormState, FormData>(async (prev, fd) => {
+    const submitted = valuesRef.current;
+    const res = await updatePublicProfileAction(prev, fd);
+    if (res.ok) {
+      setSavedValues(submitted);
+      setSavedCount((n) => n + 1);
+    }
+    setShowSaved(res.ok === true);
+    return res;
+  }, {});
+
+  const dirty = snapshot(values) !== saved;
+  const leaveGuard = useUnsavedChanges(dirty);
+
+  // 頭像上傳成功後只儲存頭像（伺服器用已儲存的其他欄位）；表單上還沒儲存的修改維持「尚未儲存」
+  async function saveAvatarOnly(path: string) {
+    setAvatarSaving(true);
+    setAvatarErr(null);
+    try {
+      const res = await saveAvatarImageAction(path);
+      if (res.ok) {
+        setSavedValues((v) => ({ ...v, avatarPath: path }));
+        setSavedCount((n) => n + 1);
+      } else {
+        setAvatarErr(`頭像已上傳但還沒儲存：${res.formError ?? res.fieldErrors?.avatarPath ?? "儲存失敗"}。可以再選一次圖片，或按「儲存基本資料」。`);
+      }
+    } catch {
+      setAvatarErr("頭像已上傳但還沒儲存，請再選一次圖片，或按「儲存基本資料」。");
+    } finally {
+      setAvatarSaving(false);
+    }
+  }
+
   const fe = state.fieldErrors ?? {};
-  const v = state.values ?? {};
-  const val = (key: string, fallback: string) => (typeof v[key] === "string" ? (v[key] as string) : fallback);
-  const checked = Array.isArray(v.collabTypes) ? v.collabTypes : initial.collabTypes;
-  // React 送出後會重設表單；失敗時用 values 還原。儲存成功後 props 變了，所以 props 也放進 key 讓欄位重新掛載
-  const k = JSON.stringify(state.values ?? initial);
-  const avatarInitial = typeof v.avatarPath === "string" ? (v.avatarPath || null) : initial.avatarPath;
+  function set<K extends keyof Values>(key: K, value: Values[K]) {
+    setValues((v) => ({ ...v, [key]: value }));
+    setShowSaved(false);
+  }
+  function toggleType(t: string, on: boolean) {
+    const next = on ? [...values.collabTypes, t] : values.collabTypes.filter((x) => x !== t);
+    set("collabTypes", next);
+    onCollabTypesChange?.(next);
+  }
+
   return (
-    <form action={action} className="max-w-xl space-y-4 rounded-card border border-line bg-surface p-5 md:p-8">
-      <h2 className="text-lg font-bold text-ink">基本資料</h2>
-      <AvatarField
-        key={`avatar-${k}`} userId={userId} name={displayName} initialPath={avatarInitial}
-        error={fe.avatarPath} onBusyChange={setUploading} disabled={pending}
-      />
-      <Field label="自我介紹（選填）" hint="300 字以內" error={fe.bio}>
-        {(c) => <textarea key={k} {...c} name="bio" rows={4} maxLength={300} defaultValue={val("bio", initial.bio)} className={textareaClass} />}
-      </Field>
-      <Field label="風格標籤（選填）" hint="用逗號或頓號分隔，最多 8 個，每個 12 字以內" error={fe.styleTags}>
-        {(c) => (
-          <input key={k} {...c} name="styleTags" placeholder="例如：日系、簡約" defaultValue={val("styleTags", initial.styleTags.join("、"))} className={inputClass} />
-        )}
-      </Field>
-      <fieldset>
-        <legend className="text-sm font-semibold text-ink">想接的合作</legend>
-        <div className="mt-2 flex flex-wrap gap-4">
-          {COLLAB_TYPES.map((t) => (
-            <label key={`${k}-${t}`} className="flex min-h-9 items-center gap-2 text-sm text-ink">
-              <input type="checkbox" name="collabTypes" value={t} defaultChecked={checked.includes(t)} className="h-4 w-4 accent-ink" />
-              {t}
-            </label>
-          ))}
+    <>
+      <form action={action} noValidate className={`${cardPad} max-w-2xl space-y-5`}>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h3 className="text-lg font-bold text-ink">基本資料</h3>
+          <UnsavedBadge show={dirty} />
         </div>
-        {fe.collabTypes && <span className="mt-1 block text-xs text-danger">{fe.collabTypes}</span>}
-      </fieldset>
-      <Field label="互動率（%，選填）" hint="0–100，最多兩位小數" error={fe.engagementRate}>
-        {(c) => (
-          <input
-            key={k} {...c} name="engagementRate" inputMode="decimal" placeholder="例如 3.5"
-            defaultValue={val("engagementRate", initial.engagementRate === null ? "" : String(initial.engagementRate))}
-            className={inputClass}
-          />
-        )}
-      </Field>
-      <Field label="主要受眾年齡（選填）" error={fe.audienceAge}>
-        {(c) => (
-          <select key={k} {...c} name="audienceAge" defaultValue={val("audienceAge", initial.audienceAge)} className={inputClass}>
-            <option value="">不填</option>
-            {AUDIENCE_AGES.map((a) => <option key={a} value={a}>{a} 歲</option>)}
-          </select>
-        )}
-      </Field>
-      {state.formError && <p role="alert" className="text-sm text-danger">{state.formError}</p>}
-      {state.ok && <p role="status" className="text-sm text-success">已儲存</p>}
-      <button disabled={pending || uploading} className="h-11 w-full rounded-btn bg-ink px-6 font-semibold text-on-ink disabled:opacity-60 md:w-auto">
-        儲存基本資料
-      </button>
-    </form>
+        <AvatarField
+          userId={userId} name={displayName} initialPath={initial.avatarPath}
+          error={avatarErr ?? fe.avatarPath} onBusyChange={setUploading} disabled={pending || avatarSaving}
+          savedCount={savedCount}
+          onPathChange={(p) => setValues((v) => ({ ...v, avatarPath: p ?? "" }))}
+          onUploaded={(p) => void saveAvatarOnly(p)}
+          onTouch={() => setShowSaved(false)}
+        />
+        <p className="-mt-3 text-xs text-muted">圖片上傳後會直接儲存；其他還沒儲存的修改不受影響。移除頭像要按下方「儲存基本資料」。</p>
+        <Field label="自我介紹（選填）" hint="300 字以內" error={fe.bio}>
+          {(c) => <textarea {...c} name="bio" rows={4} maxLength={300} value={values.bio} onChange={(e) => set("bio", e.target.value)} className={textarea} />}
+        </Field>
+        <Field label="風格標籤（選填）" hint="用逗號或頓號分隔，最多 8 個，每個 12 字以內" error={fe.styleTags}>
+          {(c) => (
+            <input {...c} name="styleTags" placeholder="例如：日系、簡約" value={values.styleTags} onChange={(e) => set("styleTags", e.target.value)} className={input} />
+          )}
+        </Field>
+        <fieldset>
+          <legend className="text-sm font-bold text-ink">想接的合作</legend>
+          <div className="mt-1 flex flex-wrap gap-x-6">
+            {COLLAB_TYPES.map((t) => (
+              <label key={t} className="flex min-h-11 items-center gap-2 text-sm text-ink">
+                <input type="checkbox" name="collabTypes" value={t} checked={values.collabTypes.includes(t)} onChange={(e) => toggleType(t, e.target.checked)} />
+                {t}
+              </label>
+            ))}
+          </div>
+          {fe.collabTypes && <span className="mt-1 block text-xs text-danger">{fe.collabTypes}</span>}
+        </fieldset>
+        <Field label="互動率（%，選填）" hint="0–100，最多兩位小數" error={fe.engagementRate}>
+          {(c) => (
+            <input {...c} name="engagementRate" inputMode="decimal" placeholder="例如 3.5" value={values.engagementRate} onChange={(e) => set("engagementRate", e.target.value)} className={input} />
+          )}
+        </Field>
+        <Field label="主要受眾年齡（選填）" error={fe.audienceAge}>
+          {(c) => (
+            <select {...c} name="audienceAge" value={values.audienceAge} onChange={(e) => set("audienceAge", e.target.value)} className={input}>
+              <option value="">不填</option>
+              {AUDIENCE_AGES.map((a) => <option key={a} value={a}>{a} 歲</option>)}
+            </select>
+          )}
+        </Field>
+        <ErrorText message={state.formError} />
+        <div className="flex flex-wrap items-center gap-4">
+          <button disabled={pending || uploading || avatarSaving} className={btn.primary}>{pending ? "儲存中…" : "儲存基本資料"}</button>
+          <SavedMark show={showSaved && !dirty && state.ok === true} />
+        </div>
+      </form>
+      <LeaveDialog guard={leaveGuard} />
+    </>
   );
 }

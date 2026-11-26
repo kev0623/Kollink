@@ -1,4 +1,6 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { requireAdmin } from "@/lib/auth/current-user";
 import { loadAdminPayments, loadAnomalies, loadPayouts } from "@/lib/admin/load";
 import { adminHref, MONEY_TABS, parseMoneyTab, parsePage, type SearchParams } from "@/lib/admin/query";
@@ -10,12 +12,13 @@ import { PayoutList } from "@/components/admin/PayoutList";
 
 type Props = { searchParams: Promise<SearchParams> };
 
+export const metadata: Metadata = { title: "款項" };
+
 export default function AdminPaymentsPage({ searchParams }: Props) {
   return (
     <div>
-      <h1 className="text-[32px] font-bold text-ink">款項</h1>
-      <p className="mt-1 text-sm text-muted">撥款與人工標記已付款在合作案詳情操作；退款與付款異常在這裡記錄。</p>
-      <Suspense fallback={<div aria-busy="true" className="mt-6 h-48 rounded-card border border-line bg-surface" />}>
+      <PageHeader title="款項" description="撥款與人工標記已付款在合作案詳情操作；退款與付款異常在這裡記錄。" />
+      <Suspense fallback={<div aria-busy="true" className="h-48 rounded-card border border-line bg-surface" />}>
         <Section searchParams={searchParams} />
       </Suspense>
     </div>
@@ -34,7 +37,7 @@ async function Section({ searchParams }: Props) {
       view: p.view ?? view, state: p.state === undefined ? (resolved ? "resolved" : null) : p.state, page: p.page ?? 1,
     }, { view: "payouts" });
   return (
-    <div className="mt-6 space-y-4">
+    <div className="space-y-4">
       <FilterChips label="款項分類" options={MONEY_TABS} current={view} hrefFor={(v) => href({ view: v, state: null })} />
       {view === "payouts" && <Payouts page={page} hrefFor={(p) => href({ page: p })} />}
       {view === "refunds" && <Payments kind="refund" page={page} hrefFor={(p) => href({ page: p })} />}

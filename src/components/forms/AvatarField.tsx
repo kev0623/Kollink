@@ -1,6 +1,9 @@
 "use client";
-import { useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
+import { AlertCircle, Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { FilePicker, uploadedCaption } from "@/components/ui/FilePicker";
+import { btn } from "@/components/ui/styles";
 import { uploadErrorMessage } from "@/lib/upload-limits";
 import { CREATOR_MEDIA_BUCKET, creatorMediaUrl, planMediaUpload } from "@/lib/creator-media";
 import { initialOf } from "@/lib/format";
@@ -15,15 +18,26 @@ type Props = {
   onBusyChange?: (busy: boolean) => void;
   /** 表單儲存中為 true：不能換檔、移除，也不會刪除任何檔案。 */
   disabled?: boolean;
+  /** 路徑變了（上傳成功／移除）。 */
+  onPathChange?: (path: string | null) => void;
+  /** 上傳成功、路徑已更新之後（頁面據此「上傳即儲存」）。 */
+  onUploaded?: (path: string) => void;
+  /** 使用者動了這個欄位（選檔、移除）：頁面據此隱藏「已儲存」。 */
+  onTouch?: () => void;
+  /** 每次儲存成功加一：之後這個頭像就是資料庫在引用的檔案，換檔時不能再刪它。 */
+  savedCount?: number;
 };
 
-export function AvatarField({ userId, name, initialPath, error, onBusyChange, disabled }: Props) {
+export function AvatarField({ userId, name, initialPath, error, onBusyChange, disabled, onPathChange, onUploaded, onTouch, savedCount }: Props) {
   const [path, setPath] = useState<string | null>(initialPath);
   const [msg, setMsg] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [picked, setPicked] = useState<string | null>(null);
   const ownedRef = useRef<string | null>(null);
   const noteId = useId();
   const url = creatorMediaUrl(path);
+
+  useEffect(() => { ownedRef.current = null; }, [savedCount]);
 
   function setBusyState(b: boolean) {
     setBusy(b);
@@ -40,6 +54,7 @@ export function AvatarField({ userId, name, initialPath, error, onBusyChange, di
   async function onFile(file: File | undefined) {
     if (!file) return;
     setMsg(null);
+    onTouch?.();
     const plan = planMediaUpload(userId, "avatar", file, crypto.randomUUID());
     if ("error" in plan) return setMsg(plan.error);
     setBusyState(true);
@@ -50,6 +65,9 @@ export function AvatarField({ userId, name, initialPath, error, onBusyChange, di
       discard(ownedRef.current);
       ownedRef.current = plan.path;
       setPath(plan.path);
+      setPicked(file.name);
+      onPathChange?.(plan.path);
+      onUploaded?.(plan.path);
     } catch {
       setMsg("上傳失敗，請再試一次");
     } finally {
@@ -61,35 +79,41 @@ export function AvatarField({ userId, name, initialPath, error, onBusyChange, di
     if (disabled) return;
     discard(path);
     setPath(null);
+    setPicked(null);
     setMsg(null);
+    onPathChange?.(null);
+    onTouch?.();
   }
 
   const note = msg ?? error;
   return (
     <div>
-      <span className="text-sm font-semibold text-ink">頭像（選填）</span>
+      <span className="text-sm font-bold text-ink">頭像（選填）</span>
       <div className="mt-1 flex flex-wrap items-center gap-3">
         {url ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={url} alt="頭像預覽" className="h-16 w-16 rounded-full border border-line object-cover" />
         ) : (
-          <div aria-hidden="true" className="flex h-16 w-16 items-center justify-center rounded-full bg-ink text-2xl font-semibold text-on-ink">
+          <div aria-hidden="true" className="flex h-16 w-16 items-center justify-center rounded-full bg-subtle text-2xl font-semibold text-ink">
             {initialOf(name)}
           </div>
         )}
-        <input
-          type="file" className="min-w-0 flex-1" accept="image/png,image/jpeg,image/webp" disabled={busy || disabled}
-          aria-label="上傳頭像" aria-describedby={note ? noteId : undefined} aria-invalid={note ? true : undefined}
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            e.target.value = ""; // 讓同一個檔案可以再選一次
-            void onFile(file);
-          }}
+        <div className="flex min-w-0 flex-col items-start gap-1">
+        <FilePicker
+          label={path ? "更換圖片" : "選擇圖片"} ariaLabel="上傳頭像" accept="image/png,image/jpeg,image/webp"
+          busy={busy} disabled={disabled} fileName={uploadedCaption(!!path, picked)}
+          describedBy={note ? noteId : undefined} invalid={note ? true : undefined}
+          onFiles={(files) => void onFile(files[0])}
         />
-        {path && <button type="button" disabled={busy || disabled} className="text-sm text-muted" onClick={remove}>移除頭像</button>}
+        {path && (
+          <button type="button" disabled={busy || disabled} className={btn.dangerQuiet} onClick={remove}>
+            <Trash2 size={16} strokeWidth={1.5} aria-hidden="true" />移除頭像
+          </button>
+        )}
+        </div>
       </div>
       <input type="hidden" name="avatarPath" value={path ?? ""} />
-      {note && <span id={noteId} role={msg ? "status" : undefined} className="mt-1 block text-xs text-danger">{note}</span>}
+      {note && <span id={noteId} role={msg ? "status" : undefined} className="mt-1.5 flex items-start gap-1 text-xs text-danger"><AlertCircle size={14} strokeWidth={1.5} aria-hidden="true" className="mt-0.5 shrink-0" /><span>{note}</span></span>}
       <span className="mt-1 block text-xs text-muted">JPG、PNG、WebP，5MB 以內</span>
     </div>
   );

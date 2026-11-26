@@ -1,5 +1,8 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import Link from "next/link";
+import { ChevronLeft } from "lucide-react";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { notFound } from "next/navigation";
 import { ApplyPanel } from "@/components/briefs/ApplyPanel";
 import { BriefDetailView } from "@/components/briefs/BriefDetailView";
@@ -11,12 +14,16 @@ import { detailDataOf, displayStatusOf } from "@/lib/briefs/view";
 
 type Props = { params: Promise<{ id: string }> };
 
+export const metadata: Metadata = { title: "招募詳情" };
+
 export default function OpportunityPage({ params }: Props) {
   return (
     <div>
-      <Link href="/creator" className="text-sm text-muted">← 機會</Link>
+      <Link href="/creator" className="-ml-2 inline-flex min-h-11 items-center gap-0.5 rounded-btn px-2 text-sm text-muted hover:text-ink">
+        <ChevronLeft size={18} strokeWidth={1.5} aria-hidden="true" />機會
+      </Link>
       <div className="mt-2">
-        <Suspense fallback={<p className="text-muted">載入中…</p>}>
+        <Suspense fallback={<Skeleton className="h-96 w-full" />}>
           <Opportunity params={params} />
         </Suspense>
       </div>

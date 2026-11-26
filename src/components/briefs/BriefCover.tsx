@@ -9,7 +9,7 @@ export function BriefCover({ coverPath, brandName, brandLogoPath, className = ""
   const cover = briefCoverUrl(coverPath);
   const logo = brandLogoUrl(brandLogoPath);
   return (
-    <div className={`relative aspect-[2/1] overflow-hidden bg-primary-soft ${className}`}>
+    <div className={`relative aspect-[2/1] overflow-hidden bg-subtle ${className}`}>
       {cover ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={cover} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover" />

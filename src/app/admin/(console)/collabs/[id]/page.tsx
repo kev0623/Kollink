@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
@@ -7,10 +8,14 @@ import { accountChangedRecently, adminCollabActions, lostPaymentCandidates, payo
 import { formatDateTimeTw } from "@/lib/briefs/dates";
 import { isUuid } from "@/lib/briefs/query";
 import { loadCollabDetail } from "@/lib/collabs/load";
-import { nowMs } from "@/lib/collabs/view";
+import { nowMs, refundState } from "@/lib/collabs/view";
 import { formatTwd } from "@/lib/format";
 import { maskAccount } from "@/lib/payout-account";
 import { summarizePayments } from "@/lib/payments/view";
+import { Notice } from "@/components/ui/Notice";
+import { ListSkeleton } from "@/components/ui/Skeleton";
+import { textLink } from "@/components/ui/styles";
+import { ChevronLeft } from "lucide-react";
 import { AdminCollabPanel, type PayoutPanel } from "@/components/admin/AdminCollabPanel";
 import { PaymentRows } from "@/components/admin/PaymentRows";
 import { CollabHeader } from "@/components/collabs/CollabHeader";
@@ -20,15 +25,17 @@ import { SubmissionList } from "@/components/collabs/SubmissionList";
 
 type Props = { params: Promise<{ id: string }> };
 
+export const metadata: Metadata = { title: "合作案詳情（後台）" };
+
 export default function AdminCollabPage({ params }: Props) {
   return (
     <div>
-      <Link href="/admin/collabs" className="text-sm text-muted">← 合作案</Link>
-      <div className="mt-2">
-        <Suspense fallback={<p className="text-muted">載入中…</p>}>
-          <Section params={params} />
-        </Suspense>
-      </div>
+      <Link href="/admin/collabs" className="-ml-2 mb-2 inline-flex min-h-11 items-center gap-0.5 rounded-btn px-2 text-sm text-muted hover:text-ink">
+        <ChevronLeft size={18} strokeWidth={1.5} aria-hidden="true" />合作案
+      </Link>
+      <Suspense fallback={<ListSkeleton />}>
+        <Section params={params} />
+      </Suspense>
     </div>
   );
 }
@@ -62,28 +69,29 @@ async function Section({ params }: Props) {
       changedRecently: accountChangedRecently(account?.updatedAt ?? null, now),
     };
   }
-  const lost = lostPaymentCandidates(payments).map((p) => ({ merchantTradeNo: p.merchantTradeNo, amount: p.amount }));
+  // 等待付款或已取消（取消後才到的款項）可補登，與 adminCollabActions 一致；參與者管理員不顯示
+  const lost = actions.lostPayment
+    ? lostPaymentCandidates(payments).map((p) => ({ merchantTradeNo: p.merchantTradeNo, amount: p.amount }))
+    : [];
   return (
     <div className="space-y-6">
-      <CollabHeader c={c} testPayment={summary.testPaid} />
+      <CollabHeader c={c} testPayment={summary.testPaid} refund={refundState(data.events, summary.refundPending)} />
       <p className="text-sm text-muted">
-        <Link href={`/c/${c.creatorHandle}`} className="text-primary underline">@{c.creatorHandle}</Link>
-        <span>・{c.brandName}</span>
+        {c.creatorHandle && <Link href={`/c/${c.creatorHandle}`} className={`${textLink} min-h-11`}>@{c.creatorHandle}</Link>}
+        <span>{c.creatorHandle ? "・" : ""}{c.brandName}</span>
       </p>
       <Stepper status={c.status} />
       {participant ? (
-        <p className="rounded-card border border-line bg-surface p-4 text-sm text-ink">
-          你是這個合作案的參與者，不能用管理員身分處理。請另一位管理員處理。
-        </p>
+        <Notice tone="info">你是這個合作案的參與者，不能用管理員身分處理。請另一位管理員處理。</Notice>
       ) : (
         <AdminCollabPanel
-          collabId={c.id} amount={c.amount} actions={actions} lost={lost} payout={payout}
+          collabId={c.id} status={c.status} amount={c.amount} actions={actions} lost={lost} payout={payout}
           paid={payments.some((p) => p.status === "paid" && !p.refundRequired && !p.refundedAt)}
         />
       )}
       {record && (
-        <section className="rounded-card border border-line bg-surface p-4 text-sm md:p-6">
-          <h2 className="font-semibold text-ink">撥款紀錄</h2>
+        <section className="rounded-card border border-line bg-surface p-5 text-sm md:p-8">
+          <h2 className="text-lg font-bold text-ink">撥款紀錄</h2>
           <p className="mt-1">
             {formatDateTimeTw(record.createdAt)}・{formatTwd(record.amount)}・{record.bankCode} {maskAccount(record.accountLast4)}・{record.accountName}
           </p>

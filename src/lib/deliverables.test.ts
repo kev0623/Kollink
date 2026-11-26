@@ -35,7 +35,7 @@ describe("檔案種類與標籤", () => {
     expect(fileKindOf("a/b/c.webp")).toBe("image");
     expect(fileKindOf("a/b/c.MOV")).toBe("video");
     expect(fileKindOf("a/b/c.pdf")).toBe("pdf");
-    expect(fileLabel("a/b/c.pdf", 2)).toBe("PDF 3");
-    expect(fileLabel("a/b/c.jpg", 0)).toBe("圖片 1");
+    expect(fileLabel("a/b/c.pdf", 2, 1)).toBe("第 1 次交稿・PDF 3");
+    expect(fileLabel("a/b/c.jpg", 0, 2)).toBe("第 2 次交稿・圖片 1");
   });
 });

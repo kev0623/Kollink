@@ -116,7 +116,7 @@ function budgetValue(v: string): number {
 }
 
 /**
- * draft：只檢查格式（草稿可以缺必填）；publish：再檢查必填、預算或產品、截止日（今天到 90 天內）。
+ * draft：只檢查格式（草稿可以缺必填，但至少要有案名）；publish：再檢查必填、預算或產品、截止日（今天到 90 天內）。
  * 錯誤的 key 是 BriefField。
  */
 export function validateBrief(i: BriefInput, mode: "draft" | "publish", today: string): Record<string, string> | null {
@@ -125,7 +125,7 @@ export function validateBrief(i: BriefInput, mode: "draft" | "publish", today: s
 
   if (hasBadChar(i.title)) e.title = BAD_CHAR_MESSAGE;
   else if (len(i.title) > 60) e.title = "案名最多 60 字";
-  else if (publish && i.title === "") e.title = "請填寫案名（60 字以內）";
+  else if (i.title === "") e.title = publish ? "請填寫案名（60 字以內）" : "存成草稿前請先填寫案名";
 
   if (hasBadChar(i.description)) e.description = BAD_CHAR_MESSAGE;
   else if (len(i.description) > 2000) e.description = "說明最多 2000 字";

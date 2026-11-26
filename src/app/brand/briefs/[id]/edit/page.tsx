@@ -1,5 +1,7 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
-import Link from "next/link";
+import { FormSkeleton } from "@/components/ui/Skeleton";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { notFound, redirect } from "next/navigation";
 import { BriefForm } from "@/components/briefs/BriefForm";
 import { requireRole } from "@/lib/auth/current-user";
@@ -14,16 +16,15 @@ type Props = {
 };
 
 // params 與 searchParams 都是請求時才知道的值：在 <Suspense> 內讀（dynamic-routes.md「Without generateStaticParams」）
+export const metadata: Metadata = { title: "編輯招募" };
+
 export default function EditBriefPage({ params, searchParams }: Props) {
   return (
     <div className="max-w-3xl">
-      <Link href="/brand/briefs" className="text-sm text-muted">← 我的招募</Link>
-      <h1 className="mt-2 text-[32px] font-bold text-ink">編輯招募</h1>
-      <div className="mt-6">
-        <Suspense fallback={<p className="text-muted">載入中…</p>}>
-          <EditBrief params={params} searchParams={searchParams} />
-        </Suspense>
-      </div>
+      <PageHeader title="編輯招募" back={{ href: "/brand/briefs", label: "我的招募" }} />
+      <Suspense fallback={<FormSkeleton fields={3} steps />}>
+        <EditBrief params={params} searchParams={searchParams} />
+      </Suspense>
     </div>
   );
 }

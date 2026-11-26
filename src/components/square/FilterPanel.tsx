@@ -1,5 +1,6 @@
 "use client";
 
+import { btn, chip, input } from "@/components/ui/styles";
 import { CATEGORIES, COLLAB_TYPES, REGIONS } from "@/lib/options";
 import {
   ENGAGEMENT_OPTIONS, FOLLOWER_RANGES, KEYWORD_MAX, PRICE_RANGES, activeFilterCount, clearFilters, toggleValue,
@@ -21,6 +22,7 @@ export function FilterPanel({ idPrefix, query, popularTags, onChange }: Props) {
   return (
     <div className="space-y-6">
       <form
+        noValidate
         role="search"
         onSubmit={(e) => {
           e.preventDefault();
@@ -39,20 +41,20 @@ export function FilterPanel({ idPrefix, query, popularTags, onChange }: Props) {
             defaultValue={query.q}
             maxLength={KEYWORD_MAX}
             placeholder="名稱、網址代稱、IG 帳號"
-            className="h-10 min-w-0 flex-1 rounded-input border border-line bg-surface px-3 text-sm text-ink"
+            className={input}
           />
-          <button type="submit" className="h-10 shrink-0 rounded-btn bg-ink px-4 text-sm font-semibold text-on-ink">搜尋</button>
+          <button type="submit" className={`${btn.primary} shrink-0`}>搜尋</button>
         </div>
       </form>
 
-      <label className="flex items-center justify-between gap-3 text-sm font-semibold text-ink">
+      <label className="flex min-h-11 items-center justify-between gap-3 text-sm font-semibold text-ink">
         只看收藏
         <input
           type="checkbox"
           role="switch"
           checked={query.fav}
           onChange={(e) => set({ fav: e.target.checked })}
-          className="h-5 w-5 accent-ink"
+          className="h-5 w-5"
         />
       </label>
 
@@ -75,7 +77,7 @@ export function FilterPanel({ idPrefix, query, popularTags, onChange }: Props) {
         type="button"
         onClick={() => onChange(clearFilters(query))}
         disabled={activeFilterCount(query) === 0}
-        className="h-10 w-full rounded-btn border border-line bg-surface text-sm font-semibold text-ink hover:bg-primary-soft disabled:opacity-50"
+        className={`${btn.secondary} w-full`}
       >
         清除篩選
       </button>
@@ -98,7 +100,7 @@ function ChipGroup({ legend, options, selected, onToggle }: {
           return (
             <button
               key={o} type="button" aria-pressed={on} onClick={() => onToggle(o)}
-              className={`min-h-9 rounded-btn border px-3 py-1 text-sm ${on ? "border-ink bg-ink font-medium text-on-ink" : "border-line bg-surface text-ink hover:bg-primary-soft"}`}
+              className={chip(on)}
             >
               {o}
             </button>
@@ -112,17 +114,17 @@ function ChipGroup({ legend, options, selected, onToggle }: {
 function RadioGroup<K extends string>({ legend, name, options, value, onChange }: {
   legend: string; name: string; options: readonly { key: K; label: string }[]; value: K | null; onChange: (v: K | null) => void;
 }) {
-  const item = "flex min-h-9 items-center gap-2 text-sm text-ink";
+  const item = "flex min-h-11 items-center gap-2 text-sm text-ink";
   return (
     <fieldset>
       <legend className={legendCls}>{legend}</legend>
       <div className="mt-1">
         <label className={item}>
-          <input type="radio" name={name} checked={value === null} onChange={() => onChange(null)} className="accent-ink" />不限
+          <input type="radio" name={name} checked={value === null} onChange={() => onChange(null)} />不限
         </label>
         {options.map((o) => (
           <label key={o.key} className={item}>
-            <input type="radio" name={name} checked={value === o.key} onChange={() => onChange(o.key)} className="accent-ink" />
+            <input type="radio" name={name} checked={value === o.key} onChange={() => onChange(o.key)} />
             {o.label}
           </label>
         ))}

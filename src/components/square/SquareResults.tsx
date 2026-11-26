@@ -5,6 +5,9 @@ import { loadMoreCreatorsAction, type LoadMoreResult } from "@/app/brand/actions
 import { emptyStateOf, type SquareQuery, type SquareSort } from "@/lib/creators/square-query";
 import { appendUnique, type SquareCreator, type SquarePage } from "@/lib/creators/square-view";
 import type { ViewMode } from "@/lib/creators/view-mode";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { ErrorText } from "@/components/ui/ErrorText";
+import { btn } from "@/components/ui/styles";
 import { CreatorCard } from "./CreatorCard";
 import { CreatorTable } from "./CreatorTable";
 
@@ -60,18 +63,9 @@ export function SquareResults({ initial, query, queryKey, view, onSort, onClear 
   if (items.length === 0) {
     const noFavorites = emptyStateOf(query) === "no-favorites";
     return (
-      <div className="rounded-card border border-line bg-surface p-8 text-center">
-        <p className="font-semibold text-ink">{noFavorites ? "還沒有收藏的創作者" : "找不到符合條件的創作者"}</p>
-        {noFavorites ? (
-          <p className="mt-2 text-sm text-muted">在卡片、列表或創作者頁按 ♡，就會出現在這裡。</p>
-        ) : (
-          <button
-            type="button" onClick={onClear}
-            className="mt-4 h-10 rounded-btn border border-line px-4 text-sm font-semibold text-ink hover:bg-primary-soft"
-          >
-            清除篩選
-          </button>
-        )}
+      <div className="space-y-3">
+        <EmptyState text={noFavorites ? "還沒有收藏的創作者。在卡片、列表或創作者頁按 ♡，就會出現在這裡。" : "找不到符合條件的創作者"} />
+        {!noFavorites && <div className="flex justify-center"><button type="button" onClick={onClear} className={btn.secondary}>清除篩選</button></div>}
       </div>
     );
   }
@@ -79,18 +73,18 @@ export function SquareResults({ initial, query, queryKey, view, onSort, onClear 
   return (
     <div>
       {view === "card" ? (
-        <ul className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <ul className="grid grid-cols-2 gap-3 md:grid-cols-2 md:gap-4 xl:grid-cols-3">
           {items.map((c) => <li key={c.userId}><CreatorCard c={c} /></li>)}
         </ul>
       ) : (
         <CreatorTable items={items} sort={query.sort} onSort={onSort} />
       )}
-      {error && <p role="alert" className="mt-4 text-center text-sm text-danger">{error}</p>}
+      {error && <div className="mt-4 flex justify-center"><ErrorText message={error} /></div>}
       {hasMore && (
         <div className="mt-6 flex justify-center">
           <button
             type="button" onClick={loadMore} disabled={loading}
-            className="h-11 rounded-btn border border-line bg-surface px-6 text-sm font-semibold text-ink hover:bg-primary-soft disabled:opacity-60"
+            className={btn.secondary}
           >
             {loading ? "載入中…" : "載入更多"}
           </button>

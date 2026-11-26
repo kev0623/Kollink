@@ -2,6 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
+import { ErrorText } from "@/components/ui/ErrorText";
+import { btn } from "@/components/ui/styles";
 import { requestReviewAction } from "./me/actions";
 
 // 與 me/actions.ts requestReviewAction 的狀態過期訊息一致（"use server" 檔不能 export 常數）。
@@ -13,7 +15,7 @@ export function ResubmitButton() {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   return (
-    <div className="mt-3">
+    <div>
       <button
         type="button" disabled={pending}
         onClick={() => {
@@ -31,11 +33,11 @@ export function ResubmitButton() {
             }
           });
         }}
-        className="h-11 rounded-btn bg-ink px-5 text-sm font-semibold text-on-ink disabled:opacity-60"
+        className={btn.primary}
       >
         {pending ? "送出中…" : "我已修正，重新送審"}
       </button>
-      {error && <p role="alert" className="mt-2 text-sm text-danger">{error}</p>}
+      <div className="mt-2"><ErrorText message={error} /></div>
     </div>
   );
 }

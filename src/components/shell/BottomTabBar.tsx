@@ -10,28 +10,22 @@ export function BottomTabBar({ items }: { items: NavItem[] }) {
   return (
     <nav
       aria-label="主選單"
-      className="fixed inset-x-0 bottom-0 z-10 flex justify-around border-t border-line bg-surface px-2 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] text-xs md:hidden"
+      className="fixed inset-x-0 bottom-0 z-20 flex justify-around border-t border-line bg-surface px-1 pb-[max(0.25rem,env(safe-area-inset-bottom))] text-[11px] md:hidden"
     >
-      {items.map((it) => {
-        const base = "flex min-h-12 min-w-14 flex-col items-center justify-center gap-0.5 rounded-nav px-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2";
-        if (!it.href) {
-          return (
-            <span key={it.label} className={`${base} text-muted opacity-60`}>
-              <NavIcon name={it.icon} size={20} />
-              <span>{it.label}</span><span className="sr-only">（即將推出）</span>
-            </span>
-          );
-        }
-        const active = isActive(it.href, pathname);
+      {items.filter((it) => it.href).map((it) => {
+        const href = it.href as string;
+        const active = isActive(href, pathname);
         return (
           <Link
             key={it.label}
-            href={it.href}
+            href={href}
             aria-current={active ? "page" : undefined}
-            className={`${base} ${active ? "bg-ink font-medium text-on-ink" : "text-ink"}`}
+            className={`relative flex min-h-14 min-w-14 flex-1 flex-col items-center justify-center gap-0.5 px-1 ${
+              active ? "font-bold text-ink before:absolute before:inset-x-4 before:top-0 before:h-0.5 before:rounded-full before:bg-thread" : "text-muted"
+            }`}
           >
             <span className="relative inline-flex">
-              <NavIcon name={it.icon} size={20} />
+              <NavIcon name={it.icon} size={22} />
               {it.badge === "messages" && <UnreadBadge />}
             </span>
             <span>{it.label}</span>

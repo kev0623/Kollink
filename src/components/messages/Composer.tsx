@@ -1,22 +1,35 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useSyncExternalStore, useTransition } from "react";
+import { ErrorText } from "@/components/ui/ErrorText";
+import { Notice } from "@/components/ui/Notice";
+import { btn, textarea } from "@/components/ui/styles";
 import { sendMessageAction } from "@/lib/messages/actions";
 import { contactKinds, contactWarning } from "@/lib/messages/contact";
-import type { Message } from "@/lib/messages/view";
-import { textLength } from "@/lib/validation/brief";
+import { composerCount, composerKeyAction, type Message } from "@/lib/messages/view";
 import { cleanMessageBody, MESSAGE_BODY_MAX, validateMessageBody } from "@/lib/validation/message";
+
+const FINE = "(pointer: fine)";
+function subscribeFine(cb: () => void) {
+  const mq = window.matchMedia(FINE);
+  mq.addEventListener("change", cb);
+  return () => mq.removeEventListener("change", cb);
+}
 
 /**
  * 輸入區。偵測到聯絡方式時先在下方提醒（不是 confirm()），按「仍要送出」才送；改了內容要重新確認。
- * Enter 換行；Ctrl／⌘ + Enter 送出。受控輸入，送出用 onSubmit（不用 form action，避免 React 重設欄位）。
+ * 桌面：Enter 送出、Shift + Enter 換行；觸控裝置 Enter 換行；Ctrl／⌘ + Enter 一律送出；選字中（IME）的 Enter 不送出。
+ * 受控輸入，送出用 onSubmit（不用 form action，避免 React 重設欄位）。字數用與驗證相同的規則即時計算。
  */
 export function Composer({ conversationId, onSent }: { conversationId: string; onSent: (m: Message) => void }) {
   const [body, setBody] = useState("");
   const [warning, setWarning] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
-  const count = textLength(body);
+  const finePointer = useSyncExternalStore(subscribeFine, () => window.matchMedia(FINE).matches, () => true);
+  const count = composerCount(body);
+  const over = count > MESSAGE_BODY_MAX;
+  const empty = count === 0;
 
   function send(force: boolean) {
     if (pending) return;
@@ -50,11 +63,12 @@ export function Composer({ conversationId, onSent }: { conversationId: string; o
 
   return (
     <form
+      noValidate
       onSubmit={(e) => {
         e.preventDefault();
         send(false);
       }}
-      className="sticky bottom-[calc(4.25rem+env(safe-area-inset-bottom))] shrink-0 rounded-card border border-line bg-surface p-3 md:static"
+      className="sticky bottom-[calc(3.5rem+max(0.25rem,env(safe-area-inset-bottom)))] z-10 shrink-0 rounded-card border border-line bg-surface p-3 md:static"
     >
       <label htmlFor="message-body" className="sr-only">訊息</label>
       <textarea
@@ -63,41 +77,43 @@ export function Composer({ conversationId, onSent }: { conversationId: string; o
         readOnly={pending}
         rows={2}
         placeholder="輸入訊息…"
+        aria-invalid={over ? true : undefined}
+        aria-describedby="message-count"
         onChange={(e) => {
           setBody(e.target.value);
           setWarning(null);
           setError(null);
         }}
         onKeyDown={(e) => {
-          if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+          // 選字中的 Enter（isComposing；Safari 的 compositionend 之後 keyCode 仍是 229）不送出
+          const composing = e.nativeEvent.isComposing || e.keyCode === 229;
+          const a = composerKeyAction({ key: e.key, shift: e.shiftKey, composing, finePointer, mod: e.metaKey || e.ctrlKey });
+          if (a === "send") {
             e.preventDefault();
+            // 空白、超過字數、正在顯示聯絡方式提醒時：Enter 什麼都不做（要送出請明確按按鈕）
+            if (empty || over || warning !== null) return;
             send(false);
           }
         }}
-        className="block max-h-40 min-h-11 w-full resize-y rounded-input border border-line bg-surface px-3 py-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-ink"
+        className={`${textarea} max-h-40 min-h-11 resize-none`}
       />
       {warning && (
-        <div role="alert" className="mt-2 rounded-input border border-line bg-primary-soft p-3 text-sm text-ink">
+        <Notice tone="warning" className="mt-2">
           <p>{warning}</p>
-          <div className="mt-2 flex gap-2">
-            <button type="button" disabled={pending} onClick={() => send(true)}
-              className="h-9 rounded-btn bg-ink px-4 text-sm font-semibold text-on-ink disabled:opacity-60">
-              仍要送出
-            </button>
-            <button type="button" disabled={pending} onClick={() => setWarning(null)}
-              className="h-9 rounded-btn border border-line bg-surface px-4 text-sm font-semibold text-ink">
-              修改訊息
-            </button>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button type="button" disabled={pending} onClick={() => send(true)} className={btn.primary}>仍要送出</button>
+            <button type="button" disabled={pending} onClick={() => setWarning(null)} className={btn.secondary}>修改訊息</button>
           </div>
-        </div>
+        </Notice>
       )}
-      {error && <p role="alert" className="mt-2 text-sm text-danger">{error}</p>}
+      {error && <div className="mt-2"><ErrorText message={error} /></div>}
       <div className="mt-2 flex items-center justify-between gap-3">
-        <span className={`text-xs ${count > MESSAGE_BODY_MAX ? "text-danger" : "text-muted"}`}>
-          {count} / {MESSAGE_BODY_MAX}<span className="hidden md:inline">・Ctrl／⌘ + Enter 送出</span>
+        <span id="message-count" className={`text-xs tabular-nums ${over ? "font-bold text-danger" : "text-muted"}`}>
+          {count} / {MESSAGE_BODY_MAX}
+          {over && <span className="sr-only">，超過字數上限</span>}
+          {finePointer && <span className="hidden font-normal text-muted md:inline">・Enter 送出，Shift + Enter 換行</span>}
         </span>
-        <button type="submit" disabled={pending || warning !== null}
-          className="h-11 rounded-btn bg-ink px-6 font-semibold text-on-ink disabled:opacity-60">
+        <button type="submit" disabled={pending || warning !== null || over} className={btn.primary}>
           {pending ? "送出中…" : "送出"}
         </button>
       </div>

@@ -2,6 +2,7 @@
 // check_collab_offer（20261125000100_collab_create.sql）、submit_deliverables（20261125000200_deliverables.sql）、
 // transition_collaboration 的貼文連結 regex（20261122000300_collaborations.sql）。
 import { isOwnDeliverablePath, MAX_DELIVERABLE_FILES } from "@/lib/deliverables";
+import { requiresOfflinePayment as exceedsOnlineLimit } from "@/lib/payments/limits";
 import { hasBadChar, textLength } from "./brief";
 import { cleanText, cleanTextWithin } from "./onboarding";
 
@@ -35,13 +36,17 @@ export function parseAmount(v: string): number | null {
   return n >= 1 && n <= AMOUNT_MAX ? n : null;
 }
 
-export type OfferInput = { title: string; deliverables: string; amount: string };
+/** 超過線上付款上限（綠界單筆 PAYMENT_MAX_TWD）：建立可以，但之後只能由平台協助線下付款。與 requiresOfflinePayment 是同一個判斷。 */
+export { exceedsOnlineLimit };
+
+export type OfferInput = { title: string; deliverables: string; amount: string; offlineAck: boolean };
 
 export function parseOfferForm(fd: FormData): OfferInput {
   return {
     title: cleanText(str(fd, "title")),
     deliverables: cleanLongText(str(fd, "deliverables")),
     amount: str(fd, "amount"),
+    offlineAck: str(fd, "offlineAck") === "1",
   };
 }
 
@@ -56,7 +61,9 @@ export function validateOffer(i: OfferInput, withTitle: boolean): Record<string,
   if (hasBadChar(i.deliverables)) e.deliverables = BAD_CHAR_MESSAGE;
   else if (i.deliverables === "") e.deliverables = "請填寫交付內容";
   else if (textLength(i.deliverables) > DELIVERABLES_MAX) e.deliverables = `最多 ${DELIVERABLES_MAX} 字`;
-  if (parseAmount(i.amount) === null) e.amount = "請填 1 到 10,000,000 的整數";
+  const amount = parseAmount(i.amount);
+  if (amount === null) e.amount = "請填 1 到 10,000,000 的整數";
+  else if (exceedsOnlineLimit(amount) && !i.offlineAck) e.offlineAck = "超過線上付款上限，請勾選確認這筆要線下付款";
   return Object.keys(e).length ? e : null;
 }
 

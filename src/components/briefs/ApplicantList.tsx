@@ -1,84 +1,70 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { MapPin } from "lucide-react";
 import { acceptApplicationAction, rejectApplicationAction } from "@/app/brand/briefs/actions";
 import { OfferForm } from "@/components/collabs/OfferForm";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { btn, chip, rows, textLink } from "@/components/ui/styles";
 import { Avatar } from "@/components/square/Avatar";
 import { acceptDefaults } from "@/lib/validation/collab";
-import { isStaleStateMessage } from "@/lib/briefs/errors";
-import { APPLICANT_FILTERS, filterApplicants, proposedPriceLabel, type Applicant, type ApplicantFilter } from "@/lib/briefs/view";
+import { APPLICANT_FILTERS, filterApplicants, proposedPriceLabel, sortApplicants, type Applicant, type ApplicantFilter } from "@/lib/briefs/view";
 import { formatDateTimeTw } from "@/lib/briefs/dates";
 import { formatNumber, formatPercent } from "@/lib/format";
+import { ConfirmAction } from "./ConfirmAction";
 import { ApplicationStatusBadge } from "./StatusBadges";
 
 /** 錄取表單預設值需要的招募資料。 */
 export type OfferBrief = { budgetMin: number | null; budgetMax: number | null; collabTypes: string[]; description: string };
 
-/** 報名者列表與篩選（全部、待處理、已錄取、已婉拒）。篩選只在畫面上，不寫進網址。 */
-export function ApplicantList({ briefId, brief, applicants }: { briefId: string; brief: OfferBrief; applicants: Applicant[] }) {
-  const [filter, setFilter] = useState<ApplicantFilter>("all");
-  const shown = filterApplicants(applicants, filter);
+/** 報名者列表與篩選（全部、待處理、已錄取、已婉拒）。篩選寫進網址 ?applicants=（重新整理、分享連結都會保留）。 */
+export function ApplicantList({ briefId, brief, applicants, initialFilter }: {
+  briefId: string; brief: OfferBrief; applicants: Applicant[]; initialFilter: ApplicantFilter;
+}) {
+  const [filter, setFilter] = useState<ApplicantFilter>(initialFilter);
+  const shown = sortApplicants(filterApplicants(applicants, filter));
+
+  function choose(f: ApplicantFilter) {
+    setFilter(f);
+    const url = new URL(window.location.href);
+    if (f === "all") url.searchParams.delete("applicants");
+    else url.searchParams.set("applicants", f);
+    window.history.replaceState(null, "", url);
+  }
+
   return (
     <div>
-      <div role="group" aria-label="篩選報名者" className="flex flex-wrap gap-2">
+      <div role="group" aria-label="篩選報名者" className="scroll-fade-x flex gap-2 overflow-x-auto pb-1">
         {APPLICANT_FILTERS.map((f) => (
-          <button
-            key={f.value} type="button" onClick={() => setFilter(f.value)} aria-pressed={filter === f.value}
-            className={`h-9 rounded-full border px-4 text-sm font-semibold ${filter === f.value ? "border-ink bg-ink text-on-ink" : "border-line bg-surface text-ink"}`}
-          >
-            {f.label} {filterApplicants(applicants, f.value).length}
+          <button key={f.value} type="button" onClick={() => choose(f.value)} aria-pressed={filter === f.value} className={chip(filter === f.value)}>
+            {f.label} <span className="tabular-nums opacity-80">{filterApplicants(applicants, f.value).length}</span>
           </button>
         ))}
       </div>
-      {shown.length === 0 ? (
-        <p className="mt-4 rounded-card border border-line bg-surface p-6 text-center text-sm text-muted">沒有符合的報名者</p>
-      ) : (
-        <ul className="mt-4 space-y-3">
-          {shown.map((a) => <li key={a.id}><ApplicantItem a={a} briefId={briefId} brief={brief} /></li>)}
-        </ul>
-      )}
+      <div className="mt-4">
+        {shown.length === 0 ? (
+          <EmptyState text="沒有符合的報名者" />
+        ) : (
+          <ul className={rows}>
+            {shown.map((a) => <li key={a.id} className="p-4 md:p-5"><ApplicantItem a={a} briefId={briefId} brief={brief} /></li>)}
+          </ul>
+        )}
+      </div>
     </div>
   );
 }
 
 function ApplicantItem({ a, briefId, brief }: { a: Applicant; briefId: string; brief: OfferBrief }) {
-  const router = useRouter();
-  const [error, setError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
   const [accepting, setAccepting] = useState(false);
-  const [pending, startTransition] = useTransition();
-
-  function reject() {
-    setError(null);
-    setNotice(null);
-    startTransition(async () => {
-      try {
-        const res = await rejectApplicationAction(a.id, briefId);
-        if (!res.ok) {
-          if (isStaleStateMessage(res.error)) {
-            // 連點或另一個分頁已處理：重新整理即可
-            setNotice("這筆報名的狀態已更新，已為你重新整理");
-            router.refresh();
-          } else {
-            setError(res.error);
-          }
-        }
-      } catch {
-        setError("發生錯誤，請稍後再試");
-      }
-    });
-  }
 
   return (
-    <article className="rounded-card border border-line bg-surface p-4 md:p-5">
+    <article>
       <div className="flex items-start gap-3">
         <Avatar path={a.avatarPath} name={a.displayName} size="md" />
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <Link href={`/c/${a.handle}`} className="min-w-0 break-words font-bold text-ink underline-offset-2 hover:underline">
+            <Link href={`/c/${a.handle}`} className="inline-flex min-h-11 min-w-0 items-center break-words font-bold text-ink underline-offset-2 hover:underline">
               {a.displayName}
             </Link>
             <ApplicationStatusBadge status={a.status} viewer="brand" />
@@ -104,19 +90,17 @@ function ApplicantItem({ a, briefId, brief }: { a: Applicant; briefId: string; b
         )}
       </dl>
       {a.status === "applied" && !accepting && (
-        <div className="mt-4 flex gap-2">
-          <button type="button" onClick={() => setAccepting(true)} disabled={pending}
-            className="h-10 flex-1 rounded-btn bg-ink px-4 text-sm font-semibold text-on-ink disabled:opacity-60 sm:flex-none">
-            錄取
-          </button>
-          <button type="button" onClick={reject} disabled={pending}
-            className="h-10 flex-1 rounded-btn border border-line bg-surface px-4 text-sm font-semibold text-ink disabled:opacity-60 sm:flex-none">
-            {pending ? "處理中…" : "婉拒"}
-          </button>
+        <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-start">
+          <button type="button" onClick={() => setAccepting(true)} className={`${btn.primary} w-full shrink-0 sm:w-auto`}>錄取</button>
+          <ConfirmAction
+            label="婉拒報名" danger icon="x" confirmLabel="確定婉拒"
+            message={`婉拒後不能復原，${a.displayName} 會看到「未錄取」。確定要婉拒嗎？`}
+            onConfirm={() => rejectApplicationAction(a.id, briefId)}
+          />
         </div>
       )}
       {a.status === "applied" && accepting && (
-        <div className="mt-4 rounded-card border border-line bg-bg p-4">
+        <div className="mt-4 rounded-card border border-line bg-subtle p-4">
           <p className="mb-3 text-sm font-semibold text-ink">錄取 {a.displayName}：設定合作條件</p>
           <OfferForm
             action={acceptApplicationAction} hidden={{ applicationId: a.id, briefId }} withTitle={false}
@@ -126,12 +110,10 @@ function ApplicantItem({ a, briefId, brief }: { a: Applicant; briefId: string; b
         </div>
       )}
       {a.collaborationId && (
-        <Link href={`/brand/collabs/${a.collaborationId}`} className="mt-3 inline-block text-sm font-semibold text-ink underline underline-offset-2">
-          查看合作案 →
+        <Link href={`/brand/collabs/${a.collaborationId}`} className={`mt-3 ${textLink}`}>
+          查看合作案
         </Link>
       )}
-      {notice && <p role="status" className="mt-2 text-sm text-muted">{notice}</p>}
-      {error && <p role="alert" className="mt-2 text-sm text-danger">{error}</p>}
     </article>
   );
 }

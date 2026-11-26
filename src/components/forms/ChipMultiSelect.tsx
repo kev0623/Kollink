@@ -1,6 +1,7 @@
 "use client";
 
 import { useId } from "react";
+import { chip } from "@/components/ui/styles";
 
 type Props = {
   legend: string;
@@ -32,7 +33,7 @@ export function ChipMultiSelect({ legend, name, options, value, onChange, max, e
           return (
             <button
               key={c} type="button" onClick={() => toggle(c)} aria-pressed={on}
-              className={`min-h-9 rounded-full border px-3 py-1 text-sm font-medium ${on ? "border-ink bg-ink text-on-ink" : "border-line bg-surface text-ink"}`}
+              className={chip(on)}
             >
               {c}
             </button>

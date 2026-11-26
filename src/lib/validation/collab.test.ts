@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { PAYMENT_MAX_TWD } from "@/lib/payments/limits";
 import {
-  acceptDefaults, cleanLongText, isValidLink, isValidPostUrl, needsCreatorConsent, parseAmount, parseLinks, parseOfferForm,
+  acceptDefaults, cleanLongText, exceedsOnlineLimit, isValidLink, isValidPostUrl, needsCreatorConsent, parseAmount, parseLinks, parseOfferForm,
   validateOffer, validateRevisionNote, validateSubmission,
 } from "./collab";
 
@@ -28,16 +29,18 @@ describe("邀請與錄取表單", () => {
   }
   it("解析：清理案名、交付內容換行統一", () => {
     expect(parseOfferForm(fd({ title: " 春季開箱 ", deliverables: "IG 貼文\r\n限動 2 則 ", amount: "3,000" })))
-      .toEqual({ title: "春季開箱", deliverables: "IG 貼文\n限動 2 則", amount: "3,000" });
+      .toEqual({ title: "春季開箱", deliverables: "IG 貼文\n限動 2 則", amount: "3,000", offlineAck: false });
+    expect(parseOfferForm(fd({ title: "x", deliverables: "y", amount: "1", offlineAck: "1" })).offlineAck).toBe(true);
+    expect(parseOfferForm(fd({ title: "x", deliverables: "y", amount: "1", offlineAck: "on" })).offlineAck).toBe(false);
   });
   it("直接邀請要案名；錄取不檢查案名", () => {
-    expect(validateOffer({ title: "", deliverables: "x", amount: "1000" }, true)).toEqual({ title: "請填寫案名" });
-    expect(validateOffer({ title: "", deliverables: "x", amount: "1000" }, false)).toBeNull();
-    expect(validateOffer({ title: "案".repeat(61), deliverables: "", amount: "0" }, true)).toEqual({
+    expect(validateOffer({ title: "", deliverables: "x", amount: "1000", offlineAck: false }, true)).toEqual({ title: "請填寫案名" });
+    expect(validateOffer({ title: "", deliverables: "x", amount: "1000", offlineAck: false }, false)).toBeNull();
+    expect(validateOffer({ title: "案".repeat(61), deliverables: "", amount: "0", offlineAck: false }, true)).toEqual({
       title: "最多 60 字", deliverables: "請填寫交付內容", amount: "請填 1 到 10,000,000 的整數",
     });
-    expect(validateOffer({ title: "x", deliverables: "字".repeat(1001), amount: "1" }, true)).toEqual({ deliverables: "最多 1000 字" });
-    expect(validateOffer({ title: "a‮b", deliverables: "x\u0000", amount: "1" }, true)).toEqual({
+    expect(validateOffer({ title: "x", deliverables: "字".repeat(1001), amount: "1", offlineAck: false }, true)).toEqual({ deliverables: "最多 1000 字" });
+    expect(validateOffer({ title: "a‮b", deliverables: "x\u0000", amount: "1", offlineAck: false }, true)).toEqual({
       title: "含有不允許的特殊字元", deliverables: "含有不允許的特殊字元",
     });
   });
@@ -116,5 +119,20 @@ describe("錄取預設值", () => {
     expect(acceptDefaults(null, brief).deliverables).toBe("IG 貼文、限時動態\n冬季保養開箱");
     const long = acceptDefaults(null, { ...brief, description: "字".repeat(300) }).deliverables;
     expect(long).toBe(`IG 貼文、限時動態\n${"字".repeat(200)}…`);
+  });
+});
+
+describe("金額超過線上付款上限（QA M2）", () => {
+  const base = { title: "夏季合作", deliverables: "IG 貼文 1 篇", amount: "", offlineAck: false };
+  it("上限以內不需要確認", () => {
+    expect(exceedsOnlineLimit(PAYMENT_MAX_TWD)).toBe(false);
+    expect(exceedsOnlineLimit(null)).toBe(false);
+    expect(validateOffer({ ...base, amount: String(PAYMENT_MAX_TWD) }, true)).toBeNull();
+  });
+  it("超過上限要勾選「我了解這筆要線下付款」", () => {
+    expect(exceedsOnlineLimit(PAYMENT_MAX_TWD + 1)).toBe(true);
+    expect(validateOffer({ ...base, amount: "250000" }, true)?.offlineAck).toBe("超過線上付款上限，請勾選確認這筆要線下付款");
+    expect(validateOffer({ ...base, amount: "250,000" }, false)?.offlineAck).toBeTruthy();
+    expect(validateOffer({ ...base, amount: "250000", offlineAck: true }, true)).toBeNull();
   });
 });

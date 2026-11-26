@@ -8,3 +8,8 @@ export const ATM_EXPIRE_DAYS = 3;
 
 /** 信用卡付款後，綠界通知可能晚幾分鐘到：建單後這段時間內顯示「確認中」提示。 */
 export const RECENT_ORDER_MS = 30 * 60_000;
+
+/** 金額超過線上付款上限：不顯示信用卡／ATM 付款，改請品牌聯絡平台線下付款。 */
+export function requiresOfflinePayment(amount: number | null): boolean {
+  return amount !== null && amount > PAYMENT_MAX_TWD;
+}

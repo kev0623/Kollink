@@ -1,7 +1,10 @@
 "use client";
 import { useActionState, useState } from "react";
-import { Field, inputClass } from "@/components/forms/Field";
+import { Field } from "@/components/forms/Field";
 import { LogoField } from "@/components/forms/LogoField";
+import { ErrorText } from "@/components/ui/ErrorText";
+import { Notice } from "@/components/ui/Notice";
+import { btn, cardPad, input } from "@/components/ui/styles";
 import { INDUSTRIES } from "@/lib/options";
 import type { FormState } from "@/lib/auth/account-errors";
 import { updateBrandAction } from "./actions";
@@ -11,6 +14,13 @@ type Props = { userId: string; brandName: string; industry: string | null; logoP
 export function BrandSettingsForm({ userId, brandName, industry, logoPath }: Props) {
   const [state, action, pending] = useActionState<FormState, FormData>(updateBrandAction, {});
   const [logoBusy, setLogoBusy] = useState(false);
+  // 成功訊息：下次修改任何欄位時收起；新的送出結果（state 變了）再顯示
+  const [hideOk, setHideOk] = useState(false);
+  const [seen, setSeen] = useState(state);
+  if (state !== seen) {
+    setSeen(state);
+    setHideOk(false);
+  }
   const fe = state.fieldErrors ?? {};
   const v = state.values ?? {};
   const val = (key: string, fallback: string) => (typeof v[key] === "string" ? (v[key] as string) : fallback);
@@ -18,13 +28,13 @@ export function BrandSettingsForm({ userId, brandName, industry, logoPath }: Pro
   // 儲存成功後 props 變了（<select> 掛載後不會套用新的 defaultValue），所以 props 也放進 key 讓欄位重新掛載
   const k = JSON.stringify(state.values ?? [brandName, industry]);
   return (
-    <form action={action} className="max-w-xl space-y-4 rounded-card border border-line bg-surface p-5 md:p-8">
-      <Field label="品牌名稱" error={fe.brandName}>
-        {(c) => <input key={k} {...c} name="brandName" required maxLength={60} defaultValue={val("brandName", brandName)} className={inputClass} />}
+    <form action={action} noValidate onChange={() => setHideOk(true)} className={`max-w-xl space-y-4 ${cardPad}`}>
+      <Field label="品牌名稱" mark="required" error={fe.brandName}>
+        {(c) => <input key={k} {...c} name="brandName" maxLength={60} defaultValue={val("brandName", brandName)} className={input} />}
       </Field>
-      <Field label="產業" error={fe.industry}>
+      <Field label="產業" mark="required" error={fe.industry}>
         {(c) => (
-          <select key={k} {...c} name="industry" required defaultValue={val("industry", industry ?? "")} className={inputClass}>
+          <select key={k} {...c} name="industry" defaultValue={val("industry", industry ?? "")} className={input}>
             <option value="" disabled>請選擇</option>
             {INDUSTRIES.map((i) => <option key={i} value={i}>{i}</option>)}
           </select>
@@ -32,10 +42,10 @@ export function BrandSettingsForm({ userId, brandName, industry, logoPath }: Pro
       </Field>
       {/* initialPath 是資料庫目前的 Logo；key 讓儲存成功（路徑變了）後以新路徑重新開始，已儲存的檔案不會被當成「本次上傳」而刪掉 */}
       <LogoField key={logoPath ?? ""} userId={userId} initialPath={logoPath} error={fe.logoPath} onBusyChange={setLogoBusy} disabled={pending} />
-      {state.formError && <p role="alert" className="text-sm text-danger">{state.formError}</p>}
-      {state.ok && <p role="status" className="text-sm text-success">已儲存</p>}
-      <button disabled={pending || logoBusy} className="h-11 w-full md:w-auto rounded-btn bg-ink px-6 font-semibold text-on-ink disabled:opacity-60">
-        {logoBusy ? "Logo 上傳中…" : "儲存"}
+      <ErrorText message={state.formError} />
+      {state.ok && !hideOk && <Notice tone="success">已儲存</Notice>}
+      <button disabled={pending || logoBusy} className={`${btn.primary} w-full md:w-auto`}>
+        {logoBusy ? "Logo 上傳中…" : pending ? "儲存中…" : "儲存"}
       </button>
     </form>
   );

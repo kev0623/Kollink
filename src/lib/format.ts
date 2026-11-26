@@ -8,9 +8,9 @@ export function formatTwd(n: number): string {
   return `NT$${nf.format(n)}`;
 }
 
-/** 互動率；沒填顯示「—」。 */
+/** 互動率；沒填顯示「—」。固定一位小數（QA p1）。 */
 export function formatPercent(n: number | null): string {
-  return n === null ? "—" : `${Number(n.toFixed(2))}%`;
+  return n === null ? "—" : `${n.toFixed(1)}%`;
 }
 
 /** 頭像沒上傳時顯示名字第一個字（以 code point 計算，避免拆壞 emoji）。 */

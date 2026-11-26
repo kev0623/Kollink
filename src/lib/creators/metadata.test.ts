@@ -11,7 +11,7 @@ const c: PublicCreator = {
 describe("profileMetadata", () => {
   it("已審核：title、description、openGraph，沒有 robots", () => {
     const m = profileMetadata(c);
-    expect(m.title).toBe("小美（@mei）｜Kollink");
+    expect(m.title).toEqual({ absolute: "小美（@mei）｜Kollink" });
     expect(m.description).toBe("台北市・美妝、穿搭・IG 粉絲 12,000");
     expect(m.openGraph).toMatchObject({ title: "小美（@mei）｜Kollink", type: "profile" });
     expect(m.robots).toBeUndefined();
@@ -24,6 +24,6 @@ describe("profileMetadata", () => {
   });
   it("找不到時不洩漏任何資料", () => {
     const m = profileMetadata(null);
-    expect(m).toEqual({ title: "找不到這個頁面｜Kollink", robots: { index: false, follow: false } });
+    expect(m).toEqual({ title: { absolute: "找不到這個頁面｜Kollink" }, robots: { index: false, follow: false } });
   });
 });

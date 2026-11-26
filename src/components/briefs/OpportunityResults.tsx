@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { loadMoreOpportunitiesAction, type LoadMoreOpportunitiesResult } from "@/app/creator/actions";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { btn } from "@/components/ui/styles";
+import { ErrorText } from "@/components/ui/ErrorText";
 import type { OpportunityQuery } from "@/lib/briefs/query";
 import { appendUniqueById, type Opportunity, type OpportunityPage } from "@/lib/briefs/view";
 import { OpportunityCard } from "./OpportunityCard";
@@ -54,20 +56,9 @@ function Results({ initial, query, queryKey, today }: Props) {
   }
 
   if (items.length === 0) {
-    return (
-      <div className="rounded-card border border-line bg-surface p-8 text-center">
-        {query.tab === "match" ? (
-          <>
-            <p className="font-semibold text-ink">目前沒有完全符合的招募，看看全部吧</p>
-            <Link href="/creator?tab=all" className="mt-4 inline-flex h-10 items-center rounded-btn border border-line px-4 text-sm font-semibold text-ink hover:bg-primary-soft">
-              看全部招募
-            </Link>
-          </>
-        ) : (
-          <p className="font-semibold text-ink">目前沒有開放中的招募</p>
-        )}
-      </div>
-    );
+    return query.tab === "match"
+      ? <EmptyState text="目前沒有完全符合你條件的招募。看看全部招募吧。" action={{ href: "/creator?tab=all", label: "看全部招募" }} />
+      : <EmptyState text="還沒有符合的機會。換個篩選條件試試。" />;
   }
 
   return (
@@ -75,12 +66,12 @@ function Results({ initial, query, queryKey, today }: Props) {
       <ul className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
         {items.map((o) => <li key={o.id}><OpportunityCard o={o} today={today} /></li>)}
       </ul>
-      {error && <p role="alert" className="mt-4 text-center text-sm text-danger">{error}</p>}
+      {error && <div className="mt-4 flex justify-center"><ErrorText message={error} /></div>}
       {hasMore && (
         <div className="mt-6 flex justify-center">
           <button
             type="button" onClick={loadMore} disabled={loading}
-            className="h-11 rounded-btn border border-line bg-surface px-6 text-sm font-semibold text-ink hover:bg-primary-soft disabled:opacity-60"
+            className={btn.secondary}
           >
             {loading ? "載入中…" : "載入更多"}
           </button>

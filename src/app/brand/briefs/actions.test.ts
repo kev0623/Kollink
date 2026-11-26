@@ -133,6 +133,14 @@ describe("acceptApplicationAction", () => {
       .toEqual({ fieldErrors: { deliverables: "請填寫交付內容", amount: "請填 1 到 10,000,000 的整數" } });
     expect(rpc).not.toHaveBeenCalled();
   });
+  it("超過線上付款上限要勾選線下付款確認（伺服器端擋）", async () => {
+    const ack = "超過線上付款上限，請勾選確認這筆要線下付款";
+    expect(await acceptApplicationAction({}, acceptForm({ amount: "250000", deliverables: "x" }))).toEqual({ fieldErrors: { offlineAck: ack } });
+    expect(rpc).not.toHaveBeenCalled();
+    rpc.mockResolvedValue({ data: "00000000-0000-0000-0000-0000000007e1", error: null });
+    await expect(acceptApplicationAction({}, acceptForm({ amount: "250000", deliverables: "x", offlineAck: "1" }))).rejects.toThrow("REDIRECT");
+    expect(rpc).toHaveBeenCalledTimes(1);
+  });
   it("錄取並導到合作案", async () => {
     rpc.mockResolvedValue({ data: "00000000-0000-0000-0000-0000000007e1", error: null });
     await expect(acceptApplicationAction({}, acceptForm({ amount: "6,000", deliverables: "IG 貼文 1 篇\r\n" })))

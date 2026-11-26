@@ -1,9 +1,11 @@
 import { actionCardCopy, reviewCountdown, type Collab, type CollabSide } from "@/lib/collabs/view";
+import { textLink } from "@/components/ui/styles";
 import type { SubmissionView } from "@/lib/collabs/load";
 import type { PaymentAvailability } from "@/lib/payments/config";
 import type { PaymentSummary } from "@/lib/payments/view";
+import { requiresOfflinePayment } from "@/lib/payments/limits";
 import { CollabActions } from "./CollabActions";
-import { FileTile } from "./FileTile";
+import { FILE_GRID, FileTile } from "./FileTile";
 
 type Props = {
   c: Collab;
@@ -17,32 +19,39 @@ type Props = {
   summary: PaymentSummary;
   /** 事件紀錄裡是否有平台取消（admin_cancel） */
   adminCancelled: boolean;
+  /** 創作者還沒有收款帳戶、而這個合作案已付款未撥款：說明文字改成請先設定收款帳戶（QA m19） */
+  payoutPrompt?: boolean;
 };
 
 /** 「現在要做什麼」卡片（主色外框）：輪到自己時顯示動作；輪到對方時說明在等什麼（文字見 actionCardCopy）。 */
-export function ActionCard({ c, side, uid, latest, nowMs, devPaymentEnabled, payment, summary, adminCancelled }: Props) {
+export function ActionCard({ c, side, uid, latest, nowMs, devPaymentEnabled, payment, summary, adminCancelled, payoutPrompt }: Props) {
   const fromApplication = c.briefId !== null;
-  const copy = actionCardCopy(c.status, side, adminCancelled, fromApplication);
+  const offlineOnly = requiresOfflinePayment(c.amount);
+  const base = actionCardCopy(c.status, side, adminCancelled, fromApplication, payoutPrompt === true && side === "creator");
+  // 超過線上付款上限：不能選信用卡或 ATM，卡片文字改成線下付款
+  const copy = offlineOnly && c.status === "awaiting_payment" && side === "brand"
+    ? { ...base, title: "輪到你：安排線下付款", body: "款項由平台保管，創作者交稿並發佈後才撥款。" }
+    : base;
   const countdown = c.status === "in_review" ? reviewCountdown(c.reviewDueAt, nowMs) : null;
   return (
-    <section aria-labelledby="action-title" className={`rounded-card border-2 bg-surface p-4 md:p-5 ${copy.mine ? "border-primary" : "border-line"}`}>
+    <section aria-labelledby="action-title" className={`rounded-card border p-4 md:p-6 ${copy.mine ? "border-primary bg-primary-soft" : "border-line bg-surface"}`}>
       <h2 id="action-title" className="text-lg font-bold text-ink">{copy.title}</h2>
-      <p className="mt-1 text-sm text-muted">{copy.body}</p>
+      <p className={`mt-1 text-sm ${copy.mine ? "text-ink" : "text-muted"}`}>{copy.body}</p>
       {countdown && <p className="mt-2 text-sm font-semibold text-ink">{countdown}</p>}
       {c.status === "awaiting_payout" && c.publishedUrl && (
         <p className="mt-2 min-w-0 break-all text-sm">
-          貼文：<a href={c.publishedUrl} target="_blank" rel="noopener noreferrer" className="text-ink underline underline-offset-2">{c.publishedUrl}</a>
+          貼文：<a href={c.publishedUrl} target="_blank" rel="noopener noreferrer" className={`${textLink} break-all`}>{c.publishedUrl}</a>
         </p>
       )}
       {side === "brand" && c.status === "in_review" && latest && latest.files.length > 0 && (
-        <ul aria-label="最新一次交稿的檔案" className="mt-3 flex flex-wrap gap-2">
+        <ul aria-label="最新一次交稿的檔案" className={`mt-3 ${FILE_GRID}`}>
           {latest.files.map((f) => <li key={f.path}><FileTile f={f} /></li>)}
         </ul>
       )}
       <div className="mt-4">
         <CollabActions
           collabId={c.id} status={c.status} side={side} uid={uid} fromApplication={fromApplication}
-          devPaymentEnabled={devPaymentEnabled} payment={payment} summary={summary}
+          devPaymentEnabled={devPaymentEnabled} payment={payment} summary={summary} offlineOnly={offlineOnly}
         />
       </div>
     </section>

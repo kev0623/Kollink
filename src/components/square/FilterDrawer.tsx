@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { SlidersHorizontal, X } from "lucide-react";
+import { btn } from "@/components/ui/styles";
 import { formatNumber } from "@/lib/format";
 
 type Props = { count: number; total: number; children: React.ReactNode };
@@ -28,7 +29,7 @@ export function FilterDrawer({ count, total, children }: Props) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="inline-flex h-10 items-center gap-2 rounded-btn border border-line bg-surface px-4 text-sm font-semibold text-ink lg:hidden"
+        className={`${btn.secondary} lg:hidden`}
       >
         <SlidersHorizontal size={16} strokeWidth={1.5} aria-hidden="true" />
         篩選{count > 0 ? `（${count}）` : ""}
@@ -37,21 +38,21 @@ export function FilterDrawer({ count, total, children }: Props) {
         ref={ref}
         onClose={() => setOpen(false)}
         aria-labelledby="filter-drawer-title"
-        className="fixed inset-y-0 left-auto right-0 m-0 h-dvh max-h-dvh w-full max-w-sm bg-surface p-0 text-ink backdrop:bg-ink/40 lg:hidden"
+        className="fixed inset-y-0 left-auto right-0 m-0 h-dvh max-h-dvh w-full max-w-sm bg-surface p-0 text-ink backdrop:bg-bg/70 lg:hidden"
       >
         <div className="flex h-full flex-col">
           <div className="flex items-center justify-between border-b border-line px-4 py-3">
             <h2 id="filter-drawer-title" className="font-bold">篩選</h2>
             <button
               type="button" onClick={() => setOpen(false)} aria-label="關閉篩選"
-              className="flex h-10 w-10 items-center justify-center rounded-btn hover:bg-primary-soft"
+              className={btn.icon}
             >
               <X size={20} strokeWidth={1.5} aria-hidden="true" />
             </button>
           </div>
           <div className="flex-1 overflow-y-auto px-4 py-4">{children}</div>
           <div className="border-t border-line p-4">
-            <button type="button" onClick={() => setOpen(false)} className="h-11 w-full rounded-btn bg-ink font-semibold text-on-ink">
+            <button type="button" onClick={() => setOpen(false)} className={`${btn.primary} w-full`}>
               查看 {formatNumber(total)} 位創作者
             </button>
           </div>

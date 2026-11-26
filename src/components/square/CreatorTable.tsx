@@ -15,13 +15,14 @@ const SORTABLE: SortableColumn[] = [
   { label: "貼文報價", sort: "price", dir: "ascending", hint: "依起價（所有報價中的最低價）由低到高排序" },
 ];
 
-const th = "whitespace-nowrap px-4 py-3 text-left text-xs font-medium text-muted";
+const th = "whitespace-nowrap px-4 py-3 text-left text-xs font-bold text-muted";
 const td = "whitespace-nowrap px-4 py-3";
 
 type Props = { items: SquareCreator[]; sort: SquareSort; onSort: (s: SquareSort) => void };
 
 export function CreatorTable({ items, sort, onSort }: Props) {
   return (
+    <div>
     <div className="relative overflow-x-auto rounded-card border border-line bg-surface">
       <table className="w-full min-w-[640px] text-sm">
         <thead>
@@ -36,7 +37,7 @@ export function CreatorTable({ items, sort, onSort }: Props) {
                     data-sort={col.sort}
                     onClick={() => onSort(active ? "newest" : col.sort)}
                     title={active ? "改回最新加入" : col.hint}
-                    className={`inline-flex items-center gap-1 rounded-btn hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink ${active ? "font-semibold text-ink" : ""}`}
+                    className={`inline-flex items-center gap-1 rounded-btn hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus ${active ? "font-semibold text-ink" : ""}`}
                   >
                     {col.label}
                     {active && (col.dir === "descending"
@@ -52,13 +53,15 @@ export function CreatorTable({ items, sort, onSort }: Props) {
         </thead>
         <tbody className="divide-y divide-line">
           {items.map((c) => (
-            <tr key={c.userId}>
+            <tr key={c.userId} className="hover:bg-subtle">
               <td className={td}>
                 <div className="flex items-center gap-3">
                   <Avatar path={c.avatarPath} name={c.displayName} size="sm" />
                   <div className="min-w-0">
-                    <Link href={`/c/${c.handle}`} className="font-semibold text-ink hover:underline">{c.displayName}</Link>
+                    <Link href={`/c/${c.handle}`} className="inline-flex min-h-11 items-center font-semibold text-ink hover:underline">{c.displayName}</Link>
                     <p className="text-xs text-muted">@{c.handle}</p>
+                    {/* 手機看不到右邊的欄位：把粉絲數與互動率放在第一欄 */}
+                    <p className="text-xs text-muted md:hidden">粉絲 {formatNumber(c.followerCount)}・互動率 {formatPercent(c.engagementRate)}</p>
                   </div>
                 </div>
               </td>
@@ -71,7 +74,7 @@ export function CreatorTable({ items, sort, onSort }: Props) {
                   <FavoriteButton creatorId={c.userId} name={c.displayName} initial={c.isFavorite} />
                   <Link
                     href={`/c/${c.handle}`}
-                    className="inline-flex h-9 items-center rounded-btn border border-line px-3 text-xs font-semibold text-ink hover:bg-primary-soft"
+                    className="inline-flex min-h-11 items-center rounded-btn border border-line-strong px-3 text-xs font-semibold text-ink hover:bg-subtle"
                   >
                     查看<span className="sr-only"> {c.displayName}</span>
                   </Link>
@@ -81,6 +84,8 @@ export function CreatorTable({ items, sort, onSort }: Props) {
           ))}
         </tbody>
       </table>
+    </div>
+    <p className="mt-2 text-xs text-muted md:hidden">表格可以左右滑動，看更多欄位。</p>
     </div>
   );
 }

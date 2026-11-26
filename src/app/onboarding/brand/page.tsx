@@ -1,12 +1,17 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import { getCurrentUser } from "@/lib/auth/current-user";
+import { FormSkeleton } from "@/components/ui/Skeleton";
+import { h1 } from "@/components/ui/styles";
 import { BrandOnboardingForm } from "../BrandOnboardingForm";
+
+export const metadata: Metadata = { title: "建立品牌資料" };
 
 export default function BrandOnboardingPage() {
   return (
     <>
-      <h1 className="mb-6 text-[32px] font-bold text-ink">填寫品牌資料</h1>
-      <Suspense fallback={null}>
+      <h1 className={`${h1} mb-6`}>填寫品牌資料</h1>
+      <Suspense fallback={<FormSkeleton fields={2} />}>
         <Form />
       </Suspense>
     </>

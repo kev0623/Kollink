@@ -110,3 +110,8 @@ export function validateCreatorInput(i: CreatorInput): Record<string, string> | 
   }
   return Object.keys(e).length ? e : null;
 }
+
+/** 寄驗證碼前的 Email 格式檢查（寬鬆：有一個 @、網域有點、沒有空白）；真正的驗證交給寄信。 */
+export function isEmail(v: string): boolean {
+  return v.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v);
+}

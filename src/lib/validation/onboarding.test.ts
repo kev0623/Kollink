@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  MAX_RAW_LENGTH, cleanText, cleanTextWithin, hasBidi, normalizeIgUsername, suggestHandle, validateBrandInput, validateCreatorInput,
+  MAX_RAW_LENGTH, cleanText, cleanTextWithin, hasBidi, isEmail, normalizeIgUsername, suggestHandle, validateBrandInput, validateCreatorInput,
   type CreatorInput,
 } from "./onboarding";
 
@@ -119,5 +119,16 @@ describe("cleanTextWithin", () => {
   });
   it("cleanText 可以直接當 map 的 callback（不會把索引當成截斷長度）", () => {
     expect(["  a ", " b"].map(cleanText)).toEqual(["a", "b"]);
+  });
+});
+
+describe("isEmail", () => {
+  it("一般格式通過、缺 @ 或網域時不通過", () => {
+    expect(isEmail("a@b.co")).toBe(true);
+    expect(isEmail("name+tag@kollink.com.tw")).toBe(true);
+    expect(isEmail("ab.co")).toBe(false);
+    expect(isEmail("a@b")).toBe(false);
+    expect(isEmail("a @b.co")).toBe(false);
+    expect(isEmail("")).toBe(false);
   });
 });

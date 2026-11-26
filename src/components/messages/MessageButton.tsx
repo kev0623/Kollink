@@ -2,16 +2,17 @@
 
 import { useActionState } from "react";
 import { MessageCircle } from "lucide-react";
+import { btn } from "@/components/ui/styles";
 import { startConversationAction, type StartState } from "@/app/brand/messages/actions";
 
 /** 公開頁的「傳訊息」（只有品牌看得到）：開啟或找到既有的對話後導過去。 */
 export function MessageButton({ creatorId }: { creatorId: string }) {
   const [state, action, pending] = useActionState<StartState, FormData>(startConversationAction, {});
   return (
-    <form action={action} className="contents">
+    <form action={action} noValidate className="contents">
       <input type="hidden" name="creatorId" value={creatorId} />
       <button type="submit" disabled={pending}
-        className="flex h-11 w-full min-w-0 items-center justify-center gap-1.5 rounded-btn border border-line bg-surface font-semibold text-ink disabled:opacity-60">
+        className={`${btn.secondary} w-full min-w-0`}>
         <MessageCircle size={18} strokeWidth={1.5} aria-hidden="true" />
         {pending ? "開啟中…" : "傳訊息"}
       </button>
