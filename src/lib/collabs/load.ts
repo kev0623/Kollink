@@ -58,7 +58,7 @@ export async function loadCollabDetail(id: string): Promise<CollabDetailData | n
   const notes = revisionNotesByRound(subs, events);
   const submissions = subs.map((s) => ({
     ...s,
-    files: s.filePaths.map((p, i) => ({ path: p, kind: fileKindOf(p), label: fileLabel(p, i), url: urls.get(p) ?? null })),
+    files: s.filePaths.map((p, i) => ({ path: p, kind: fileKindOf(p), label: fileLabel(p, i, s.round), url: urls.get(p) ?? null })),
     revisionNotes: notes[s.round] ?? [],
   }));
   return { collab, submissions, events, payments };

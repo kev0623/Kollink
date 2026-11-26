@@ -4,6 +4,10 @@ import { useEffect, useId, useRef, useState, useTransition } from "react";
 import { brandCollabAction, startPaymentAction } from "@/app/brand/collabs/actions";
 import { creatorCollabAction } from "@/app/creator/collabs/actions";
 import { ConfirmAction } from "@/components/briefs/ConfirmAction";
+import { CopyButton } from "@/components/ui/CopyButton";
+import { ErrorText } from "@/components/ui/ErrorText";
+import { Notice } from "@/components/ui/Notice";
+import { btn } from "@/components/ui/styles";
 import type { CollabSide, CollabStatus } from "@/lib/collabs/view";
 import { formatTwd } from "@/lib/format";
 import type { CheckoutForm, PaymentMethod } from "@/lib/payments/checkout";
@@ -13,7 +17,6 @@ import { atmDeadlineLabel, formatVAccount, type AtmPending, type PaymentSummary 
 import { PublishForm } from "./PublishForm";
 import { RevisionForm } from "./RevisionForm";
 import { SubmitPanel } from "./SubmitPanel";
-import { useCollabAction } from "./useCollabAction";
 
 type Props = {
   collabId: string; status: CollabStatus; side: CollabSide; uid: string;
@@ -22,7 +25,7 @@ type Props = {
   devPaymentEnabled: boolean; payment: PaymentAvailability; summary: PaymentSummary;
 };
 
-const primary = "h-11 w-full rounded-btn bg-ink px-6 font-semibold text-on-ink disabled:opacity-60 sm:w-auto";
+const primary = `${btn.primary} w-full sm:w-auto`;
 
 /** 「現在要做什麼」卡片裡的按鈕（依狀態與視角）。 */
 export function CollabActions({ collabId, status, side, uid, fromApplication, devPaymentEnabled, payment, summary }: Props) {
@@ -42,32 +45,21 @@ export function CollabActions({ collabId, status, side, uid, fromApplication, de
   return null;
 }
 
-function Feedback({ error, notice }: { error: string | null; notice: string | null }) {
-  return (
-    <>
-      {error && <p role="alert" className="text-sm text-danger">{error}</p>}
-      {notice && <p role="status" className="text-sm text-muted">{notice}</p>}
-    </>
-  );
-}
-
 function InviteReply({ collabId, fromApplication }: { collabId: string; fromApplication: boolean }) {
-  const { pending, error, notice, run } = useCollabAction();
   return (
-    <div className="space-y-2">
-      <div className="flex flex-col gap-2 sm:flex-row">
-        <button type="button" disabled={pending} onClick={() => run(() => creatorCollabAction(collabId, "accept"))} className={primary}>
-          {pending ? "處理中…" : fromApplication ? "接受條件" : "接受邀約"}
-        </button>
-        <ConfirmAction
-          label="婉拒" danger confirmLabel="確定婉拒"
-          message={fromApplication
-            ? "婉拒後這個合作案就結束了，品牌可以重新邀請你。確定要婉拒嗎？"
-            : "婉拒後品牌需要重新發出邀約，確定要婉拒嗎？"}
-          onConfirm={() => creatorCollabAction(collabId, "decline")}
-        />
-      </div>
-      <Feedback error={error} notice={notice} />
+    <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start">
+      <ConfirmAction
+        label={fromApplication ? "接受條件" : "接受邀約"} icon="check" confirmLabel="確定接受"
+        message="接受後品牌就可以付款；付款後只有平台能取消這個合作案。確定要接受嗎？"
+        onConfirm={() => creatorCollabAction(collabId, "accept")}
+      />
+      <ConfirmAction
+        label="婉拒" danger icon="x" confirmLabel="確定婉拒"
+        message={fromApplication
+          ? "婉拒後這個合作案就結束了，品牌可以重新邀請你。確定要婉拒嗎？"
+          : "婉拒後品牌需要重新發出邀約，確定要婉拒嗎？"}
+        onConfirm={() => creatorCollabAction(collabId, "decline")}
+      />
     </div>
   );
 }
@@ -77,7 +69,7 @@ function CreatorLeave({ collabId, devPaymentEnabled }: { collabId: string; devPa
   return (
     <div className="space-y-3">
       <ConfirmAction
-        label="退出合作" danger confirmLabel="確定退出"
+        label="退出合作" danger icon="leave" confirmLabel="確定退出"
         message="退出後這個合作案就結束了，不能復原；品牌可以重新邀請你或改找其他創作者。確定要退出嗎？"
         onConfirm={() => creatorCollabAction(collabId, "cancel")}
       />
@@ -100,25 +92,20 @@ function BrandPayment({ collabId, status, fromApplication, devPaymentEnabled, pa
   return (
     <div className="space-y-3">
       {status === "awaiting_payment" && payment.env === "stage" && (
-        <p className="rounded-btn border border-danger p-3 text-sm text-danger">
-          測試模式：目前使用綠界測試環境，不會真的扣款，付款完成也不會撥款給創作者。
-        </p>
+        <Notice tone="info" title="測試模式">目前使用綠界測試環境，不會真的扣款，付款完成也不會撥款給創作者。</Notice>
       )}
       {atm && <AtmCard atm={atm} />}
       {status === "awaiting_payment" && (!atm || changeMethod) && (
         <PayForm collabId={collabId} payment={payment} onCancel={atm ? () => setChangeMethod(false) : undefined} />
       )}
-      {status === "awaiting_payment" && summary.recentCreditPending && (
-        <p role="status" className="text-sm text-muted">剛完成付款？綠界確認款項可能需要幾分鐘，請稍後重新整理頁面。</p>
-      )}
       <div className="flex flex-col gap-2 sm:flex-row">
         {atm && !changeMethod && (
-          <button type="button" onClick={() => setChangeMethod(true)} className="h-11 rounded-btn border border-line px-4 text-sm font-semibold text-ink">
+          <button type="button" onClick={() => setChangeMethod(true)} className={`${btn.secondary} w-full sm:w-auto`}>
             改用其他方式付款
           </button>
         )}
         <ConfirmAction
-          label={status !== "invited" ? "取消合作" : fromApplication ? "撤回錄取" : "撤回邀約"} danger confirmLabel="確定取消"
+          label={status !== "invited" ? "取消合作" : fromApplication ? "撤回錄取" : "撤回邀約"} danger icon="x" confirmLabel="確定取消"
           message={cancelMessage}
           onConfirm={() => brandCollabAction(collabId, "cancel")}
         />
@@ -131,15 +118,18 @@ function BrandPayment({ collabId, status, fromApplication, devPaymentEnabled, pa
 /** ATM 待繳：銀行代碼、虛擬帳號、金額、期限（綠界取號通知寫進資料庫的值）。 */
 function AtmCard({ atm }: { atm: AtmPending }) {
   return (
-    <div className="rounded-btn border border-line bg-subtle p-4 text-sm text-ink">
-      <p className="font-semibold">請在 {atmDeadlineLabel(atm.expireDate)}轉帳</p>
+    <div className="rounded-input border border-line-strong bg-subtle p-4 text-sm text-ink">
+      <p className="font-bold">請在 {atmDeadlineLabel(atm.expireDate)}轉帳</p>
       <dl className="mt-2 grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-1">
         <dt className="text-muted">銀行代碼</dt>
         <dd className="font-mono">{atm.bankCode}</dd>
         <dt className="text-muted">虛擬帳號</dt>
-        <dd className="break-all font-mono text-base font-semibold">{formatVAccount(atm.vAccount)}</dd>
+        <dd className="flex min-w-0 flex-wrap items-center gap-x-2">
+          <span className="break-all font-mono text-base font-semibold">{formatVAccount(atm.vAccount)}</span>
+          <CopyButton text={atm.vAccount} label="複製帳號" />
+        </dd>
         <dt className="text-muted">金額</dt>
-        <dd className="font-semibold">{formatTwd(atm.amount)}</dd>
+        <dd className="font-semibold tabular-nums">{formatTwd(atm.amount)}</dd>
       </dl>
       <p className="mt-2 text-muted">金額必須完全相同。轉帳後通常幾分鐘內就會確認，確認後自動進入交稿。</p>
     </div>
@@ -180,9 +170,7 @@ function PayForm({ collabId, payment, onCancel }: { collabId: string; payment: P
     return (
       <div className="space-y-2">
         <button type="button" disabled className={primary}>確認並付款</button>
-        <p role="status" className="text-sm text-muted">
-          線上付款尚未開放。目前由平台人工確認款項，確認後會自動進入交稿階段。
-        </p>
+        <Notice tone="info">線上付款尚未開放。目前由平台人工確認款項，確認後會自動進入交稿階段。</Notice>
       </div>
     );
   }
@@ -204,9 +192,9 @@ function PayForm({ collabId, payment, onCancel }: { collabId: string; payment: P
   return (
     <div className="space-y-3">
       <fieldset className="space-y-2">
-        <legend className="text-sm font-semibold text-ink">付款方式</legend>
+        <legend className="text-sm font-bold text-ink">付款方式</legend>
         {METHODS.map((m) => (
-          <label key={m.value} className="flex items-start gap-2 text-sm text-ink">
+          <label key={m.value} className="flex min-h-11 items-start gap-2 text-sm text-ink">
             <input
               type="radio" name={name} value={m.value} checked={method === m.value} disabled={busy}
               onChange={() => setMethod(m.value)} className="mt-1 accent-primary"
@@ -218,15 +206,15 @@ function PayForm({ collabId, payment, onCancel }: { collabId: string; payment: P
           </label>
         ))}
       </fieldset>
-      <button type="button" disabled={busy} onClick={start} className={primary}>
-        {busy ? "前往綠界付款頁…" : "確認並付款"}
-      </button>
-      {onCancel && (
-        <button type="button" disabled={busy} onClick={onCancel} className="h-11 rounded-btn border border-line px-4 text-sm font-semibold text-ink">
-          取消
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <button type="button" disabled={busy} onClick={start} className={primary}>
+          {busy ? "前往綠界付款頁…" : "確認並付款"}
         </button>
-      )}
-      {error && <p role="alert" className="text-sm text-danger">{error}</p>}
+        {onCancel && (
+          <button type="button" disabled={busy} onClick={onCancel} className={`${btn.secondary} w-full sm:w-auto`}>取消</button>
+        )}
+      </div>
+      <ErrorText message={error} subject="付款協助" />
       {form && (
         <form ref={formRef} method="post" action={form.action} acceptCharset="UTF-8" className="hidden">
           {Object.entries(form.fields).map(([k, v]) => <input key={k} type="hidden" name={k} value={v} />)}
@@ -242,7 +230,7 @@ function DevMarkPaid({ collabId }: { collabId: string }) {
   return (
     <form method="post" action="/api/dev/mark-paid" onSubmit={() => setSubmitted(true)}>
       <input type="hidden" name="collabId" value={collabId} />
-      <button type="submit" disabled={submitted} className="h-10 rounded-btn border border-dashed border-line px-4 text-sm font-semibold text-muted disabled:opacity-50">
+      <button type="submit" disabled={submitted} className="inline-flex h-11 items-center rounded-btn border border-dashed border-line-strong px-4 text-sm font-semibold text-muted disabled:opacity-50">
         {submitted ? "送出中…" : "標記已付款（本機）"}
       </button>
     </form>
@@ -250,16 +238,14 @@ function DevMarkPaid({ collabId }: { collabId: string }) {
 }
 
 function Review({ collabId }: { collabId: string }) {
-  const { pending, error, notice, run } = useCollabAction();
   return (
-    <div className="space-y-2">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
-        <button type="button" disabled={pending} onClick={() => run(() => brandCollabAction(collabId, "approve"))} className={primary}>
-          {pending ? "處理中…" : "審核通過"}
-        </button>
-        <RevisionForm collabId={collabId} />
-      </div>
-      <Feedback error={error} notice={notice} />
+    <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start">
+      <ConfirmAction
+        label="審核通過" icon="check" confirmLabel="確定通過"
+        message="通過後就不能再要求修改；創作者發佈貼文、送出連結後，平台會把款項撥給創作者。確定要通過嗎？"
+        onConfirm={() => brandCollabAction(collabId, "approve")}
+      />
+      <RevisionForm collabId={collabId} />
     </div>
   );
 }

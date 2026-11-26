@@ -46,7 +46,7 @@ export function fileKindOf(path: string): FileKind {
 
 const KIND_LABEL: Record<FileKind, string> = { image: "圖片", video: "影片", pdf: "PDF" };
 
-/** 檔名是亂數，畫面上顯示「圖片 1」「影片 2」「PDF 3」（index 從 0 起算）。 */
-export function fileLabel(path: string, index: number): string {
-  return `${KIND_LABEL[fileKindOf(path)]} ${index + 1}`;
+/** 檔案的名稱（圖片 alt、連結名稱）：「第 n 次交稿・種類 序號」（index 從 0 起算）。 */
+export function fileLabel(path: string, index: number, round: number): string {
+  return `第 ${round} 次交稿・${KIND_LABEL[fileKindOf(path)]} ${index + 1}`;
 }

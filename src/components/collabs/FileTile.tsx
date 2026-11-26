@@ -11,14 +11,13 @@ export function FileTile({ f }: { f: SubmissionFile }) {
       {f.kind === "video"
         ? <Film size={24} strokeWidth={1.5} aria-hidden="true" />
         : <FileText size={24} strokeWidth={1.5} aria-hidden="true" />}
-      {f.label}
+      {f.label.split("・")[1] ?? f.label}
     </span>
   );
   if (!f.url) return <span title="連結產生失敗，請重新整理">{inner}</span>;
   return (
-    <a href={f.url} target="_blank" rel="noopener noreferrer" className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink">
+    <a href={f.url} target="_blank" rel="noopener noreferrer" aria-label={`${f.label}（在新分頁開啟）`} className="block rounded-btn focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus">
       {inner}
-      <span className="sr-only">（在新分頁開啟）</span>
     </a>
   );
 }

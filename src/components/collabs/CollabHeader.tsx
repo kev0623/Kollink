@@ -7,14 +7,14 @@ export function CollabHeader({ c, testPayment }: { c: Collab; testPayment: boole
   return (
     <header className="space-y-3">
       <div className="flex flex-wrap items-center gap-2">
-        <h1 className="min-w-0 break-words text-[24px] font-bold text-ink md:text-[28px]">
-          <Link href={`/c/${c.creatorHandle}`} className="underline-offset-2 hover:underline">{c.creatorName}</Link>
+        <h1 className="min-w-0 break-words font-serif text-[24px] font-bold leading-tight text-ink md:text-[28px]">
+          <Link href={`/c/${c.creatorHandle}`} className="underline-offset-4 hover:underline">{c.creatorName}</Link>
           <span className="text-muted"> × </span>
           {c.title}
         </h1>
         <CollabStatusBadge status={c.status} />
       </div>
-      <dl className="grid gap-3 rounded-card border border-line bg-surface p-4 text-sm md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] md:p-5">
+      <dl className="grid gap-4 rounded-card border border-line bg-surface p-5 text-sm md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] md:p-8">
         <div className="min-w-0">
           <dt className="text-xs text-muted">交付內容</dt>
           <dd className="mt-0.5 whitespace-pre-line break-words text-ink">{c.deliverables}</dd>
@@ -22,10 +22,10 @@ export function CollabHeader({ c, testPayment }: { c: Collab; testPayment: boole
         <div className="space-y-2">
           <div>
             <dt className="text-xs text-muted">金額</dt>
-            <dd className="mt-0.5 flex flex-wrap items-center gap-2 font-semibold text-accent">
+            <dd className="mt-0.5 flex flex-wrap items-center gap-2 font-serif text-2xl font-bold tabular-nums text-ink">
               {escrowLabel(c.status, c.amount)}
               {testPayment && (
-                <span className="rounded-full border border-danger px-2 py-0.5 text-xs font-semibold text-danger">測試付款（未實際收款）</span>
+                <span className="rounded-full border border-danger bg-danger-soft px-2 py-0.5 font-sans text-xs font-bold text-danger">測試付款（未實際收款）</span>
               )}
             </dd>
           </div>

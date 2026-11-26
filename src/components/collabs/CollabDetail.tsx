@@ -4,6 +4,7 @@ import { messagesHref } from "@/lib/messages/view";
 import type { PaymentAvailability } from "@/lib/payments/config";
 import { summarizePayments, summaryForSide } from "@/lib/payments/view";
 import { ActionCard } from "./ActionCard";
+import { PaymentStatusPoller } from "./PaymentStatusPoller";
 import { PayoutPrompt } from "./PayoutPrompt";
 import { CollabHeader } from "./CollabHeader";
 import { EventList } from "./EventList";
@@ -27,10 +28,11 @@ export function CollabDetail({ data, side, uid, nowMs, devPaymentEnabled, paymen
       <CollabHeader c={c} testPayment={fullSummary.testPaid} />
       <Stepper status={c.status} />
       {payoutPrompt && <PayoutPrompt />}
+      {side === "brand" && c.status === "awaiting_payment" && summary.recentCreditPending && <PaymentStatusPoller />}
       <ActionCard
         c={c} side={side} uid={uid} latest={latest} nowMs={nowMs}
         devPaymentEnabled={devPaymentEnabled} payment={payment} summary={summary}
-        adminCancelled={events.some((e) => e.action === "admin_cancel")}
+        adminCancelled={events.some((e) => e.action === "admin_cancel")} payoutPrompt={payoutPrompt}
       />
       <SubmissionList submissions={submissions} />
       <EventList events={events} chatHref={c.conversationId ? messagesHref(side, c.conversationId) : null} fromApplication={c.briefId !== null} />

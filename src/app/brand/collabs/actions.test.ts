@@ -39,6 +39,14 @@ describe("inviteCreatorAction", () => {
       .toEqual({ fieldErrors: { title: "請填寫案名", amount: "請填 1 到 10,000,000 的整數" } });
     expect(rpc).not.toHaveBeenCalled();
   });
+  it("超過線上付款上限要勾選線下付款確認（伺服器端擋）", async () => {
+    const base = { creatorId: CREATOR, title: "x", deliverables: "x", amount: "200,001" };
+    expect(await inviteCreatorAction({}, form(base))).toEqual({ fieldErrors: { offlineAck: "超過線上付款上限，請勾選確認這筆要線下付款" } });
+    expect(rpc).not.toHaveBeenCalled();
+    rpc.mockResolvedValue({ data: COLLAB, error: null });
+    await expect(inviteCreatorAction({}, form({ ...base, offlineAck: "1" }))).rejects.toThrow("REDIRECT");
+    expect(rpc).toHaveBeenCalledTimes(1);
+  });
   it("成功後導到合作案", async () => {
     rpc.mockResolvedValue({ data: COLLAB, error: null });
     await expect(inviteCreatorAction({}, form({ creatorId: CREATOR, title: " 夏季邀約 ", deliverables: "Reels 1 支", amount: "3,000" })))
