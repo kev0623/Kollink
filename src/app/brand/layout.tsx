@@ -17,7 +17,7 @@ export default function BrandLayout({ children }: { children: React.ReactNode })
           <Gate>{children}</Gate>
         </Suspense>
       </main>
-      {/* 手機只放可用的項目，「即將推出」的 4 項放不下 */}
+      {/* 手機只放可用的項目（計畫 7 起共 5 項）；「即將推出」的項目放不下 */}
       <Suspense fallback={null}><BottomTabBar items={BRAND_NAV.filter((i) => i.href)} /></Suspense>
     </div>
   );

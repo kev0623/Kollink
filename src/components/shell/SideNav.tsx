@@ -3,6 +3,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { SITE_NAME } from "@/lib/site";
 import { NavIcon } from "./NavIcon";
+import { UnreadBadge } from "./UnreadBadge";
 import { isActive, type NavItem } from "./nav";
 
 const itemBase = "flex h-[60px] w-16 flex-col items-center justify-center gap-1 rounded-nav px-1 text-center text-[11px] leading-tight focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2";
@@ -23,7 +24,10 @@ export function SideNav({ items, footer }: { items: NavItem[]; footer?: React.Re
                   aria-current={active ? "page" : undefined}
                   className={`${itemBase} ${active ? "bg-ink font-medium text-on-ink" : "text-ink hover:bg-line"}`}
                 >
-                  <NavIcon name={it.icon} size={22} />
+                  <span className="relative inline-flex">
+                    <NavIcon name={it.icon} size={22} />
+                    {it.badge === "messages" && <UnreadBadge />}
+                  </span>
                   <span>{it.label}</span>
                 </Link>
               ) : (
