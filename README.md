@@ -2,6 +2,19 @@
 
 台灣品牌 × 創作者合作平台。
 
+## 技術
+
+Next.js 16（App Router、`cacheComponents`）、React 19、Tailwind v4、Supabase（Postgres、Auth、Realtime、Storage）、綠界金流。介面主題「紅線」：首頁、登入／註冊、創作者公開頁有一條 3D 紅線（`three`，0.187.0），只在這三類頁面動態載入（`requestIdleCallback` 之後才 import）；品牌後台、創作者後台、管理後台不載入 three。`prefers-reduced-motion: reduce` 時不載入、改用靜態 SVG。
+
+## 設計系統
+
+- **Token**：`src/app/globals.css`。深色是預設；淺色在 `[data-theme="light"]` 與 `@media (prefers-color-scheme: light)` 兩段，兩段必須完全一致（`src/app/theme-tokens.test.ts` 會檢查）。顏色只用 token class，不寫色碼。
+- **共用元件**：`src/components/ui/`（`PageHeader`、`EmptyState`、`Notice`、`FilePicker`、`SupportLink`、`Skeleton` 等）與 `src/components/ui/styles.ts`（`btn`、`input`、`textarea`、`chip`、`rows`、`cardPad`、`h1`、`h2`、`textLink`）。
+- **按鈕**：主要動作一律 `btn.primary`（紅）；破壞性動作 `btn.danger`，並用 `ConfirmAction`（頁面內確認，不用瀏覽器 `confirm()`；後台用 `NoteAction`）。`bg-ink text-on-ink` 只用在選中的篩選標籤。
+- **3D**：`src/components/thread/`；只有 `thread-scene.ts` 可以 import `three`。
+- **主題切換**：`ThemeSelect`（跟隨系統／深色／淺色，存在 `localStorage` 的 `kollink-theme`）；`<html data-theme>` 由 `<head>` 內的腳本在第一次繪製前設定，不會閃。
+- 設計規格：`docs/superpowers/specs/2026-11-27-ui-upgrade-design.md`。
+
 ## 本機開發
 
 需要：Node 22（見 `.nvmrc`）、Docker Desktop（先啟動）。
@@ -373,7 +386,10 @@ select count(*) as refund_required from public.payments where refund_required;  
 
 ## 上線前檢查
 
-- [ ] `src/lib/site.ts` 的 `SUPPORT_EMAIL`（與 `SUPPORT_LINE_URL`）已改成真實客服聯絡方式（目前是 `support@example.com` 佔位；/help、停權橫幅、金額上限說明都會顯示它）。
+- [ ] 設定客服聯絡方式：`src/lib/site.ts` 的 `SUPPORT_EMAIL`（與 `SUPPORT_LINE_URL`）改成真實信箱與 LINE 官方帳號網址。目前是 `support@example.com` 佔位，在改掉之前，客服連結會顯示「聯絡方式準備中」（/help、停權橫幅、金額上限說明、線下付款提示、無法退出合作的說明）。
+- [ ] 確認首頁大標：`src/lib/site.ts` 的 `HERO_HEADLINE`（目前「把對的品牌，牽到對的創作者。」；備選：「一條紅線，從品牌牽到創作者。」「好的合作，從牽對線開始。」）。
+- [ ] 用真的 iPhone（Safari）開首頁、登入頁、創作者公開頁，確認 3D 紅線順暢、文字可讀、捲動不卡；省電模式與「減少動態效果」開啟時應該是靜態線。
+- [ ] 管理員用真的驗證器 App（Google Authenticator、1Password 等）掃描 `/admin/mfa` 的 QR Code 完成綁定（QR 在白底磚上，深色模式也能掃）；同時確認 Dashboard 已開啟 TOTP（見「正式環境設定」第 7a 項）。
 
 ## 資安修正（全系統體檢）上線
 

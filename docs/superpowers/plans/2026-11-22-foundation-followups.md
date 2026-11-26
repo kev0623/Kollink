@@ -299,6 +299,25 @@
 - `transition_collaboration` 的 system 身分要求「透過 PostgREST 以 service_role 呼叫」；**pg_cron 以 postgres 身分執行會被判定為「不是參與者」**。可以改用 Next route 搭配 Cron 和 secret，再以 service_role 呼叫 RPC；或另外寫一個只授權給 service_role 的 `auto_approve_due()` definer 函式。
 → 已完成（計畫 6：Vercel Cron + auto_approve_due）。
 
+### UI 升級（紅線）的延後項目
+規格 `docs/superpowers/specs/2026-11-27-ui-upgrade-design.md` §15 與 Task 13／14 留下的項目（每條一行，附原因）：
+- 「格式合法但不存在」的創作者頁回真正的 404：需要 proxy 查資料庫；目前回 200 並帶 `noindex`（格式不合法的已在 proxy 回 404）。
+- 篩選標籤上的個別筆數：需要新的彙總 SQL。
+- 後台「申請時間」改成最近送審時間（QA m17）：需要 SQL 欄位。
+- OTP 信件主旨依登入／註冊區分（QA m5）：是 Supabase 信件範本設定，不是 App UI。
+- 交稿檔案顯示原始檔名：路徑是 UUID，需要資料庫存檔名。
+- Logo／頭像裁切、批次操作與鍵盤快捷、SLA 顯示、稽核紀錄頁面：超出本次範圍。
+- 訪客可瀏覽的公開廣場、範例創作者區塊：需要先決定公開哪些資料。
+- 浮動 toast、頁面轉場動畫、PWA、多語系：不在範圍。
+- 真正的客服信箱與 LINE：擁有者提供後只改 `src/lib/site.ts`（README「上線前檢查」）。
+- 列表上的「款項已退回」：列表只顯示狀態徽章；要在列表顯示需要改列表 RPC（目前只有詳情頁顯示）。
+- 「報酬與報價」（QA m12，我的頁面報價要先儲存合作形式）：目前用提示文字處理；合併成一個表單是改版，不是微調。
+- 瀏覽器「上一頁」按鈕無法被站內離開提示攔截（`useUnsavedChanges` 已註明）；只有站內連結與關閉分頁會提示。
+- 已登入者仍可開 `/onboarding`（已有資料時的導向）：屬於登入導向流程，沒有放進 UI 改版（`/login`、`/signup` 已導走）。
+- 3D 紅線只在真機以外的環境驗證過（桌面 Chrome 軟體 WebGL）；iPhone 實機要上線前測（README 上線前檢查）。
+- 首頁 390 寬的 LCP 元素是副標段落而不是大標（段落面積較大）；仍是伺服器渲染的文字、LCP 約 1.2–1.6 秒，不影響目標，若要讓大標成為 LCP，需要加大手機字級或縮短副標。
+- 創作者在有未過期 ATM 訂單的待付款合作案仍看得到「退出合作」按鈕，按下後由資料庫擋下並顯示說明；可改成預先隱藏按鈕（需要把 ATM 狀態帶到創作者端 RPC）。
+
 ## 部署
 
 正式環境（Hosted Supabase 與 Vercel）的設定清單以 README 的「正式環境（Hosted Supabase）設定」與「部署（Vercel）」為準，這裡不重複（避免兩份清單不一致）。清單包含：Redirect URLs 加 `https://<site>/auth/callback**`、關閉匿名登入、Email 範本、自訂 SMTP、CAPTCHA、Google OAuth。
