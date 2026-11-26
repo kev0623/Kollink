@@ -378,6 +378,6 @@ curl -i -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/cron/a
 
 ### 計畫 9（管理後台）上線
 
-1. 合併前：`npx supabase db push --remote`（`20261128000100_admin_core.sql`、`20261128000200_admin_money.sql`、`20261128000300_admin_review_fixes.sql`，依序）。migration 會改 `transition_collaboration`：之後撥款只能經由後台或 `admin_mark_payout`（舊的撥款 SQL 會報 `invalid transition`）；`admin_mark_payout` 現在要帶帳號末四碼。
+1. 合併前：`npx supabase db push --remote`（`20261128000100_admin_core.sql`、`20261128000200_admin_money.sql`、`20261128000300_admin_review_fixes.sql`、`20261128000400_admin_refund_participant_guard.sql`，依序）。migration 會改 `transition_collaboration`：之後撥款只能經由後台或 `admin_mark_payout`（舊的撥款 SQL 會報 `invalid transition`）；`admin_mark_payout` 現在要帶帳號末四碼。
 2. 合併後：照「管理後台 → 新增管理員」把營運人員的帳號加進 `admins`，用該帳號登入確認進得了 `/admin`。
 3. 通知所有已審核的創作者到「我的 → 收款帳戶」填寫（沒有帳戶時不能撥款）。目前 `awaiting_payout` 的合作案在創作者填好前會顯示「創作者還沒填收款帳戶」。
