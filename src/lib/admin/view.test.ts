@@ -100,6 +100,12 @@ describe("其他 Row", () => {
     expect(toAnomaly({ ...{ id: 2, created_at: "t", source: "x", kind: "y", merchant_trade_no: "", provider_trade_no: "",
       expected_amount_twd: null, received_amount_twd: null, collaboration_id: null, resolved_at: null, resolved_note: null } }).kind).toBe("y");
   });
+  it("付款異常：管理員補登來源、原型屬性與空值都有安全的顯示", () => {
+    const base = { id: 3, created_at: null, source: "admin", kind: "toString", merchant_trade_no: null, provider_trade_no: null,
+      expected_amount_twd: null, received_amount_twd: null, collaboration_id: null, resolved_at: null, resolved_note: null };
+    expect(toAnomaly(base)).toMatchObject({ source: "管理員補登", kind: "toString", merchantTradeNo: "", createdAt: "" });
+    expect(toAnomaly({ ...base, source: null, kind: null })).toMatchObject({ source: "未知", kind: "未知" });
+  });
   it("違規訊息與總覽", () => {
     expect(toFlaggedMessage({
       id: "m", conversation_id: null, body: null, created_at: null, sender_side: "creator", brand_id: null, brand_name: null,

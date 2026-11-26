@@ -1,4 +1,4 @@
-import { ADMIN_STALE_MESSAGE } from "@/lib/admin/errors";
+import { ADMIN_STALE_MESSAGE, PAYOUT_ACCOUNT_CHANGED_MESSAGE } from "@/lib/admin/errors";
 import { COLLAB_STALE_MESSAGE } from "@/lib/collabs/errors";
 
 // 招募相關 definer 函式的錯誤（supabase/migrations/20261124000500_briefs.sql）→ 畫面文字。
@@ -58,5 +58,6 @@ export function briefFieldError(error: DbError): Record<string, string> | null {
 /** 連點或另一個分頁已處理過：狀態已經變了，畫面重新整理即可，不必當成錯誤。 */
 export function isStaleStateMessage(message: string): boolean {
   return message === MESSAGES["brief not open"] || message === MESSAGES["application not pending"]
-    || message === COLLAB_STALE_MESSAGE || message === ADMIN_STALE_MESSAGE;
+    || message === COLLAB_STALE_MESSAGE || message === ADMIN_STALE_MESSAGE
+    || message === PAYOUT_ACCOUNT_CHANGED_MESSAGE;
 }

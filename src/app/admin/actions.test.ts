@@ -9,6 +9,7 @@ vi.mock("@/lib/auth/current-user", () => ({ requireAdmin }));
 vi.mock("@/lib/supabase/server", () => ({ createClient: async () => ({ rpc }) }));
 vi.mock("@/lib/payments/config", () => ({ readEcpayConfig }));
 
+import { PAYOUT_ACCOUNT_CHANGED_MESSAGE } from "@/lib/admin/errors";
 import {
   adminCancelAction, markMessageReviewedAction, markPayoutAction, recordLostPaymentAction, recordOfflinePaymentAction,
   resolveAnomalyAction, resolveRefundAction, setCreatorStatusAction,
@@ -106,12 +107,16 @@ describe("recordLostPaymentAction", () => {
 
 describe("撥款、平台取消、退款、異常", () => {
   it("撥款：轉帳說明必填；測試付款被拒", async () => {
-    expect(await markPayoutAction(COLLAB, " ")).toEqual({ ok: false, error: "請填寫轉帳說明" });
+    expect(await markPayoutAction(COLLAB, " ", "5678")).toEqual({ ok: false, error: "請填寫轉帳說明" });
+    expect(await markPayoutAction(COLLAB, "已轉帳", "56")).toEqual(BAD);
+    expect(await markPayoutAction(COLLAB, "已轉帳", undefined)).toEqual(BAD);
+    rpc.mockResolvedValue({ data: null, error: { code: "55000", message: "payout account changed" } });
+    expect(await markPayoutAction(COLLAB, "已轉帳", "5678")).toEqual({ ok: false, error: PAYOUT_ACCOUNT_CHANGED_MESSAGE });
     rpc.mockResolvedValue({ data: null, error: { code: "55000", message: "test payment cannot be paid out" } });
-    expect(await markPayoutAction(COLLAB, "已轉帳")).toMatchObject({ ok: false, error: expect.stringContaining("測試環境") });
+    expect(await markPayoutAction(COLLAB, "已轉帳", "5678")).toMatchObject({ ok: false, error: expect.stringContaining("測試環境") });
     rpc.mockResolvedValue({ data: null, error: null });
-    expect(await markPayoutAction(COLLAB, "已轉帳")).toEqual({ ok: true });
-    expect(rpc).toHaveBeenLastCalledWith("admin_mark_payout", { p_collab_id: COLLAB, p_note: "已轉帳" });
+    expect(await markPayoutAction(COLLAB, "已轉帳", "5678")).toEqual({ ok: true });
+    expect(rpc).toHaveBeenLastCalledWith("admin_mark_payout", { p_collab_id: COLLAB, p_note: "已轉帳", p_expected_last4: "5678" });
   });
   it("平台取消：有已付款的款項時提示需退款", async () => {
     rpc.mockResolvedValue({ data: 1, error: null });

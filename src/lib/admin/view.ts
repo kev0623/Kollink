@@ -346,24 +346,34 @@ export type PayoutRecord = {
 
 // ── 付款異常 ──
 
-export const ANOMALY_KIND_LABEL: Record<string, string> = {
+const ANOMALY_KIND_LABEL: Record<string, string> = {
   unknown_trade_no: "找不到付款單",
   amount_mismatch: "金額與付款單不符",
   price_mismatch: "付款單與報價不符",
 };
 
-export const ANOMALY_SOURCE_LABEL: Record<string, string> = {
+const ANOMALY_SOURCE_LABEL: Record<string, string> = {
   notify: "付款通知",
   payment_info: "ATM 取號通知",
+  admin: "管理員補登",
 };
+
+/** 標籤查表：用 Object.hasOwn（不吃到 toString 之類的原型屬性），沒有對應就照原文，空值顯示「未知」。 */
+function labelOf(map: Record<string, string>, key: string | null): string {
+  if (!key) return "未知";
+  return Object.hasOwn(map, key) ? map[key] : key;
+}
+
+export const anomalyKindLabel = (k: string | null): string => labelOf(ANOMALY_KIND_LABEL, k);
+export const anomalySourceLabel = (s: string | null): string => labelOf(ANOMALY_SOURCE_LABEL, s);
 
 export type AnomalyRow = {
   id: number;
-  created_at: string;
-  source: string;
-  kind: string;
-  merchant_trade_no: string;
-  provider_trade_no: string;
+  created_at: string | null;
+  source: string | null;
+  kind: string | null;
+  merchant_trade_no: string | null;
+  provider_trade_no: string | null;
   expected_amount_twd: number | null;
   received_amount_twd: number | null;
   collaboration_id: string | null;
@@ -388,16 +398,16 @@ export type Anomaly = {
 export function toAnomaly(r: AnomalyRow): Anomaly {
   return {
     id: r.id,
-    createdAt: r.created_at,
-    source: ANOMALY_SOURCE_LABEL[r.source] ?? r.source,
-    kind: ANOMALY_KIND_LABEL[r.kind] ?? r.kind,
-    merchantTradeNo: r.merchant_trade_no,
-    providerTradeNo: r.provider_trade_no,
-    expected: r.expected_amount_twd,
-    received: r.received_amount_twd,
-    collabId: r.collaboration_id,
-    resolvedAt: r.resolved_at,
-    resolvedNote: r.resolved_note,
+    createdAt: r.created_at ?? "",
+    source: anomalySourceLabel(r.source),
+    kind: anomalyKindLabel(r.kind),
+    merchantTradeNo: r.merchant_trade_no ?? "",
+    providerTradeNo: r.provider_trade_no ?? "",
+    expected: r.expected_amount_twd ?? null,
+    received: r.received_amount_twd ?? null,
+    collabId: r.collaboration_id ?? null,
+    resolvedAt: r.resolved_at ?? null,
+    resolvedNote: r.resolved_note ?? null,
   };
 }
 

@@ -115,13 +115,14 @@ export async function recordLostPaymentAction(
 }
 
 /** 撥款：管理員已在平台外轉帳，標記 awaiting_payout → completed（轉帳說明必填）。 */
-export async function markPayoutAction(collabId: unknown, memo: unknown): Promise<AdminActionResult> {
+export async function markPayoutAction(collabId: unknown, memo: unknown, expectedLast4: unknown): Promise<AdminActionResult> {
   await requireAdmin();
-  if (!isUuid(collabId)) return { ok: false, error: BAD_INPUT };
+  // expectedLast4：管理員畫面上看到的帳號末四碼；資料庫在撥款時比對，創作者中途改了帳戶就拒絕
+  if (!isUuid(collabId) || typeof expectedLast4 !== "string" || !/^[0-9]{4}$/.test(expectedLast4)) return { ok: false, error: BAD_INPUT };
   const n = note(memo, "轉帳說明");
   if (!n.ok) return n;
   const supabase = await createClient();
-  const { error } = await supabase.rpc("admin_mark_payout", { p_collab_id: collabId, p_note: n.value });
+  const { error } = await supabase.rpc("admin_mark_payout", { p_collab_id: collabId, p_note: n.value, p_expected_last4: expectedLast4 });
   if (error) return { ok: false, error: adminErrorMessage(error) };
   revalidateCollab(collabId);
   return { ok: true };

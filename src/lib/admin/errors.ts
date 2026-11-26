@@ -6,10 +6,15 @@ type DbError = { code?: string; message?: string };
 /** 資料已經被處理過（連點、另一位管理員、另一個分頁）：畫面重新整理即可，不當成錯誤。 */
 export const ADMIN_STALE_MESSAGE = "資料已經更新";
 
+/** 撥款前創作者剛改了收款帳戶：畫面要重新載入帳號讓管理員重新確認（不是一般錯誤）。 */
+export const PAYOUT_ACCOUNT_CHANGED_MESSAGE = "創作者剛更新了收款帳戶，請重新確認帳號後再撥款";
+
 const MESSAGES: Record<string, string> = {
   "not authenticated": "登入已逾時，請重新登入",
   "not admin": "這個帳號不是管理員",
   "admin is participant": "你是這個合作案的參與者，不能用管理員身分處理",
+  "admin is subject": "不能處理自己的帳號或訊息",
+  "payout account changed": PAYOUT_ACCOUNT_CHANGED_MESSAGE,
   "invalid note": "說明必填，最多 500 字，不能有特殊字元",
   "invalid reason": "原因必填，最多 500 字，不能有特殊字元",
   "creator not found": "找不到這位創作者",

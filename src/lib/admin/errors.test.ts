@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { isStaleStateMessage } from "@/lib/briefs/errors";
 import { COLLAB_STALE_MESSAGE } from "@/lib/collabs/errors";
-import { ADMIN_STALE_MESSAGE, adminErrorMessage, paymentResultNotice } from "./errors";
+import { ADMIN_STALE_MESSAGE, adminErrorMessage, PAYOUT_ACCOUNT_CHANGED_MESSAGE, paymentResultNotice } from "./errors";
 
 describe("adminErrorMessage", () => {
   it("已知錯誤轉中文；不認得的回通用訊息", () => {
@@ -9,6 +9,8 @@ describe("adminErrorMessage", () => {
     expect(adminErrorMessage({ message: "payout account missing" })).toBe("創作者還沒填收款帳戶，請先聯絡創作者");
     expect(adminErrorMessage({ message: "admin is participant" })).toContain("參與者");
     expect(adminErrorMessage({ message: "toString" })).toBe("發生錯誤，請稍後再試");
+    expect(adminErrorMessage({ message: "admin is subject" })).toBe("不能處理自己的帳號或訊息");
+    expect(adminErrorMessage({ message: "payout account changed" })).toBe(PAYOUT_ACCOUNT_CHANGED_MESSAGE);
     expect(adminErrorMessage({})).toBe("發生錯誤，請稍後再試");
   });
   it("狀態已經變了：當成重新整理，不是錯誤", () => {
@@ -16,6 +18,7 @@ describe("adminErrorMessage", () => {
     expect(adminErrorMessage({ message: "collaboration not awaiting payout" })).toBe(COLLAB_STALE_MESSAGE);
     expect(adminErrorMessage({ message: "invalid transition: payout from completed by admin" })).toBe(COLLAB_STALE_MESSAGE);
     expect(isStaleStateMessage(ADMIN_STALE_MESSAGE)).toBe(true);
+    expect(isStaleStateMessage(PAYOUT_ACCOUNT_CHANGED_MESSAGE)).toBe(true);
   });
 });
 
