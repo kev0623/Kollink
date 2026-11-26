@@ -573,6 +573,11 @@ isOneToOne: false
               "approved": number,"failed": (string)[]
             }[]
                            },
+"brief_applicant_status_counts":
+{ Args: { "p_brief_id": string }; Returns: {
+              "accepted_count": number,"all_count": number,"applied_count": number,"rejected_count": number
+            }[]
+                           },
 "brief_application_counts":
 { Args: { "p_ids": (string)[] }; Returns: {
               "applicant_count": number,"brief_id": string,"pending_count": number
@@ -704,6 +709,11 @@ isOneToOne: false
                            },
 "list_brief_applicants":
 { Args: { "p_brief_id": string }; Returns: {
+              "avatar_path": string,"collaboration_id": string,"created_at": string,"creator_id": string,"display_name": string,"engagement_rate": number,"follower_count": number,"handle": string,"id": string,"message": string,"proposed_price_twd": number,"region": string,"status": string
+            }[]
+                           },
+"list_brief_applicants_page":
+{ Args: { "p_brief_id": string,"p_limit"?: number,"p_offset"?: number,"p_status"?: string }; Returns: {
               "avatar_path": string,"collaboration_id": string,"created_at": string,"creator_id": string,"display_name": string,"engagement_rate": number,"follower_count": number,"handle": string,"id": string,"message": string,"proposed_price_twd": number,"region": string,"status": string
             }[]
                            },

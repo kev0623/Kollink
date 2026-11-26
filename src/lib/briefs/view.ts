@@ -458,6 +458,33 @@ export function filterApplicants(list: Applicant[], f: ApplicantFilter): Applica
   return f === "all" ? list : list.filter((a) => a.status === f);
 }
 
+/** brief_applicant_status_counts 的一列（bigint 可能是字串）。 */
+export type ApplicantCountsRow = {
+  all_count: number | string | null; applied_count: number | string | null;
+  accepted_count: number | string | null; rejected_count: number | string | null;
+};
+/** 各篩選的人數（「全部」含已撤回）。 */
+export type ApplicantCounts = Record<ApplicantFilter, number>;
+export const NO_APPLICANTS: ApplicantCounts = { all: 0, applied: 0, accepted: 0, rejected: 0 };
+
+export function toApplicantCounts(r: ApplicantCountsRow | null | undefined): ApplicantCounts {
+  const n = (v: number | string | null | undefined) => Math.max(0, toNumberOrNull(v ?? null) ?? 0);
+  return r ? { all: n(r.all_count), applied: n(r.applied_count), accepted: n(r.accepted_count), rejected: n(r.rejected_count) } : NO_APPLICANTS;
+}
+
+/** 「報名 N 人」的 N：待處理＋已錄取（不算已婉拒與已撤回）。 */
+export function activeApplicantCount(c: ApplicantCounts): number {
+  return c.applied + c.accepted;
+}
+
+/** 這個篩選是空的時候要說什麼。 */
+export const APPLICANT_EMPTY_TEXT: Record<ApplicantFilter, string> = {
+  all: "還沒有人報名",
+  applied: "沒有待處理的報名，都處理完了。",
+  accepted: "還沒有錄取任何人。",
+  rejected: "沒有婉拒過的報名。",
+};
+
 export function parseApplicantFilter(v: string | string[] | undefined): ApplicantFilter {
   const x = Array.isArray(v) ? v[0] : v;
   return APPLICANT_FILTERS.some((f) => f.value === x) ? (x as ApplicantFilter) : "all";

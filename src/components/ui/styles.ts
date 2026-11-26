@@ -35,9 +35,12 @@ export const cardPad = "rounded-card border border-line bg-surface p-5 md:p-8";
 export const rows = "divide-y divide-line overflow-hidden rounded-card border border-line bg-surface";
 export const row = "block min-h-11 px-4 py-3 hover:bg-subtle md:px-5 md:py-4";
 
+/** 連結裡有 <LinkPending />、而且正在換頁時：淡出並閃動，讓人知道按下去有反應 */
+export const linkPending = "has-[[data-pending]]:animate-pulse has-[[data-pending]]:opacity-70";
+
 /** 篩選標籤（44px）；選中時反白膠囊 */
 export function chip(active: boolean): string {
-  return `inline-flex h-11 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-btn border px-4 text-sm font-semibold ${
+  return `inline-flex h-11 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-btn border px-4 text-sm font-semibold ${linkPending} ${
     active ? "border-ink bg-ink text-on-ink" : "border-line-strong bg-surface text-ink hover:bg-subtle"
   }`;
 }
@@ -46,4 +49,4 @@ export function chip(active: boolean): string {
 export const h1 = "font-serif text-[28px] font-bold leading-tight text-ink";
 export const h2 = "text-lg font-bold text-ink";
 /** 行內文字連結（加大點擊範圍） */
-export const textLink = "inline-flex min-h-11 items-center font-semibold text-ink underline underline-offset-4 hover:text-accent";
+export const textLink = "inline-flex min-h-11 min-w-11 items-center justify-center font-semibold text-ink underline underline-offset-4 hover:text-accent";

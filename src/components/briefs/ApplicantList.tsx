@@ -6,51 +6,58 @@ import { MapPin } from "lucide-react";
 import { acceptApplicationAction, rejectApplicationAction } from "@/app/brand/briefs/actions";
 import { OfferForm } from "@/components/collabs/OfferForm";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { LinkPending } from "@/components/ui/LinkPending";
+import { Pagination } from "@/components/ui/Pagination";
 import { btn, chip, rows, textLink } from "@/components/ui/styles";
 import { Avatar } from "@/components/square/Avatar";
 import { acceptDefaults } from "@/lib/validation/collab";
-import { APPLICANT_FILTERS, filterApplicants, proposedPriceLabel, sortApplicants, type Applicant, type ApplicantFilter } from "@/lib/briefs/view";
+import { APPLICANTS_ANCHOR } from "@/lib/briefs/query";
+import { APPLICANT_EMPTY_TEXT, APPLICANT_FILTERS, proposedPriceLabel, type Applicant, type ApplicantCounts, type ApplicantFilter } from "@/lib/briefs/view";
 import { formatDateTimeTw } from "@/lib/briefs/dates";
 import { formatNumber, formatPercent } from "@/lib/format";
+import { pageHref } from "@/lib/paging";
 import { ConfirmAction } from "./ConfirmAction";
 import { ApplicationStatusBadge } from "./StatusBadges";
 
 /** 錄取表單預設值需要的招募資料。 */
 export type OfferBrief = { budgetMin: number | null; budgetMax: number | null; collabTypes: string[]; description: string };
 
-/** 報名者列表與篩選（全部、待處理、已錄取、已婉拒）。篩選寫進網址 ?applicants=（重新整理、分享連結都會保留）。 */
-export function ApplicantList({ briefId, brief, applicants, initialFilter }: {
-  briefId: string; brief: OfferBrief; applicants: Applicant[]; initialFilter: ApplicantFilter;
+/**
+ * 報名者列表：篩選（全部、待處理、已錄取、已婉拒）與分頁都在網址（?applicants=、?page=），由伺服器取這一頁。
+ * 換篩選時畫面不捲動（scroll={false}）；換頁時回到報名者區塊的開頭（#applicants）。
+ */
+export function ApplicantList({ briefId, brief, applicants, filter, counts, page }: {
+  briefId: string; brief: OfferBrief; applicants: Applicant[]; filter: ApplicantFilter; counts: ApplicantCounts; page: number;
 }) {
-  const [filter, setFilter] = useState<ApplicantFilter>(initialFilter);
-  const shown = sortApplicants(filterApplicants(applicants, filter));
-
-  function choose(f: ApplicantFilter) {
-    setFilter(f);
-    const url = new URL(window.location.href);
-    if (f === "all") url.searchParams.delete("applicants");
-    else url.searchParams.set("applicants", f);
-    window.history.replaceState(null, "", url);
-  }
+  const base = `/brand/briefs/${briefId}`;
+  const hrefFor = (f: ApplicantFilter, p = 1) =>
+    pageHref(base, { applicants: f === "all" ? undefined : f }, p, p > 1 || page > 1 ? `#${APPLICANTS_ANCHOR}` : "");
 
   return (
     <div>
-      <div role="group" aria-label="篩選報名者" className="scroll-fade-x flex gap-2 overflow-x-auto pb-1">
+      <nav aria-label="篩選報名者" className="scroll-fade-x flex gap-2 overflow-x-auto pb-1">
         {APPLICANT_FILTERS.map((f) => (
-          <button key={f.value} type="button" onClick={() => choose(f.value)} aria-pressed={filter === f.value} className={chip(filter === f.value)}>
-            {f.label} <span className="tabular-nums opacity-80">{filterApplicants(applicants, f.value).length}</span>
-          </button>
+          <Link
+            key={f.value} href={hrefFor(f.value)} scroll={false} replace
+            aria-current={filter === f.value ? "page" : undefined} className={chip(filter === f.value)}
+          >
+            {f.label} <span className="tabular-nums opacity-80">{formatNumber(counts[f.value])}</span><LinkPending />
+          </Link>
         ))}
-      </div>
+      </nav>
       <div className="mt-4">
-        {shown.length === 0 ? (
-          <EmptyState text="沒有符合的報名者" />
+        {applicants.length === 0 ? (
+          <EmptyState
+            text={APPLICANT_EMPTY_TEXT[filter]}
+            secondary={filter === "all" ? undefined : { href: hrefFor("all"), label: "看全部報名者" }}
+          />
         ) : (
           <ul className={rows}>
-            {shown.map((a) => <li key={a.id} className="p-4 md:p-5"><ApplicantItem a={a} briefId={briefId} brief={brief} /></li>)}
+            {applicants.map((a) => <li key={a.id} className="p-4 md:p-5"><ApplicantItem a={a} briefId={briefId} brief={brief} /></li>)}
           </ul>
         )}
       </div>
+      <Pagination page={page} total={counts[filter]} hrefFor={(p) => hrefFor(filter, p)} label="報名者分頁" unit="人" />
     </div>
   );
 }

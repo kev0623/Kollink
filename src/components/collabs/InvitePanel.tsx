@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { inviteCreatorAction } from "@/app/brand/collabs/actions";
 import { btn } from "@/components/ui/styles";
+import { useKeyboardPanel } from "@/components/ui/useKeyboardInset";
 import { MessageButton } from "@/components/messages/MessageButton";
 import { OfferForm } from "./OfferForm";
 
@@ -12,8 +13,10 @@ import { OfferForm } from "./OfferForm";
  */
 export function InvitePanel({ creatorId, creatorName }: { creatorId: string; creatorName: string }) {
   const [open, setOpen] = useState(false);
+  // 鍵盤彈出時（手機）：面板移到鍵盤上方、高度縮到看得到的範圍
+  const panel = useKeyboardPanel(0);
   return (
-    <div className="fixed inset-x-0 bottom-0 z-10 max-h-[80vh] overflow-y-auto border-t border-line bg-surface px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] md:sticky md:inset-x-auto md:bottom-auto md:top-4 md:max-h-none md:overflow-visible md:rounded-card md:border md:p-5">
+    <div style={open ? panel.style : undefined} onFocus={panel.onFocus} className="fixed inset-x-0 bottom-0 z-10 max-h-[80dvh] overflow-y-auto overscroll-contain border-t border-line bg-surface px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] md:sticky md:inset-x-auto md:bottom-auto md:top-4 md:max-h-none md:overflow-visible md:rounded-card md:border md:p-5">
       {!open ? (
         <div key="open" className="grid grid-cols-2 gap-2">
           <button type="button" onClick={() => setOpen(true)}

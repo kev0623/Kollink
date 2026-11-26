@@ -4,7 +4,7 @@ import { SUPPORT_EMAIL, SUPPORT_LINE_URL, SUPPORT_PAGE, isSupportPlaceholder, su
 /** 「聯絡我們」：信箱（mailto）＋（有設定時）LINE＋說明頁。subject 帶入信件主旨；onHelpPage 時不再顯示指向 /help 的連結。
  * 信箱還是佔位值時不顯示會寄不出去的 mailto，改顯示「聯絡方式準備中」。 */
 export function SupportLink({ subject, compact = false, onHelpPage = false }: { subject?: string; compact?: boolean; onHelpPage?: boolean }) {
-  const link = "inline-flex min-h-11 items-center font-semibold text-ink underline underline-offset-4 hover:text-accent";
+  const link = "inline-flex min-h-11 min-w-11 items-center justify-center font-semibold text-ink underline underline-offset-4 hover:text-accent";
   if (compact) return <Link href={SUPPORT_PAGE} className={link}>聯絡我們</Link>;
   const placeholder = isSupportPlaceholder();
   return (

@@ -63,10 +63,9 @@ export function SquareResults({ initial, query, queryKey, view, onSort, onClear 
   if (items.length === 0) {
     const noFavorites = emptyStateOf(query) === "no-favorites";
     return (
-      <div className="space-y-3">
-        <EmptyState text={noFavorites ? "還沒有收藏的創作者。在卡片、列表或創作者頁按 ♡，就會出現在這裡。" : "找不到符合條件的創作者"} />
-        {!noFavorites && <div className="flex justify-center"><button type="button" onClick={onClear} className={btn.secondary}>清除篩選</button></div>}
-      </div>
+      noFavorites
+        ? <EmptyState text="還沒有收藏的創作者。在卡片、列表或創作者頁按 ♡，就會出現在這裡。" action={{ label: "看全部創作者", onClick: onClear }} />
+        : <EmptyState text="沒有創作者符合目前的條件。放寬粉絲數、起價或地區，或清除篩選重新找。" action={{ label: "清除篩選", onClick: onClear }} />
     );
   }
 

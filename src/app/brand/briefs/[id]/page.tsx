@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { ApplicantList } from "@/components/briefs/ApplicantList";
 import { BriefDetailView } from "@/components/briefs/BriefDetailView";
 import { BriefOwnerActions } from "@/components/briefs/BriefOwnerActions";
@@ -9,10 +9,13 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { BriefStatusBadge } from "@/components/briefs/StatusBadges";
 import { requireRole } from "@/lib/auth/current-user";
-import { loadApplicants, loadOwnBrief } from "@/lib/briefs/brand";
+import { loadApplicantsPage, loadOwnBrief } from "@/lib/briefs/brand";
 import { todayTw } from "@/lib/briefs/dates";
-import { isUuid } from "@/lib/briefs/query";
-import { deadlineText, displayStatusOf, parseApplicantFilter, rewardLabel, UNTITLED_DRAFT } from "@/lib/briefs/view";
+import { APPLICANTS_ANCHOR, isUuid } from "@/lib/briefs/query";
+import {
+  activeApplicantCount, deadlineText, displayStatusOf, NO_APPLICANTS, parseApplicantFilter, rewardLabel, UNTITLED_DRAFT,
+} from "@/lib/briefs/view";
+import { pageHref, pageOverflow, parsePage } from "@/lib/paging";
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -38,8 +41,19 @@ async function BriefDetail({ params, searchParams }: Props) {
   if (!brief) notFound();
   const today = todayTw();
   const display = displayStatusOf(brief.status, brief.deadline, today);
-  const applicants = brief.status === "draft" ? [] : await loadApplicants(id);
-  const counted = applicants.filter((a) => a.status === "applied" || a.status === "accepted").length;
+  const sp = await searchParams;
+  const filter = parseApplicantFilter(sp.applicants);
+  const page = parsePage(sp.page);
+  // 草稿不會有報名者
+  const { items: applicants, counts } = brief.status === "draft"
+    ? { items: [], counts: NO_APPLICANTS }
+    : await loadApplicantsPage(id, filter, page);
+  // 網址的頁數超過最後一頁（剛處理完這一頁最後一位、舊連結）：改到最後一頁
+  const last = pageOverflow(page, counts[filter]);
+  if (last !== null) {
+    redirect(pageHref(`/brand/briefs/${id}`, { applicants: filter === "all" ? undefined : filter }, last, `#${APPLICANTS_ANCHOR}`));
+  }
+  const counted = activeApplicantCount(counts);
 
   return (
     <div className="space-y-6">
@@ -71,19 +85,21 @@ async function BriefDetail({ params, searchParams }: Props) {
         </div>
       </details>
 
-      <section aria-labelledby="applicants-title">
+      {/* scroll-mt：換頁後捲到這裡時，標題上方留一點空間 */}
+      <section id={APPLICANTS_ANCHOR} aria-labelledby="applicants-title" className="scroll-mt-6">
         <h2 id="applicants-title" className="text-lg font-bold text-ink">報名者</h2>
         <div className="mt-3">
           {brief.status === "draft" ? (
-            <EmptyState text="發佈後，創作者的報名會出現在這裡" />
-          ) : applicants.length === 0 ? (
-            <EmptyState text="還沒有人報名" />
+            <EmptyState text="這則招募還是草稿。發佈後，創作者的報名會出現在這裡。" />
+          ) : counts.all === 0 ? (
+            display === "open"
+              ? <EmptyState text="還沒有人報名。不想等的話，可以到創作者廣場主動邀請適合的創作者。" action={{ href: "/brand", label: "去創作者廣場" }} />
+              : <EmptyState text="這則招募結束時沒有人報名。可以再刊登一則，或到創作者廣場主動邀請。" action={{ href: "/brand/briefs/new", label: "刊登招募" }} secondary={{ href: "/brand", label: "去創作者廣場" }} />
           ) : (
             <ApplicantList
               briefId={brief.id}
               brief={{ budgetMin: brief.budgetMin, budgetMax: brief.budgetMax, collabTypes: brief.collabTypes, description: brief.description }}
-              applicants={applicants}
-              initialFilter={parseApplicantFilter((await searchParams).applicants)}
+              applicants={applicants} filter={filter} counts={counts} page={page}
             />
           )}
         </div>

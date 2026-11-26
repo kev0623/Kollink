@@ -4,8 +4,14 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { mapAccountError, type FormState } from "@/lib/auth/account-errors";
 import { validateBrandInput, validateCreatorInput } from "@/lib/validation/onboarding";
-import { homeFor } from "@/lib/auth/post-login";
+import { afterOnboardingPath, onboardingPath } from "@/lib/auth/post-login";
 import { parseBrandForm, parseCreatorForm } from "@/lib/validation/form-data";
+
+/** 表單帶著的「填完要回去的頁面」。不信任內容：由 afterOnboardingPath／onboardingPath 檢查。 */
+function nextOf(fd: FormData): string | null {
+  const v = fd.get("next");
+  return typeof v === "string" && v ? v : null;
+}
 
 export async function createBrandAccountAction(_prev: FormState, fd: FormData): Promise<FormState> {
   const input = parseBrandForm(fd);
@@ -22,10 +28,10 @@ export async function createBrandAccountAction(_prev: FormState, fd: FormData): 
   if (error) {
     const mapped = mapAccountError(error);
     // 帳號已存在：回到 /onboarding，由 layout 依實際身分導向
-    if (mapped.kind === "exists") redirect("/onboarding");
+    if (mapped.kind === "exists") redirect(onboardingPath(null, nextOf(fd)));
     return { ...mapped.state, values };
   }
-  redirect(homeFor("brand"));
+  redirect(afterOnboardingPath("brand", nextOf(fd)));
 }
 
 export async function createCreatorAccountAction(_prev: FormState, fd: FormData): Promise<FormState> {
@@ -45,8 +51,8 @@ export async function createCreatorAccountAction(_prev: FormState, fd: FormData)
   });
   if (error) {
     const mapped = mapAccountError(error);
-    if (mapped.kind === "exists") redirect("/onboarding");
+    if (mapped.kind === "exists") redirect(onboardingPath(null, nextOf(fd)));
     return { ...mapped.state, values };
   }
-  redirect(homeFor("creator"));
+  redirect(afterOnboardingPath("creator", nextOf(fd)));
 }

@@ -37,7 +37,6 @@ export const LINE_LINK_ERRORS = {
   code: "驗證碼錯誤或已過期，請重新取得",
   format: "請輸入信件裡的 6 到 8 位數驗證碼",
   expired: "確認時間已過，請重新用 LINE 登入",
-  send: "無法寄出驗證碼，請稍後再試，或改用 Email 驗證碼登入",
   mismatch: "登入的帳號和 LINE 提供的 Email 不一致，已登出。請重新用 LINE 登入",
   failed: "沒有完成，請再試一次",
   bind: "你已經登入了，但 LINE 還沒有綁定；下次用 LINE 登入時會再試一次。",

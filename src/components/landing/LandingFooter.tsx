@@ -4,7 +4,7 @@ import { PRIVACY_PAGE, SITE_NAME, SITE_TAGLINE, SUPPORT_PAGE, TERMS_PAGE } from 
 import { EntryButtons } from "./Hero";
 
 export function LandingFooter() {
-  const link = "inline-flex min-h-11 items-center text-sm text-muted hover:text-ink";
+  const link = "inline-flex min-h-11 min-w-11 items-center justify-center text-sm text-muted hover:text-ink";
   return (
     <>
       <section aria-labelledby="closing-title" className="mx-auto max-w-[1280px] px-5 py-20 md:px-16 md:py-28">

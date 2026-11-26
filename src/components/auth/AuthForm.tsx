@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { fetchProviderStatus } from "@/lib/auth/oauth-provider";
 import { isValidOtpCode, OTP_MAX_LENGTH, toOtpCode } from "@/lib/auth/otp-code";
+import { classifyOtpSendError, otpSendErrorMessage } from "@/lib/auth/otp-send-error";
 import { isEmail } from "@/lib/validation/onboarding";
 import { btn, input } from "@/components/ui/styles";
 import { ErrorText } from "@/components/ui/ErrorText";
@@ -52,9 +53,10 @@ export function AuthForm({ role, next, googleEnabled, lineEnabled = false }: Pro
     setPending(true);
     const { error: e } = await supabase.auth.signInWithOtp({ email: email.trim(), options: { shouldCreateUser: true } });
     setPending(false);
-    if (e) {
+    const kind = classifyOtpSendError(e);
+    if (kind) {
       setAttempt((n) => n + 1);
-      setError(e.status === 429 ? "寄送太頻繁，請稍後再試" : "無法寄出驗證碼，請確認 Email 是否正確");
+      setError(otpSendErrorMessage(kind, { google: googleEnabled, line: lineEnabled }));
       return;
     }
     setStep("code");

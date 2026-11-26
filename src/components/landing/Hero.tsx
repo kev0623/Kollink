@@ -20,7 +20,7 @@ export function Hero({ scene }: { scene?: React.ReactNode }) {
           </p>
           <EntryButtons className="mt-8" />
           <p className="mt-4 text-sm text-muted">
-            已經有帳號？<Link href="/login" className="inline-flex min-h-11 items-center font-bold text-ink underline underline-offset-4">登入</Link>
+            已經有帳號？<Link href="/login" className="inline-flex min-h-11 min-w-11 items-center justify-center font-bold text-ink underline underline-offset-4">登入</Link>
           </p>
         </div>
       </div>
