@@ -1,5 +1,6 @@
 import type { CollabDetailData } from "@/lib/collabs/load";
 import type { CollabSide } from "@/lib/collabs/view";
+import { messagesHref } from "@/lib/messages/view";
 import { ActionCard } from "./ActionCard";
 import { CollabHeader } from "./CollabHeader";
 import { EventList } from "./EventList";
@@ -18,7 +19,7 @@ export function CollabDetail({ data, side, uid, nowMs, devPaymentEnabled }: Prop
       <Stepper status={c.status} />
       <ActionCard c={c} side={side} uid={uid} latest={latest} nowMs={nowMs} devPaymentEnabled={devPaymentEnabled} />
       <SubmissionList submissions={submissions} />
-      <EventList events={events} />
+      <EventList events={events} chatHref={c.conversationId ? messagesHref(side, c.conversationId) : null} />
     </div>
   );
 }
