@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { inputClassName } from "@/components/admin/styles";
+import { ErrorText } from "@/components/ui/ErrorText";
+import { btn, input } from "@/components/ui/styles";
 import { isValidOtpCode, toOtpCode } from "@/lib/auth/otp-code";
 import { createClient } from "@/lib/supabase/client";
 
@@ -70,7 +71,7 @@ export function MfaForm({ mode, factorId, next }: Props) {
   }
 
   return (
-    <form onSubmit={(e) => { e.preventDefault(); void submit(); }} className="mt-6 space-y-4">
+    <form noValidate onSubmit={(e) => { e.preventDefault(); void submit(); }} className="mt-6 space-y-4">
       {mode === "enroll" ? (
         <>
           <p className="text-sm text-muted">管理後台需要兩步驟驗證。請用驗證器 App（Google Authenticator、1Password 等）掃描下方 QR Code，再輸入 App 顯示的 6 位數驗證碼完成綁定。</p>
@@ -79,9 +80,9 @@ export function MfaForm({ mode, factorId, next }: Props) {
             <div className="space-y-3">
               {/* QR Code 是 Supabase 回傳的 data URI（CSP img-src 已允許 data:） */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={enrollment.qrCode} alt="驗證器 QR Code" width={192} height={192} className="mx-auto rounded-input border border-line bg-surface" />
+              <img src={enrollment.qrCode} alt="驗證器 QR Code" width={192} height={192} className="mx-auto rounded-input border border-line bg-surface p-2" />
               <p className="text-sm text-muted">無法掃描時，請在驗證器手動輸入這組密鑰：</p>
-              <p className="break-all rounded-input border border-line bg-panel px-3 py-2 font-mono text-sm text-ink select-all">{enrollment.secret}</p>
+              <p className="break-all rounded-input border border-line bg-subtle px-3 py-2 font-mono text-sm text-ink select-all">{enrollment.secret}</p>
             </div>
           )}
         </>
@@ -92,12 +93,12 @@ export function MfaForm({ mode, factorId, next }: Props) {
       <input
         id="mfa-code" ref={codeRef} inputMode="numeric" autoComplete="one-time-code" pattern="\d{6}" maxLength={TOTP_LENGTH} required
         value={code} onChange={(e) => setCode(toOtpCode(e.target.value, TOTP_LENGTH))} placeholder="6 位數驗證碼"
-        disabled={!activeFactorId} className={`${inputClassName} tracking-widest`}
+        disabled={!activeFactorId} className={`${input} tracking-widest`}
       />
-      <button type="submit" disabled={pending || !activeFactorId} className="h-11 w-full rounded-btn bg-ink px-4 font-semibold text-on-ink disabled:opacity-60">
+      <button type="submit" disabled={pending || !activeFactorId} className={`${btn.primary} w-full`}>
         {mode === "enroll" ? "完成綁定" : "驗證"}
       </button>
-      {error && <p role="alert" className="text-sm text-danger">{error}</p>}
+      <ErrorText message={error} />
     </form>
   );
 }

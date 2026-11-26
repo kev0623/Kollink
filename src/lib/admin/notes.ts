@@ -21,3 +21,9 @@ export function validateAdminNote(note: string, label = "說明"): string | null
 
 /** 綠界交易編號（TS 的補登 Server Action 與補登表單共用；SQL 端是 admin_record_lost_payment 的 invalid provider_trade_no）。 */
 export const PROVIDER_TRADE_NO_RE = /^[A-Za-z0-9]{1,20}$/;
+
+/** 人工標記已付款前的金額核對：只在畫面上擋（伺服器端的 admin_record_* 不變）。 */
+export function amountMatches(input: string, expected: number): boolean {
+  const d = input.replace(/[,，\s]/g, "");
+  return /^\d{1,9}$/.test(d) && Number(d) === expected;
+}

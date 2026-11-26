@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { PageHeader } from "@/components/ui/PageHeader";
 import { requireAdmin } from "@/lib/auth/current-user";
 import { loadCreators } from "@/lib/admin/load";
 import { adminHref, CREATOR_FILTERS, parseCreatorFilter, parsePage, parseQuery, type SearchParams } from "@/lib/admin/query";
@@ -15,9 +16,8 @@ export const metadata: Metadata = { title: "創作者審核" };
 export default function AdminCreatorsPage({ searchParams }: Props) {
   return (
     <div>
-      <h1 className="text-[32px] font-bold text-ink">創作者審核</h1>
-      <p className="mt-1 text-sm text-muted">打開 IG，確認自我介紹裡有驗證碼、粉絲數合理，再核准。</p>
-      <Suspense fallback={<div aria-busy="true" className="mt-6 h-48 rounded-card border border-line bg-surface" />}>
+      <PageHeader title="創作者審核" description="打開 IG，確認自我介紹裡有驗證碼、粉絲數合理，再核准。" />
+      <Suspense fallback={<div aria-busy="true" className="h-48 rounded-card border border-line bg-surface" />}>
         <Section searchParams={searchParams} />
       </Suspense>
     </div>
@@ -34,7 +34,7 @@ async function Section({ searchParams }: Props) {
   const href = (p: { status?: string; page?: number }) =>
     adminHref("/admin/creators", { status: p.status ?? status, q, page: p.page ?? 1 }, { status: "pending" });
   return (
-    <div className="mt-6 space-y-4">
+    <div className="space-y-4">
       <FilterChips label="審核狀態" options={CREATOR_FILTERS} current={status} hrefFor={(v) => href({ status: v })} />
       <SearchForm action="/admin/creators" q={q} placeholder="網址代稱、IG 或名稱" hidden={status === "pending" ? {} : { status }} />
       <CreatorReviewList items={items} />

@@ -2,6 +2,8 @@
 
 import { useState, useTransition } from "react";
 import { markMessageReviewedAction } from "@/app/admin/actions";
+import { ErrorText } from "@/components/ui/ErrorText";
+import { btn } from "@/components/ui/styles";
 
 /** 標記已檢視：不會改變任何人的資料，所以不需要確認區塊；進行中 disabled。 */
 export function ReviewButton({ messageId }: { messageId: string }) {
@@ -22,11 +24,11 @@ export function ReviewButton({ messageId }: { messageId: string }) {
             }
           });
         }}
-        className="h-10 rounded-btn border border-line bg-surface px-4 text-sm font-semibold text-ink disabled:opacity-60"
+        className={`${btn.secondary} w-full sm:w-auto`}
       >
         {pending ? "處理中…" : "標記已檢視"}
       </button>
-      {error && <p role="alert" className="mt-2 text-sm text-danger">{error}</p>}
+      <div className="mt-2"><ErrorText message={error} /></div>
     </div>
   );
 }

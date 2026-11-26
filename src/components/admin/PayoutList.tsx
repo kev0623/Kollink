@@ -4,28 +4,29 @@ import { caseCode } from "@/lib/collabs/view";
 import { formatTwd } from "@/lib/format";
 import { maskAccount } from "@/lib/payout-account";
 import { payoutBlocker, type AdminPayout } from "@/lib/admin/view";
-import { emptyClassName } from "./styles";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { row, rows } from "@/components/ui/styles";
 
 /** 待撥款列表：帳戶只顯示末四碼；完整帳號在合作案詳情的撥款區（會記錄查看）。 */
 export function PayoutList({ items }: { items: AdminPayout[] }) {
-  if (items.length === 0) return <p className={emptyClassName}>沒有待撥款的合作案</p>;
+  if (items.length === 0) return <EmptyState text="沒有待撥款的合作案" />;
   return (
-    <ul className="divide-y divide-line overflow-hidden rounded-card border border-line bg-surface">
+    <ul className={rows}>
       {items.map((p) => {
         const blocker = payoutBlocker({ testPaid: p.testPaid, refundPending: p.refundPending, hasAccount: p.bankCode !== null });
         return (
           <li key={p.id}>
             <Link
               href={`/admin/collabs/${p.id}`}
-              className="block space-y-1 p-4 hover:bg-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ink md:p-5"
+              className={`${row} space-y-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-focus`}
             >
               <div className="flex flex-wrap items-center gap-2">
                 <span className="font-mono text-xs text-muted">{caseCode(p.id)}</span>
                 <p className="min-w-0 break-words font-semibold text-ink">{p.title}</p>
-                <span className="font-semibold text-accent">{formatTwd(p.amount)}</span>
+                <span className="font-serif font-bold tabular-nums text-ink">{formatTwd(p.amount)}</span>
               </div>
               <p className="min-w-0 break-words text-sm text-muted">
-                @{p.creatorHandle}（{p.creatorName}）・{p.brandName}・{p.waitingSince ? `${formatDateTw(p.waitingSince)} 起等待` : ""}
+                {[p.creatorHandle ? `@${p.creatorHandle}${p.creatorName ? `（${p.creatorName}）` : ""}` : p.creatorName, p.brandName, p.waitingSince ? `${formatDateTw(p.waitingSince)} 起等待` : ""].filter(Boolean).join("・")}
               </p>
               <p className="text-sm">
                 {p.bankCode && p.accountLast4 ? `收款帳戶 ${p.bankCode} ${maskAccount(p.accountLast4)}` : "沒有收款帳戶"}

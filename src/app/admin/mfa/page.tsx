@@ -8,6 +8,7 @@ import { adminNextPath } from "@/lib/auth/admin-next";
 import { createClient } from "@/lib/supabase/server";
 import { SignOutButton } from "@/components/shell/SignOutButton";
 import { SITE_NAME } from "@/lib/site";
+import { cardPad, h1 } from "@/components/ui/styles";
 
 type SP = Promise<Record<string, string | string[] | undefined>>;
 
@@ -18,8 +19,8 @@ export const metadata: Metadata = { title: "管理員驗證" };
 export default function AdminMfaPage({ searchParams }: { searchParams: SP }) {
   return (
     <main className="mx-auto max-w-md px-4 py-8 md:py-16">
-      <div className="rounded-card border border-line bg-surface p-5 md:p-8">
-        <h1 className="text-[32px] font-bold text-ink">{SITE_NAME} 管理後台</h1>
+      <div className={cardPad}>
+        <h1 className={h1}>{SITE_NAME} 管理後台</h1>
         <Suspense fallback={<p className="mt-6 text-muted">載入中…</p>}>
           <Content searchParams={searchParams} />
         </Suspense>
