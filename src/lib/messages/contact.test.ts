@@ -6,10 +6,11 @@ const POSITIVE = [
   "我的電話 0912-345-678", "０９１２３４５６７８", "+886 912 345 678", "(02) 2345-6789", "07-123-4567",
   "mail: Mei.Lin@Example.com.tw", "看 https://foo.bar/x", "www.abc.xyz", "line.me/ti/p/abc", "官網 abc.com 有",
   "LINE ID: mei_123", "ＬＩＮＥ：mei", "加我賴", "加個line吧", "賴: abc", "line@abc",
+  "0912\u00ad345678", "0912_345_678", "0912/345/678", "加😀😀賴",
 ];
 const NEGATIVE = [
   "預算 NT$30,000 元", "2026-11-26 交稿", "deadline: 12/1", "online 直播", "line drawing 風格",
-  "abc.comx", "e.g. 這樣", "訂單 123456789", "IG @mei.ig", "09123456789", "加\n\n賴",
+  "abc.comx", "e.g. 這樣", "訂單 123456789", "IG @mei.ig", "09123456789", "加\n\n賴", "2026/11/26 交稿", "12/1 到 12/15",
 ];
 
 describe("contactKinds", () => {

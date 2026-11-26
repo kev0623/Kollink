@@ -18,13 +18,25 @@ export function useMessageInserts(tag: string, conversationId: string | null, on
     callback.current = onInsert;
   });
   const [status, setStatus] = useState<LiveStatus>("connecting");
+  // tag／conversationId 改變時回到 connecting（render 期間重設，不在 effect 裡 setState）
+  const key = `${tag}:${conversationId ?? ""}`;
+  const [seenKey, setSeenKey] = useState(key);
+  if (seenKey !== key) {
+    setSeenKey(key);
+    setStatus("connecting");
+  }
 
   useEffect(() => {
     const supabase = createClient();
     let channel: ReturnType<typeof supabase.channel> | null = null;
     let cancelled = false;
     void (async () => {
-      await supabase.realtime.setAuth();
+      try {
+        await supabase.realtime.setAuth();
+      } catch {
+        if (!cancelled) setStatus("error");
+        return;
+      }
       if (cancelled) return;
       channel = supabase
         .channel(`messages:${tag}:${crypto.randomUUID()}`)
@@ -39,8 +51,9 @@ export function useMessageInserts(tag: string, conversationId: string | null, on
           (payload) => callback.current(payload.new as MessageRow),
         )
         .subscribe((s) => {
+          if (cancelled) return;
           if (s === "SUBSCRIBED") setStatus("live");
-          else if (s === "CHANNEL_ERROR" || s === "TIMED_OUT") setStatus("error");
+          else if (s === "CHANNEL_ERROR" || s === "TIMED_OUT" || s === "CLOSED") setStatus("error");
         });
     })();
     return () => {

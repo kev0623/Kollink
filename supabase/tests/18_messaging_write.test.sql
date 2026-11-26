@@ -66,12 +66,13 @@ select ok(
   (select bool_and(public.has_contact_info(t)) from (values
     ('我的電話 0912-345-678'), ('０９１２３４５６７８'), ('+886 912 345 678'), ('(02) 2345-6789'), ('07-123-4567'),
     ('mail: Mei.Lin@Example.com.tw'), ('看 https://foo.bar/x'), ('www.abc.xyz'), ('line.me/ti/p/abc'), ('官網 abc.com 有'),
-    ('LINE ID: mei_123'), ('ＬＩＮＥ：mei'), ('加我賴'), ('加個line吧'), ('賴: abc'), ('line@abc')) x(t)),
+    ('LINE ID: mei_123'), ('ＬＩＮＥ：mei'), ('加我賴'), ('加個line吧'), ('賴: abc'), ('line@abc'),
+    (E'0912\u00ad345678'), ('0912_345_678'), ('0912/345/678'), (E'加\U0001F600\U0001F600賴')) x(t)),
   '電話、Email、連結、LINE 都偵測得到');
 select ok(
   (select not bool_or(public.has_contact_info(t)) from (values
     ('預算 NT$30,000 元'), ('2026-11-26 交稿'), ('deadline: 12/1'), ('online 直播'), ('line drawing 風格'),
-    ('abc.comx'), ('e.g. 這樣'), ('訂單 123456789'), ('IG @mei.ig'), ('09123456789'), (E'加\n\n賴')) x(t)),
+    ('abc.comx'), ('e.g. 這樣'), ('訂單 123456789'), ('IG @mei.ig'), ('09123456789'), (E'加\n\n賴'), ('2026/11/26 交稿'), ('12/1 到 12/15')) x(t)),
   '一般內容不會誤判');
 
 -- ── C. 開啟對話 ──

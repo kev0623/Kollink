@@ -16,5 +16,6 @@ export async function startConversationAction(_prev: StartState, fd: FormData): 
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("start_conversation", { p_creator_id: creatorId });
   if (error) return { error: messageErrorMessage(error) };
-  redirect(`/brand/messages/${data as unknown as string}`);
+  if (!isUuid(data)) return { error: "發生錯誤，請稍後再試" };
+  redirect(`/brand/messages/${data}`);
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { loadOlderMessagesAction, markReadAction } from "@/lib/messages/actions";
 import {
@@ -30,6 +31,7 @@ export function ThreadView({ conversationId, meId, side, initialMessages, initia
   const [error, setError] = useState<string | null>(null);
   const [loadingOlder, startOlder] = useTransition();
   const endRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
 
   if (initialMessages !== seenInitial) {
     setSeenInitial(initialMessages);
@@ -56,6 +58,11 @@ export function ThreadView({ conversationId, meId, side, initialMessages, initia
     setMessages((cur) => mergeMessages(cur, [m]));
     if (m.senderId !== meId) markRead();
   });
+
+  // 連上（第一次與每次重連）時重新取一次資料：訂閱成功之前插入的訊息收不到推送；merge 以 id 去重
+  useEffect(() => {
+    if (live === "live") router.refresh();
+  }, [live, router]);
 
   // 最後一則改變（收到或送出新訊息、第一次進入）時捲到最底；載入較早的訊息不會改變最後一則，所以不捲動
   const lastId = messages.length > 0 ? messages[messages.length - 1].id : null;

@@ -60,6 +60,7 @@ export function Composer({ conversationId, onSent }: { conversationId: string; o
       <textarea
         id="message-body"
         value={body}
+        readOnly={pending}
         rows={2}
         placeholder="輸入訊息…"
         onChange={(e) => {
