@@ -18,6 +18,12 @@ const MESSAGES: Record<string, string> = {
   "empty submission": "請上傳檔案或附上連結",
   "invalid note": "說明含有不允許的字元或超過 1000 字",
   "invalid published_url": "請貼上完整的貼文網址（https:// 開頭、含路徑，最多 500 字）",
+  // 計畫 8：create_payment_order
+  "not collaboration brand": "只有這個合作案的品牌可以付款",
+  "collaboration not awaiting payment": COLLAB_STALE_MESSAGE,
+  "invalid payment method": "請選擇付款方式",
+  "amount exceeds online payment limit": "金額超過線上付款上限（NT$200,000），請聯絡平台協助付款",
+  "too many payment orders": "付款嘗試次數太多，請一小時後再試",
 };
 
 const FIELD_BY_DB: Record<string, string> = {
