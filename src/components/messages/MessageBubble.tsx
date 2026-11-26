@@ -6,7 +6,7 @@ export function MessageBubble({ m, mine }: { m: Message; mine: boolean }) {
   return (
     <div className={`flex flex-col ${mine ? "items-end" : "items-start"}`}>
       <p
-        className={`max-w-[85%] whitespace-pre-wrap break-words rounded-input px-3.5 py-2 text-sm text-ink md:max-w-[70%] ${mine ? "bg-primary-soft" : "border border-line bg-surface"}`}
+        className={`max-w-[85%] whitespace-pre-wrap break-words rounded-input px-3.5 py-2 text-sm text-ink md:max-w-[70%] ${mine ? "bg-subtle" : "border border-line bg-surface"}`}
       >
         <span className="sr-only">{mine ? "你：" : "對方："}</span>
         {m.body}

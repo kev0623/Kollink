@@ -17,7 +17,7 @@ export function Stepper({ status }: { status: CollabStatus }) {
           <span className="font-semibold text-ink">{COLLAB_STATUS_LABEL[status]}</span>
           <span className="text-muted">{done ? "全部完成" : `第 ${n} / ${COLLAB_STEPS.length} 步`}</span>
         </p>
-        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-primary-soft" aria-hidden="true">
+        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-subtle" aria-hidden="true">
           <div className="h-full rounded-full bg-primary" style={{ width: `${((done ? COLLAB_STEPS.length : n) / COLLAB_STEPS.length) * 100}%` }} />
         </div>
       </div>
@@ -25,7 +25,7 @@ export function Stepper({ status }: { status: CollabStatus }) {
         {COLLAB_STEPS.map((label, i) => {
           const s = states[i];
           const dot = s === "done"
-            ? "border-line bg-primary-soft text-ink"
+            ? "border-line bg-subtle text-ink"
             : s === "current"
               ? "border-primary bg-primary text-on-ink ring-4 ring-primary-soft"
               : "border-line bg-surface text-muted";

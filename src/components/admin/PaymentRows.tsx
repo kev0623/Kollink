@@ -15,7 +15,7 @@ export function PaymentRows({ items, withCollab, empty, participant = false }: {
         <li key={p.id} className="space-y-2 p-4 md:p-5">
           <div className="flex flex-wrap items-center gap-2">
             <span className="min-w-0 break-all font-mono text-sm font-semibold text-ink">{p.merchantTradeNo}</span>
-            <span className="rounded-full bg-primary-soft px-2.5 py-0.5 text-xs font-semibold text-ink">{PAYMENT_STATUS_LABEL[p.status] ?? "未知"}</span>
+            <span className="rounded-full bg-subtle px-2.5 py-0.5 text-xs font-semibold text-ink">{PAYMENT_STATUS_LABEL[p.status] ?? "未知"}</span>
             {p.env === "stage" && p.status === "paid" && (
               <span className="rounded-full border border-danger px-2.5 py-0.5 text-xs font-semibold text-danger">測試付款（未實際收款）</span>
             )}
@@ -29,7 +29,7 @@ export function PaymentRows({ items, withCollab, empty, participant = false }: {
               <>
                 <dt className="text-muted">合作案</dt>
                 <dd className="min-w-0 break-words">
-                  <Link href={`/admin/collabs/${p.collabId}`} className="text-primary underline">
+                  <Link href={`/admin/collabs/${p.collabId}`} className="text-accent underline">
                     {caseCode(p.collabId)} {p.collabTitle}
                   </Link>
                   <span className="text-muted">（{COLLAB_STATUS_LABEL[p.collabStatus] ?? ""}・{p.brandName} × @{p.creatorHandle}）</span>

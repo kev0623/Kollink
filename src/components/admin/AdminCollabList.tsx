@@ -14,7 +14,7 @@ export function AdminCollabList({ items }: { items: AdminCollab[] }) {
         <li key={c.id}>
           <Link
             href={`/admin/collabs/${c.id}`}
-            className="block space-y-1 p-4 hover:bg-primary-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ink md:p-5"
+            className="block space-y-1 p-4 hover:bg-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ink md:p-5"
           >
             <div className="flex flex-wrap items-center gap-2">
               <span className="font-mono text-xs text-muted">{caseCode(c.id)}</span>
@@ -25,7 +25,7 @@ export function AdminCollabList({ items }: { items: AdminCollab[] }) {
             </div>
             <p className="min-w-0 break-words text-sm text-muted">{c.brandName} × @{c.creatorHandle}（{c.creatorName}）</p>
             <p className="text-sm">
-              <span className="font-semibold text-primary">{formatTwd(c.amount)}</span>
+              <span className="font-semibold text-accent">{formatTwd(c.amount)}</span>
               {c.updatedAt && <span className="ml-3 text-xs text-muted">更新於 {formatDateTw(c.updatedAt)}</span>}
             </p>
           </Link>

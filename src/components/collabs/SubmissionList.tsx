@@ -33,7 +33,7 @@ export function SubmissionList({ submissions }: { submissions: SubmissionView[] 
               )}
               {s.note && <p className="mt-3 whitespace-pre-line break-words text-sm text-ink">{s.note}</p>}
               {s.revisionNotes.map((n, i) => (
-                <div key={i} className="mt-3 rounded-btn border border-line bg-primary-soft p-3 text-sm">
+                <div key={i} className="mt-3 rounded-btn border border-line bg-subtle p-3 text-sm">
                   <p className="text-xs font-semibold text-muted">品牌要求修改</p>
                   <p className="mt-1 whitespace-pre-line break-words text-ink">{n}</p>
                 </div>

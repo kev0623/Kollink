@@ -38,7 +38,7 @@ export function AdminCollabPanel({ collabId, amount, actions, lost, payout, paid
         <div className="space-y-3">
           <h3 className="font-semibold text-ink">撥款 {formatTwd(amount)}</h3>
           {payout.account && (
-            <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 rounded-btn bg-primary-soft p-3 text-sm">
+            <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 rounded-btn bg-subtle p-3 text-sm">
               <dt className="text-muted">銀行代碼</dt><dd>{payout.account.bankCode}{payout.account.branchCode ? `（分行 ${payout.account.branchCode}）` : ""}</dd>
               <dt className="text-muted">帳號</dt><dd className="min-w-0 break-all font-mono text-base font-semibold">{formatAccountNumber(payout.account.accountNumber)}</dd>
               <dt className="text-muted">戶名</dt><dd className="min-w-0 break-words">{payout.account.accountName}</dd>

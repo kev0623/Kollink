@@ -17,12 +17,12 @@ export function PayoutList({ items }: { items: AdminPayout[] }) {
           <li key={p.id}>
             <Link
               href={`/admin/collabs/${p.id}`}
-              className="block space-y-1 p-4 hover:bg-primary-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ink md:p-5"
+              className="block space-y-1 p-4 hover:bg-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ink md:p-5"
             >
               <div className="flex flex-wrap items-center gap-2">
                 <span className="font-mono text-xs text-muted">{caseCode(p.id)}</span>
                 <p className="min-w-0 break-words font-semibold text-ink">{p.title}</p>
-                <span className="font-semibold text-primary">{formatTwd(p.amount)}</span>
+                <span className="font-semibold text-accent">{formatTwd(p.amount)}</span>
               </div>
               <p className="min-w-0 break-words text-sm text-muted">
                 @{p.creatorHandle}（{p.creatorName}）・{p.brandName}・{p.waitingSince ? `${formatDateTw(p.waitingSince)} 起等待` : ""}

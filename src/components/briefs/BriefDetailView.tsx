@@ -30,7 +30,7 @@ export function BriefDetailView({ brief: b, today, match, aside, headingLevel = 
               <p className="min-w-0 truncate text-sm font-semibold text-ink">{b.brandName}</p>
             </div>
             <Title className="mt-3 break-words text-2xl font-bold text-ink md:text-[28px]">{b.title}</Title>
-            <p className="mt-2 text-xl font-bold text-primary">{rewardLabel(b)}</p>
+            <p className="mt-2 text-xl font-bold text-accent">{rewardLabel(b)}</p>
             {b.collabTypes.length > 0 && (
               <ul aria-label="合作形式" className="mt-3 flex flex-wrap gap-2">
                 {b.collabTypes.map((t) => (

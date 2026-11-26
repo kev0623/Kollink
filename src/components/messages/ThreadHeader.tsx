@@ -28,7 +28,7 @@ export function ThreadHeader({ side, c, collabs }: { side: MessageSide; c: Conve
         <ul aria-label="這個對話的合作案" className="relative mt-3 flex gap-2 overflow-x-auto pb-1">
           {collabs.map((k) => (
             <li key={k.id} className="shrink-0">
-              <Link href={`${collabBase}/${k.id}`} className="block max-w-60 truncate rounded-btn bg-primary-soft px-3 py-1.5 text-xs text-ink">
+              <Link href={`${collabBase}/${k.id}`} className="block max-w-60 truncate rounded-btn bg-subtle px-3 py-1.5 text-xs text-ink">
                 {k.title}・{COLLAB_STATUS_LABEL[k.status]}
               </Link>
             </li>

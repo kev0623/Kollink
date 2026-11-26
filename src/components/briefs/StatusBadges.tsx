@@ -8,15 +8,15 @@ const base = "inline-flex shrink-0 items-center whitespace-nowrap rounded-full p
 const BRIEF_TONE: Record<BriefDisplayStatus, string> = {
   draft: "border border-line bg-surface text-ink",
   open: "bg-success-soft text-success",
-  expired: "bg-primary-soft text-muted",
-  closed: "bg-primary-soft text-muted",
+  expired: "bg-subtle text-muted",
+  closed: "bg-subtle text-muted",
 };
 
 const APPLICATION_TONE: Record<ApplicationStatus, string> = {
   applied: "border border-line bg-surface text-ink",
   accepted: "bg-success-soft text-success",
-  rejected: "bg-primary-soft text-muted",
-  withdrawn: "bg-primary-soft text-muted",
+  rejected: "bg-subtle text-muted",
+  withdrawn: "bg-subtle text-muted",
 };
 
 export function BriefStatusBadge({ status }: { status: BriefDisplayStatus }) {

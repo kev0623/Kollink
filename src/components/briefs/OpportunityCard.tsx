@@ -30,7 +30,7 @@ export function OpportunityCard({ o, today }: { o: Opportunity; today: string })
           </h3>
           <p className="mt-0.5 truncate text-xs text-muted">{o.collabTypes.join("、")}</p>
         </div>
-        <p className="text-lg font-bold text-primary">{rewardLabel(o)}</p>
+        <p className="text-lg font-bold text-accent">{rewardLabel(o)}</p>
         {o.isMatch && (
           <p className="inline-flex w-fit items-center gap-1 rounded-full bg-success-soft px-2.5 py-0.5 text-xs font-semibold text-success">
             <Check size={14} strokeWidth={1.5} aria-hidden="true" />符合你的條件

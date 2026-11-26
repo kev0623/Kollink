@@ -41,7 +41,7 @@ export function PublicProfileForm({ userId, displayName, initial }: {
         <div className="mt-2 flex flex-wrap gap-4">
           {COLLAB_TYPES.map((t) => (
             <label key={`${k}-${t}`} className="flex min-h-9 items-center gap-2 text-sm text-ink">
-              <input type="checkbox" name="collabTypes" value={t} defaultChecked={checked.includes(t)} className="h-4 w-4 accent-ink" />
+              <input type="checkbox" name="collabTypes" value={t} defaultChecked={checked.includes(t)} className="h-4 w-4 accent-primary" />
               {t}
             </label>
           ))}

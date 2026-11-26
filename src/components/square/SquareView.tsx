@@ -77,7 +77,7 @@ export function SquareView({ query, initial, popularTags }: Props) {
 
 function ViewToggle({ view, onChange }: { view: ViewMode; onChange: (v: ViewMode) => void }) {
   const btn = (on: boolean) =>
-    `flex h-9 w-9 items-center justify-center rounded-btn ${on ? "bg-ink text-on-ink" : "text-ink hover:bg-primary-soft"}`;
+    `flex h-9 w-9 items-center justify-center rounded-btn ${on ? "bg-ink text-on-ink" : "text-ink hover:bg-subtle"}`;
   return (
     <div role="group" aria-label="顯示方式" className="flex gap-0.5 rounded-btn border border-line bg-surface p-0.5">
       <button type="button" aria-pressed={view === "card"} onClick={() => onChange("card")} className={btn(view === "card")}>

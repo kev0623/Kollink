@@ -52,7 +52,7 @@ export function FilterPanel({ idPrefix, query, popularTags, onChange }: Props) {
           role="switch"
           checked={query.fav}
           onChange={(e) => set({ fav: e.target.checked })}
-          className="h-5 w-5 accent-ink"
+          className="h-5 w-5 accent-primary"
         />
       </label>
 
@@ -75,7 +75,7 @@ export function FilterPanel({ idPrefix, query, popularTags, onChange }: Props) {
         type="button"
         onClick={() => onChange(clearFilters(query))}
         disabled={activeFilterCount(query) === 0}
-        className="h-10 w-full rounded-btn border border-line bg-surface text-sm font-semibold text-ink hover:bg-primary-soft disabled:opacity-50"
+        className="h-10 w-full rounded-btn border border-line bg-surface text-sm font-semibold text-ink hover:bg-subtle disabled:opacity-50"
       >
         清除篩選
       </button>
@@ -98,7 +98,7 @@ function ChipGroup({ legend, options, selected, onToggle }: {
           return (
             <button
               key={o} type="button" aria-pressed={on} onClick={() => onToggle(o)}
-              className={`min-h-9 rounded-btn border px-3 py-1 text-sm ${on ? "border-ink bg-ink font-medium text-on-ink" : "border-line bg-surface text-ink hover:bg-primary-soft"}`}
+              className={`min-h-9 rounded-btn border px-3 py-1 text-sm ${on ? "border-ink bg-ink font-medium text-on-ink" : "border-line bg-surface text-ink hover:bg-subtle"}`}
             >
               {o}
             </button>
@@ -118,11 +118,11 @@ function RadioGroup<K extends string>({ legend, name, options, value, onChange }
       <legend className={legendCls}>{legend}</legend>
       <div className="mt-1">
         <label className={item}>
-          <input type="radio" name={name} checked={value === null} onChange={() => onChange(null)} className="accent-ink" />不限
+          <input type="radio" name={name} checked={value === null} onChange={() => onChange(null)} className="accent-primary" />不限
         </label>
         {options.map((o) => (
           <label key={o.key} className={item}>
-            <input type="radio" name={name} checked={value === o.key} onChange={() => onChange(o.key)} className="accent-ink" />
+            <input type="radio" name={name} checked={value === o.key} onChange={() => onChange(o.key)} className="accent-primary" />
             {o.label}
           </label>
         ))}

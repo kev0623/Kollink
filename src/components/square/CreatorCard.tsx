@@ -18,12 +18,12 @@ export function CreatorCard({ c }: { c: SquareCreator }) {
           <div className={`absolute inset-0 grid gap-0.5 ${THUMB_COLS[thumbs.length]}`}>
             {thumbs.map((p) => (
               // eslint-disable-next-line @next/next/no-img-element
-              <img key={p} src={creatorMediaUrl(p) ?? undefined} alt="" loading="lazy" className="h-full min-h-0 w-full bg-primary-soft object-cover" />
+              <img key={p} src={creatorMediaUrl(p) ?? undefined} alt="" loading="lazy" className="h-full min-h-0 w-full bg-subtle object-cover" />
             ))}
           </div>
         </div>
       ) : (
-        <div aria-hidden="true" className="flex aspect-[3/1] items-center justify-center bg-primary-soft text-4xl font-semibold text-muted">
+        <div aria-hidden="true" className="flex aspect-[3/1] items-center justify-center bg-subtle text-4xl font-semibold text-muted">
           {initialOf(c.displayName)}
         </div>
       )}
@@ -57,13 +57,13 @@ export function CreatorCard({ c }: { c: SquareCreator }) {
           </div>
           <div>
             <dt className="text-xs text-muted">起價</dt>
-            <dd className="mt-0.5 whitespace-nowrap text-sm font-bold text-primary">{startingPriceLabel(c.minPrice)}</dd>
+            <dd className="mt-0.5 whitespace-nowrap text-sm font-bold text-accent">{startingPriceLabel(c.minPrice)}</dd>
           </div>
         </dl>
         {cardTags(c).length > 0 && (
           <ul aria-label="標籤" className="mt-auto flex flex-wrap gap-1.5">
             {cardTags(c).map((t) => (
-              <li key={t} className="rounded-btn bg-primary-soft px-2.5 py-0.5 text-xs text-ink">{t}</li>
+              <li key={t} className="rounded-btn bg-subtle px-2.5 py-0.5 text-xs text-ink">{t}</li>
             ))}
           </ul>
         )}

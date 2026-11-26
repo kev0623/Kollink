@@ -46,7 +46,7 @@ async function BriefDetail({ params }: Props) {
           <BriefStatusBadge status={display} />
         </div>
         <p className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted">
-          <span className="font-semibold text-primary">{rewardLabel(brief)}</span>
+          <span className="font-semibold text-accent">{rewardLabel(brief)}</span>
           <span>{brief.deadline ? `截止 ${deadlineText(brief.status, brief.deadline, today)}` : "未設定截止日"}</span>
           {brief.status !== "draft" && <span>報名 {counted} 人</span>}
         </p>

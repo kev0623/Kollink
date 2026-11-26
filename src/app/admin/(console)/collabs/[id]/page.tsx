@@ -67,7 +67,7 @@ async function Section({ params }: Props) {
     <div className="space-y-6">
       <CollabHeader c={c} testPayment={summary.testPaid} />
       <p className="text-sm text-muted">
-        <Link href={`/c/${c.creatorHandle}`} className="text-primary underline">@{c.creatorHandle}</Link>
+        <Link href={`/c/${c.creatorHandle}`} className="text-accent underline">@{c.creatorHandle}</Link>
         <span>・{c.brandName}</span>
       </p>
       <Stepper status={c.status} />

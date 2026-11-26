@@ -67,7 +67,7 @@ function Chips({ label, items, dark }: { label: string; items: string[]; dark?: 
   return (
     <ul aria-label={label} className="flex flex-wrap gap-2">
       {items.map((t) => (
-        <li key={t} className={`rounded-btn px-3 py-1 text-sm ${dark ? "bg-ink font-medium text-on-ink" : "bg-primary-soft text-ink"}`}>{t}</li>
+        <li key={t} className={`rounded-btn px-3 py-1 text-sm ${dark ? "bg-ink font-medium text-on-ink" : "bg-subtle text-ink"}`}>{t}</li>
       ))}
     </ul>
   );
@@ -138,7 +138,7 @@ function PortfolioGrid({ name, items }: { name: string; items: PortfolioItem[] }
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={creatorMediaUrl(it.imagePath) ?? undefined} alt={`${name} 的作品 ${i + 1}`} loading="lazy"
-              className="aspect-square w-full rounded-input bg-primary-soft object-cover"
+              className="aspect-square w-full rounded-input bg-subtle object-cover"
             />
           );
           return (
@@ -167,7 +167,7 @@ function RatesSection({ viewer, handle, rates }: { viewer: ViewerKind; handle: s
   if (viewer === "creator") {
     return (
       <Section title="報價方案">
-        <p className="flex items-center gap-2 rounded-input bg-primary-soft p-4 text-sm font-semibold text-ink">
+        <p className="flex items-center gap-2 rounded-input bg-subtle p-4 text-sm font-semibold text-ink">
           <Lock size={16} strokeWidth={1.5} aria-hidden="true" />報價只開放給品牌查看
         </p>
       </Section>
@@ -178,7 +178,7 @@ function RatesSection({ viewer, handle, rates }: { viewer: ViewerKind; handle: s
       <Section title="報價方案">
         <Link
           href={`/login?next=${encodeURIComponent(`/c/${handle}`)}`}
-          className="flex items-center gap-2 rounded-input bg-primary-soft p-4 text-sm font-semibold text-ink hover:bg-line"
+          className="flex items-center gap-2 rounded-input bg-subtle p-4 text-sm font-semibold text-ink hover:bg-line"
         >
           <Lock size={16} strokeWidth={1.5} aria-hidden="true" />品牌登入後可查看報價
         </Link>

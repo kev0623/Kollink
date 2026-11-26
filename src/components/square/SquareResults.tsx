@@ -67,7 +67,7 @@ export function SquareResults({ initial, query, queryKey, view, onSort, onClear 
         ) : (
           <button
             type="button" onClick={onClear}
-            className="mt-4 h-10 rounded-btn border border-line px-4 text-sm font-semibold text-ink hover:bg-primary-soft"
+            className="mt-4 h-10 rounded-btn border border-line px-4 text-sm font-semibold text-ink hover:bg-subtle"
           >
             清除篩選
           </button>
@@ -90,7 +90,7 @@ export function SquareResults({ initial, query, queryKey, view, onSort, onClear 
         <div className="mt-6 flex justify-center">
           <button
             type="button" onClick={loadMore} disabled={loading}
-            className="h-11 rounded-btn border border-line bg-surface px-6 text-sm font-semibold text-ink hover:bg-primary-soft disabled:opacity-60"
+            className="h-11 rounded-btn border border-line bg-surface px-6 text-sm font-semibold text-ink hover:bg-subtle disabled:opacity-60"
           >
             {loading ? "載入中…" : "載入更多"}
           </button>

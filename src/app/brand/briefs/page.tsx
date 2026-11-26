@@ -72,7 +72,7 @@ async function BriefList({ searchParams }: Props) {
         <ul className="mt-4 divide-y divide-line overflow-hidden rounded-card border border-line bg-surface">
           {rows.map((b) => (
             <li key={b.id}>
-              <Link href={`/brand/briefs/${b.id}`} className="block p-4 hover:bg-primary-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ink md:p-5">
+              <Link href={`/brand/briefs/${b.id}`} className="block p-4 hover:bg-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ink md:p-5">
                 <div className="flex items-start justify-between gap-3">
                   <p className="min-w-0 break-words font-semibold text-ink">{b.title || UNTITLED_DRAFT}</p>
                   <BriefStatusBadge status={b.display} />

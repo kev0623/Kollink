@@ -71,7 +71,7 @@ export function CreatorTable({ items, sort, onSort }: Props) {
                   <FavoriteButton creatorId={c.userId} name={c.displayName} initial={c.isFavorite} />
                   <Link
                     href={`/c/${c.handle}`}
-                    className="inline-flex h-9 items-center rounded-btn border border-line px-3 text-xs font-semibold text-ink hover:bg-primary-soft"
+                    className="inline-flex h-9 items-center rounded-btn border border-line px-3 text-xs font-semibold text-ink hover:bg-subtle"
                   >
                     查看<span className="sr-only"> {c.displayName}</span>
                   </Link>

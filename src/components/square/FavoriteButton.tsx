@@ -53,7 +53,7 @@ function FavoriteToggle({ creatorId, name, initial }: Props) {
         aria-label={`收藏 ${name}`}
         aria-pressed={shown}
         title={shown ? "取消收藏" : "收藏"}
-        className="flex h-10 w-10 items-center justify-center rounded-btn border border-line bg-surface text-ink hover:bg-primary-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink"
+        className="flex h-10 w-10 items-center justify-center rounded-btn border border-line bg-surface text-ink hover:bg-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink"
       >
         <Heart size={18} strokeWidth={1.5} aria-hidden="true" className={shown ? "fill-current" : ""} />
       </button>

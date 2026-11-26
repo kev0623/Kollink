@@ -191,7 +191,7 @@ export function BriefForm({ briefId, isOpen, initial, initialStep, saved, userId
         <label className="flex items-center gap-2 text-sm font-semibold text-ink">
           <input
             type="checkbox" name="includesProduct" checked={values.includesProduct}
-            onChange={(e) => set("includesProduct", e.target.checked)} className="h-4 w-4 accent-ink"
+            onChange={(e) => set("includesProduct", e.target.checked)} className="h-4 w-4 accent-primary"
           />
           提供產品（互惠）
         </label>

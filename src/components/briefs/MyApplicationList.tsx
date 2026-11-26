@@ -9,7 +9,7 @@ export function MyApplicationList({ items, today }: { items: MyApplication[]; to
     return (
       <div className="rounded-card border border-line bg-surface p-8 text-center">
         <p className="font-semibold text-ink">還沒有報名任何招募</p>
-        <Link href="/creator" className="mt-4 inline-flex h-10 items-center rounded-btn border border-line px-4 text-sm font-semibold text-ink hover:bg-primary-soft">
+        <Link href="/creator" className="mt-4 inline-flex h-10 items-center rounded-btn border border-line px-4 text-sm font-semibold text-ink hover:bg-subtle">
           看看適合我的機會
         </Link>
       </div>
@@ -21,7 +21,7 @@ export function MyApplicationList({ items, today }: { items: MyApplication[]; to
         const ended = displayStatusOf(a.brief.status, a.brief.deadline, today) !== "open";
         return (
           <li key={a.id}>
-            <Link href={`/creator/briefs/${a.brief.id}`} className="block p-4 hover:bg-primary-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ink md:p-5">
+            <Link href={`/creator/briefs/${a.brief.id}`} className="block p-4 hover:bg-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ink md:p-5">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="truncate text-xs text-muted">{a.brief.brandName}</p>
@@ -30,7 +30,7 @@ export function MyApplicationList({ items, today }: { items: MyApplication[]; to
                 <ApplicationStatusBadge status={a.status} viewer="creator" />
               </div>
               <p className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted">
-                <span className="font-semibold text-primary">{rewardLabel(a.brief)}</span>
+                <span className="font-semibold text-accent">{rewardLabel(a.brief)}</span>
                 <span>報名於 {formatDateTw(a.createdAt)}</span>
                 {ended && <span>招募已結束</span>}
               </p>

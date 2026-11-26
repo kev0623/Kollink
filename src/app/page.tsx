@@ -12,7 +12,7 @@ export default function Home() {
             <p className="text-lg font-bold">我是品牌</p>
             <p className="mt-1 text-sm opacity-80">找到適合的創作者，安心付款、追蹤每一步進度。</p>
           </Link>
-          <Link href="/signup?role=creator" className="rounded-card border border-line bg-surface p-6 text-ink hover:bg-primary-soft md:p-8">
+          <Link href="/signup?role=creator" className="rounded-card border border-line bg-surface p-6 text-ink hover:bg-subtle md:p-8">
             <p className="text-lg font-bold">我是創作者</p>
             <p className="mt-1 text-sm text-muted">接到品牌合作，款項由平台託管，完成就撥款。</p>
           </Link>

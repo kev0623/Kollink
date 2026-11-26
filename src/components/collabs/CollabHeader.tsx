@@ -22,7 +22,7 @@ export function CollabHeader({ c, testPayment }: { c: Collab; testPayment: boole
         <div className="space-y-2">
           <div>
             <dt className="text-xs text-muted">金額</dt>
-            <dd className="mt-0.5 flex flex-wrap items-center gap-2 font-semibold text-primary">
+            <dd className="mt-0.5 flex flex-wrap items-center gap-2 font-semibold text-accent">
               {escrowLabel(c.status, c.amount)}
               {testPayment && (
                 <span className="rounded-full border border-danger px-2 py-0.5 text-xs font-semibold text-danger">測試付款（未實際收款）</span>

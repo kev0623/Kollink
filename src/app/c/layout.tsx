@@ -22,7 +22,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
 /** 會讀 session，所以放在 <Suspense> 內。 */
 async function TopBarLink() {
   const me = await getCurrentUser();
-  const cls = "inline-flex h-9 items-center rounded-btn border border-line bg-surface px-4 text-sm font-semibold text-ink hover:bg-primary-soft";
+  const cls = "inline-flex h-9 items-center rounded-btn border border-line bg-surface px-4 text-sm font-semibold text-ink hover:bg-subtle";
   if (!me) return <Link href="/login" className={cls}>登入</Link>;
   return <Link href={me.profile ? homeFor(me.profile.role) : "/onboarding"} className={cls}>回後台</Link>;
 }

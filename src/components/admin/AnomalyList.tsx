@@ -21,7 +21,7 @@ export function AnomalyList({ items, open }: { items: Anomaly[]; open: boolean }
             {a.collabId && (
               <>
                 <dt className="text-muted">合作案</dt>
-                <dd><Link href={`/admin/collabs/${a.collabId}`} className="text-primary underline">{caseCode(a.collabId)}</Link></dd>
+                <dd><Link href={`/admin/collabs/${a.collabId}`} className="text-accent underline">{caseCode(a.collabId)}</Link></dd>
               </>
             )}
             {a.resolvedNote && (<><dt className="text-muted">處理說明</dt><dd className="min-w-0 whitespace-pre-wrap break-words">{a.resolvedNote}</dd></>)}

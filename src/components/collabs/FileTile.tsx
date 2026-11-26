@@ -7,7 +7,7 @@ export function FileTile({ f }: { f: SubmissionFile }) {
     // eslint-disable-next-line @next/next/no-img-element
     <img src={f.url} alt={f.label} className="h-24 w-24 rounded-btn border border-line object-cover" />
   ) : (
-    <span className="flex h-24 w-24 flex-col items-center justify-center gap-1 rounded-btn border border-line bg-primary-soft text-xs text-ink">
+    <span className="flex h-24 w-24 flex-col items-center justify-center gap-1 rounded-btn border border-line bg-subtle text-xs text-ink">
       {f.kind === "video"
         ? <Film size={24} strokeWidth={1.5} aria-hidden="true" />
         : <FileText size={24} strokeWidth={1.5} aria-hidden="true" />}

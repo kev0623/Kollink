@@ -44,7 +44,7 @@ export function FilterDrawer({ count, total, children }: Props) {
             <h2 id="filter-drawer-title" className="font-bold">篩選</h2>
             <button
               type="button" onClick={() => setOpen(false)} aria-label="關閉篩選"
-              className="flex h-10 w-10 items-center justify-center rounded-btn hover:bg-primary-soft"
+              className="flex h-10 w-10 items-center justify-center rounded-btn hover:bg-subtle"
             >
               <X size={20} strokeWidth={1.5} aria-hidden="true" />
             </button>

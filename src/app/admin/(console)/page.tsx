@@ -32,7 +32,7 @@ async function Cards() {
         <li key={c.label}>
           <Link
             href={c.href}
-            className="block rounded-card border border-line bg-surface p-4 hover:bg-primary-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink md:p-5"
+            className="block rounded-card border border-line bg-surface p-4 hover:bg-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink md:p-5"
           >
             <p className="text-sm text-muted">{c.label}</p>
             <p className={`mt-1 text-3xl font-bold ${c.n > 0 ? "text-ink" : "text-muted"}`}>{c.n}</p>

@@ -11,7 +11,7 @@ import { updatePortfolioAction } from "./actions";
 
 type Row = { imagePath: string; linkUrl: string };
 
-const smallBtn = "rounded-btn border border-line bg-surface px-3 py-1 text-sm text-ink hover:bg-primary-soft disabled:opacity-40";
+const smallBtn = "rounded-btn border border-line bg-surface px-3 py-1 text-sm text-ink hover:bg-subtle disabled:opacity-40";
 
 export function PortfolioForm({ userId, initial }: { userId: string; initial: PortfolioItem[] }) {
   const [rows, setRows] = useState<Row[]>(() => initial.map((it) => ({ imagePath: it.imagePath, linkUrl: it.linkUrl ?? "" })));

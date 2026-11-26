@@ -47,7 +47,7 @@ export function CollabList({ side, tab, items }: { side: CollabSide; tab: Collab
           <li key={c.id}>
             <Link
               href={`/${side}/collabs/${c.id}`}
-              className="flex items-start gap-3 p-4 hover:bg-primary-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ink md:p-5"
+              className="flex items-start gap-3 p-4 hover:bg-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ink md:p-5"
             >
               <Counterpart side={side} name={c.counterpartName} imagePath={c.counterpartImagePath} />
               <div className="min-w-0 flex-1">
@@ -57,7 +57,7 @@ export function CollabList({ side, tab, items }: { side: CollabSide; tab: Collab
                 </div>
                 <p className="mt-0.5 min-w-0 break-words text-sm text-muted">{c.counterpartName}</p>
                 <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
-                  <span className="font-semibold text-primary">{formatTwd(c.amount)}</span>
+                  <span className="font-semibold text-accent">{formatTwd(c.amount)}</span>
                   <CollabStatusBadge status={c.status} />
                   {c.updatedAt && <span className="text-xs text-muted">更新於 {formatDateTw(c.updatedAt)}</span>}
                 </p>

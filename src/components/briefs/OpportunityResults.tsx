@@ -59,7 +59,7 @@ function Results({ initial, query, queryKey, today }: Props) {
         {query.tab === "match" ? (
           <>
             <p className="font-semibold text-ink">目前沒有完全符合的招募，看看全部吧</p>
-            <Link href="/creator?tab=all" className="mt-4 inline-flex h-10 items-center rounded-btn border border-line px-4 text-sm font-semibold text-ink hover:bg-primary-soft">
+            <Link href="/creator?tab=all" className="mt-4 inline-flex h-10 items-center rounded-btn border border-line px-4 text-sm font-semibold text-ink hover:bg-subtle">
               看全部招募
             </Link>
           </>
@@ -80,7 +80,7 @@ function Results({ initial, query, queryKey, today }: Props) {
         <div className="mt-6 flex justify-center">
           <button
             type="button" onClick={loadMore} disabled={loading}
-            className="h-11 rounded-btn border border-line bg-surface px-6 text-sm font-semibold text-ink hover:bg-primary-soft disabled:opacity-60"
+            className="h-11 rounded-btn border border-line bg-surface px-6 text-sm font-semibold text-ink hover:bg-subtle disabled:opacity-60"
           >
             {loading ? "載入中…" : "載入更多"}
           </button>

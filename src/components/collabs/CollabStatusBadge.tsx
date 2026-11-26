@@ -8,16 +8,16 @@ const STATUS_TONE: Record<CollabStatus, string> = {
   awaiting_submission: "border border-line bg-surface text-ink",
   in_review: "border border-line bg-surface text-ink",
   awaiting_publish: "border border-line bg-surface text-ink",
-  awaiting_payout: "bg-primary-soft text-ink",
+  awaiting_payout: "bg-subtle text-ink",
   completed: "bg-success-soft text-success",
-  declined: "bg-primary-soft text-muted",
-  cancelled: "bg-primary-soft text-muted",
+  declined: "bg-subtle text-muted",
+  cancelled: "bg-subtle text-muted",
 };
 
 const TURN_TONE: Record<ListBadge["tone"], string> = {
   turn: "bg-ink text-on-ink",
-  wait: "bg-primary-soft text-muted",
-  platform: "bg-primary-soft text-ink",
+  wait: "bg-subtle text-muted",
+  platform: "bg-subtle text-ink",
 };
 
 export function CollabStatusBadge({ status }: { status: CollabStatus }) {

@@ -77,7 +77,7 @@ export function Composer({ conversationId, onSent }: { conversationId: string; o
         className="block max-h-40 min-h-11 w-full resize-y rounded-input border border-line bg-surface px-3 py-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-ink"
       />
       {warning && (
-        <div role="alert" className="mt-2 rounded-input border border-line bg-primary-soft p-3 text-sm text-ink">
+        <div role="alert" className="mt-2 rounded-input border border-line bg-subtle p-3 text-sm text-ink">
           <p>{warning}</p>
           <div className="mt-2 flex gap-2">
             <button type="button" disabled={pending} onClick={() => send(true)}

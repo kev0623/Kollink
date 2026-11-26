@@ -131,7 +131,7 @@ function BrandPayment({ collabId, status, fromApplication, devPaymentEnabled, pa
 /** ATM 待繳：銀行代碼、虛擬帳號、金額、期限（綠界取號通知寫進資料庫的值）。 */
 function AtmCard({ atm }: { atm: AtmPending }) {
   return (
-    <div className="rounded-btn border border-line bg-primary-soft p-4 text-sm text-ink">
+    <div className="rounded-btn border border-line bg-subtle p-4 text-sm text-ink">
       <p className="font-semibold">請在 {atmDeadlineLabel(atm.expireDate)}轉帳</p>
       <dl className="mt-2 grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-1">
         <dt className="text-muted">銀行代碼</dt>
@@ -209,7 +209,7 @@ function PayForm({ collabId, payment, onCancel }: { collabId: string; payment: P
           <label key={m.value} className="flex items-start gap-2 text-sm text-ink">
             <input
               type="radio" name={name} value={m.value} checked={method === m.value} disabled={busy}
-              onChange={() => setMethod(m.value)} className="mt-1 accent-ink"
+              onChange={() => setMethod(m.value)} className="mt-1 accent-primary"
             />
             <span>
               <span className="font-semibold">{m.label}</span>

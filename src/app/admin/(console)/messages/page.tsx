@@ -49,12 +49,12 @@ async function Section({ searchParams }: Props) {
                 <span className="font-semibold">{m.brandName}</span>
                 <span className="text-muted"> ↔ </span>
                 {m.creatorHandle ? (
-                  <Link href={adminHref("/admin/creators", { status: "all", q: m.creatorHandle })} className="font-semibold text-primary underline">
+                  <Link href={adminHref("/admin/creators", { status: "all", q: m.creatorHandle })} className="font-semibold text-accent underline">
                     @{m.creatorHandle}
                   </Link>
                 ) : <span className="font-semibold">{m.creatorName}</span>}
               </p>
-              <p className="whitespace-pre-wrap break-words rounded-btn bg-primary-soft p-3 text-sm text-ink">{m.body}</p>
+              <p className="whitespace-pre-wrap break-words rounded-btn bg-subtle p-3 text-sm text-ink">{m.body}</p>
               {m.reviewedAt ? (
                 <p className="text-xs text-muted">已檢視：{formatDateTimeTw(m.reviewedAt)}</p>
               ) : (
