@@ -44,6 +44,10 @@ insert into public.conversations (brand_id, creator_id)
 insert into public.conversations (id, brand_id, creator_id) values
   ('00000000-0000-0000-0000-00000008c001', '00000000-0000-0000-0000-000000000801', '00000000-0000-0000-0000-000000000811'),
   ('00000000-0000-0000-0000-00000008c002', '00000000-0000-0000-0000-000000000801', '00000000-0000-0000-0000-000000000813');
+-- 品牌先前已發過訊息（創作者不能搶先發訊息，見 21_；時間放在 2 小時前，不影響 1 分鐘頻率限制）
+insert into public.messages (conversation_id, sender_id, body, created_at) values
+  ('00000000-0000-0000-0000-00000008c001', '00000000-0000-0000-0000-000000000801', '先前的邀約', now() - interval '2 hours'),
+  ('00000000-0000-0000-0000-00000008c002', '00000000-0000-0000-0000-000000000801', '先前的邀約', now() - interval '2 hours');
 
 -- ── A. 權限 ──
 select ok(not has_table_privilege('authenticated', 'public.messages', 'INSERT'), 'authenticated 不能直接 insert messages');
@@ -173,7 +177,7 @@ select is((select count(*)::int from public.conversation_reads), 0, '只讀得�
 
 -- ── F. 可見性 ──
 select is((select count(*)::int from public.messages where conversation_id = '00000000-0000-0000-0000-00000008c001'),
-  25, '參與者看得到對話裡的訊息');
+  26, '參與者看得到對話裡的訊息');
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-000000000802","role":"authenticated"}', true);
 select is((select count(*)::int from public.messages where conversation_id = '00000000-0000-0000-0000-00000008c001'),
   0, '第三方看不到');

@@ -216,7 +216,7 @@ CLI 3.x 的 `db push` 預設推到本機，一定要加 `--remote`。**不要執
 
 `20261124000500_briefs.sql` 會把 `briefs.cover_url` 改名為 `cover_path`。它開頭有保護檢查：**正式資料庫的 `briefs` 只要有任何一列，migration 就會停下來**（錯誤訊息 `briefs has rows …`）。目前沒有任何程式寫入招募，所以應該是 0 筆；如果真的停下來，先確認資料、手動搬移後再推。
 
-**部署順序：先推資料庫，再合併 PR。** Vercel 在 `main` 合併後立刻部署；新版程式會呼叫新 migration 建立的函式（例如計畫 4 的 `search_creators`、計畫 5 的 `save_brief`、`list_opportunities`，`20261124000500_briefs.sql`、`20261124000600_brief_covers.sql`，計畫 6 的 `20261125000100_collab_create.sql`、`20261125000200_deliverables.sql`、`20261125000300_collab_reads.sql`、`20261125000400_collab_review_fixes.sql`，計畫 7 的 `20261126000100_messaging_write.sql`、`20261126000200_messaging_reads.sql`、`20261126000300_messaging_review_fixes.sql`），資料庫還沒更新時 `/brand`、`/brand/briefs`、`/creator` 會出錯。所以每次 PR 有新 migration 時，先執行上面的 `npx supabase db push --remote`，確認成功後再合併。計畫 6 起還要在合併前把 CRON_SECRET 加到 Vercel（見「部署（Vercel）」）。
+**部署順序：先推資料庫，再合併 PR。** Vercel 在 `main` 合併後立刻部署；新版程式會呼叫新 migration 建立的函式（例如計畫 4 的 `search_creators`、計畫 5 的 `save_brief`、`list_opportunities`，`20261124000500_briefs.sql`、`20261124000600_brief_covers.sql`，計畫 6 的 `20261125000100_collab_create.sql`、`20261125000200_deliverables.sql`、`20261125000300_collab_reads.sql`、`20261125000400_collab_review_fixes.sql`，計畫 7 的 `20261126000100_messaging_write.sql`、`20261126000200_messaging_reads.sql`、`20261126000300_messaging_review_fixes.sql`、`20261126000400_messaging_creator_first_message.sql`），資料庫還沒更新時 `/brand`、`/brand/briefs`、`/creator` 會出錯。所以每次 PR 有新 migration 時，先執行上面的 `npx supabase db push --remote`，確認成功後再合併。計畫 6 起還要在合併前把 CRON_SECRET 加到 Vercel（見「部署（Vercel）」）。
 
 計畫 6 推資料庫前的檢查（只讀，在正式資料庫的 SQL Editor 執行）：
 
@@ -229,6 +229,21 @@ select brief_id, creator_id, count(*) from public.collaborations
 ```
 
 第一個查詢必須是 0：不是 0 代表有「已錄取但沒有合作案」的報名（舊版的錄取按鈕只改報名狀態），這些品牌需要改用「直接邀請」。第二個查詢必須沒有任何列：有列代表同一則招募、同一位創作者有多個合作案，`20261125000100_collab_create.sql` 建立唯一索引時會失敗，需先手動處理重複的合作案再推。
+
+計畫 7 推資料庫前的檢查（只讀，在正式資料庫的 SQL Editor 執行）：
+
+```sql
+select count(*) as too_long from public.messages where char_length(body) > 2000;                 -- 必須是 0
+select count(*) as has_pub from pg_publication where pubname = 'supabase_realtime';               -- 必須是 1
+select count(*) as already_in_pub from pg_publication_tables
+ where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'messages';         -- 必須是 0
+select count(*) as old_policy from pg_policies
+ where schemaname = 'public' and tablename = 'messages' and policyname = 'messages_insert_participant'; -- 必須是 1
+```
+
+依序代表：沒有超過 2000 字的舊訊息（新的長度檢查才不會讓 migration 失敗）；`supabase_realtime` publication 存在；`messages` 還沒被加進去（`20261126000100` 會加，重複加會報錯）；舊的 insert policy 還在（`20261126000100` 會 drop，不在會報錯）。
+
+計畫 7 推完並合併後的煙霧測試：Supabase Dashboard → Realtime → Settings 必須允許公開頻道（public channels，不能只開 private-only）；用兩個帳號（品牌與創作者）互傳訊息，確認對方畫面即時出現新訊息、導覽列的未讀徽章也會更新。
 
 本機的 `config.toml` 不會自動套用到正式專案，上線前在 Supabase 後台逐項設定：
 

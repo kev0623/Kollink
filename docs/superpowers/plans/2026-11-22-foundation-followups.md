@@ -200,6 +200,13 @@
   - 輸入框的字數計數用原始內容，送出前才清理（`cleanMessageBody`），兩者可能差幾個字。
   - `İ`（帶點大寫 I）的小寫化在 JS 與 SQL 的行為不完全一致（聯絡方式偵測）。
   - `list_messages` 的索引沒有 id 作為 tiebreak。
+  - `send_message` 大字串的 CPU：已改為先擋 `octet_length > 32000` 再清理（`20261126000400`）。
+  - `list_messages` 只傳 `before_at` 沒傳 `before_id` 時邊界訊息可能重複（action 一律兩個都傳）。
+  - 沒有 action 層級的 bidi 字元測試（只有 SQL 與 `hasBadChar` 單元測試）。
+  - 輸入框 4800 字的原始長度截斷發生在 trim 之前。
+  - 載入較早的訊息後不會保留捲動位置（scroll anchor）。
+  - `scroll-mb-56` 是固定值，輸入區很高時（多行）新訊息仍可能被蓋住。
+  - 對話頁的 404 在 Suspense 內渲染，HTTP 狀態碼仍是 200（soft 404）。
   - 對話頁的捲動在手機是整頁捲動，輸入區用 sticky 固定在底部導覽列上方；iOS 鍵盤彈出時的表現只在 E2E 的 390 寬模擬過。
 
 ### 8. 付款建單與撥款（**真的收錢之前必須完成**）

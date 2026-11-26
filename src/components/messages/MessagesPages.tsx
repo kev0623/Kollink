@@ -48,6 +48,8 @@ export async function ThreadSection({ side, params }: { side: MessageSide; param
   if (!isUuid(id)) notFound();
   const [items, thread] = await Promise.all([loadMyConversations(), loadThread(id)]);
   if (!thread || thread.conversation.side !== side) notFound();
+  // 創作者看不到品牌開啟但還沒有任何訊息或合作案的空對話（與 send_message 的規則一致）
+  if (side === "creator" && thread.messages.length === 0 && thread.collabs.length === 0) notFound();
   const today = todayTw();
   return (
     <MessagesLayout
@@ -74,7 +76,7 @@ export function MessagesSkeleton() {
   return (
     <div aria-busy="true">
       <p className="sr-only">載入中…</p>
-      <div className="h-10 w-32 rounded-full bg-surface" />
+      <div className="h-10 w-32 rounded-btn bg-surface" />
       <div className="mt-4 h-64 rounded-card border border-line bg-surface" />
     </div>
   );
