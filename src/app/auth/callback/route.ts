@@ -9,11 +9,13 @@ export async function GET(request: NextRequest) {
   const code = url.searchParams.get("code");
   if (!code) return relativeRedirect("/login?error=callback");
 
-  const supabase = await createClient();
+  // Supabase 換發 session 時要求的 Cache-Control（private, no-store）要套到這個帶 Set-Cookie 的回應上
+  const responseHeaders: Record<string, string> = {};
+  const supabase = await createClient({ responseHeaders });
   const { error } = await supabase.auth.exchangeCodeForSession(code);
-  if (error) return relativeRedirect("/login?error=callback");
+  if (error) return relativeRedirect("/login?error=callback", 307, responseHeaders);
 
   const path = await postLoginPath(supabase, url.searchParams.get("role"), url.searchParams.get("next"));
   // path 已由 resolvePostLoginPath 清理過，只會是站內相對路徑。
-  return relativeRedirect(path);
+  return relativeRedirect(path, 307, responseHeaders);
 }
