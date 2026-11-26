@@ -47,3 +47,15 @@ describe("管理後台（計畫 9）", () => {
     expect(isActive("/admin/collabs", "/admin/collabs/00000000-0000-0000-0000-000000000001")).toBe(true);
   });
 });
+
+describe("收入與付款紀錄", () => {
+  it("創作者「收入」與品牌「付款紀錄」已開放（沒有「即將推出」的項目了），子路徑也會亮起", () => {
+    expect(CREATOR_NAV.find((i) => i.label === "收入")).toMatchObject({ href: "/creator/earnings", icon: "Wallet" });
+    expect(BRAND_NAV.find((i) => i.label === "付款紀錄")).toMatchObject({ href: "/brand/payments", icon: "Receipt" });
+    expect(BRAND_NAV.find((i) => i.label === "付款與發票")).toBeUndefined();
+    expect(isActive("/creator/earnings", "/creator/earnings")).toBe(true);
+    expect(isActive("/brand/payments", "/brand/payments")).toBe(true);
+    expect(isActive("/creator", "/creator/earnings")).toBe(false);
+    for (const it of [...BRAND_NAV, ...CREATOR_NAV]) expect(it.href).not.toBeNull();
+  });
+});

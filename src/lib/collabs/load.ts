@@ -6,6 +6,7 @@ import {
   type Collab, type CollabEvent, type CollabListItem, type CollabListRow, type CollabRow, type CollabTab,
   type EventRow, type Submission, type SubmissionRow,
 } from "./view";
+import { mayBeTruncated } from "@/lib/earnings";
 import type { PaymentRow } from "@/lib/payments/view";
 
 // 合作案的伺服器端讀取。全部用使用者自己的 client（definer 函式與 RLS 自己檢查身分）。
@@ -17,6 +18,12 @@ export async function loadMyCollabs(tab: CollabTab): Promise<CollabListItem[]> {
   const { data, error } = await supabase.rpc("list_my_collaborations", { p_tab: tab });
   if (error) throw error;
   return ((data ?? []) as unknown as CollabListRow[]).map(toCollabListItem);
+}
+
+/** 收入／付款紀錄頁用：進行中＋已完成兩個分頁合起來（已取消與已婉拒不需要）。maybeTruncated＝任何一個分頁滿 200 筆（RPC 上限），加總可能少算。 */
+export async function loadMyCollabsForTotals(): Promise<{ items: CollabListItem[]; maybeTruncated: boolean }> {
+  const [active, completed] = await Promise.all([loadMyCollabs("active"), loadMyCollabs("completed")]);
+  return { items: [...active, ...completed], maybeTruncated: mayBeTruncated([active.length, completed.length]) };
 }
 
 export type SubmissionFile = { path: string; kind: FileKind; label: string; url: string | null };

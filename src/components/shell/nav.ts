@@ -11,7 +11,7 @@ export const BRAND_NAV: NavItem[] = [
   { label: "我的招募", href: "/brand/briefs", icon: "FileText" },
   { label: "合作案", href: "/brand/collabs", icon: "Handshake" },
   { label: "訊息", href: "/brand/messages", icon: "MessageCircle", badge: "messages" },
-  { label: "付款與發票", href: null, icon: "Receipt" },
+  { label: "付款紀錄", href: "/brand/payments", icon: "Receipt" },
   { label: "設定", href: "/brand/settings", icon: "Settings" },
 ];
 
@@ -19,7 +19,7 @@ export const CREATOR_NAV: NavItem[] = [
   { label: "機會", href: "/creator", icon: "Sparkles" },
   { label: "合作", href: "/creator/collabs", icon: "Handshake" },
   { label: "訊息", href: "/creator/messages", icon: "MessageCircle", badge: "messages" },
-  { label: "收入", href: null, icon: "Wallet" },
+  { label: "收入", href: "/creator/earnings", icon: "Wallet" },
   { label: "我的", href: "/creator/me", icon: "UserRound" },
 ];
 
