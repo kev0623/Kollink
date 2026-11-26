@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   brandPaymentsRows, creatorEarningsRows, mayBeTruncated, parseBrandPaymentsView, parseCreatorEarningsView,
-  sortNewestFirst, sumAmount, summarizeBrandPayments, summarizeCreatorEarnings,
+  sortNewestFirst, sumAmount, isTestPaymentMode, hasUncountedRows, summarizeBrandPayments, summarizeCreatorEarnings,
 } from "./earnings";
 import type { CollabListItem } from "@/lib/collabs/view";
 
@@ -91,5 +91,22 @@ describe("排序與截斷", () => {
     expect(mayBeTruncated([199, 12])).toBe(false);
     expect(mayBeTruncated([3, 200])).toBe(true);
     expect(mayBeTruncated([])).toBe(false);
+  });
+});
+
+describe("isTestPaymentMode", () => {
+  it("只有啟用且為 stage 才算測試環境", () => {
+    expect(isTestPaymentMode({ enabled: true, env: "stage" })).toBe(true);
+    expect(isTestPaymentMode({ enabled: true, env: "prod" })).toBe(false);
+    expect(isTestPaymentMode({ enabled: false, env: null })).toBe(false);
+  });
+});
+
+describe("hasUncountedRows", () => {
+  it("有邀約中或等待付款才為真", () => {
+    expect(hasUncountedRows([item("invited", 1)])).toBe(true);
+    expect(hasUncountedRows([item("awaiting_payment", 1)])).toBe(true);
+    expect(hasUncountedRows([item("completed", 1), item("in_review", 1)])).toBe(false);
+    expect(hasUncountedRows([])).toBe(false);
   });
 });

@@ -26,10 +26,16 @@ export function SummaryCard({ figures, label }: { figures: SummaryFigure[]; labe
   );
 }
 
+export function TestModeNote() {
+  return (
+    <Notice tone="warning" className="mb-4">目前是測試環境，付款不是實際收款，下面的金額僅供測試。</Notice>
+  );
+}
+
 export function TruncatedNote() {
   return (
     <Notice tone="info" className="mt-4">
-      合作案很多，上面的金額只統計最近更新的部分，可能比實際少。
+      合作案很多，上面的金額只統計部分合作案，可能比實際少。
     </Notice>
   );
 }

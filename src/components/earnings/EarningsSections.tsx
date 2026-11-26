@@ -1,15 +1,17 @@
 import Link from "next/link";
+import { paymentAvailability } from "@/lib/payments/config";
 import { requireRole } from "@/lib/auth/current-user";
 import { loadMyCollabsForTotals } from "@/lib/collabs/load";
 import { loadHasPayoutAccount } from "@/lib/creators/payout-status";
 import {
   BRAND_PAYMENTS_VIEWS, CREATOR_EARNINGS_VIEWS, brandPaymentsRows, creatorEarningsRows,
+  hasUncountedRows, isTestPaymentMode,
   parseBrandPaymentsView, parseCreatorEarningsView, summarizeBrandPayments, summarizeCreatorEarnings,
 } from "@/lib/earnings";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Notice } from "@/components/ui/Notice";
 import { btn, textLink } from "@/components/ui/styles";
-import { FilterEmpty, MoneyRows, SummaryCard, TruncatedNote, ViewChips } from "./EarningsParts";
+import { FilterEmpty, MoneyRows, SummaryCard, TestModeNote, TruncatedNote, ViewChips } from "./EarningsParts";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
@@ -22,15 +24,17 @@ export async function CreatorEarningsSection({ searchParams }: { searchParams: S
   const all = creatorEarningsRows(items, "all");
   const shown = view === "all" ? all : creatorEarningsRows(items, view);
 
+  const testMode = isTestPaymentMode(paymentAvailability());
   return (
     <div>
       {all.length > 0 && (
         <>
+          {testMode && <TestModeNote />}
           <SummaryCard
             label="收入摘要"
             figures={[
-              { label: "已收到", amount: s.received, caption: "已完成合作的金額" },
-              { label: "等待撥款", amount: s.awaiting, caption: "貼文發佈後，平台會以銀行轉帳撥款" },
+              { label: "已收到", amount: s.received, caption: "平台已完成撥款的金額" },
+              { label: "等待撥款", amount: s.awaiting, caption: "貼文已發佈，平台會以銀行轉帳撥款" },
               { label: "進行中", amount: s.inProgress, caption: "品牌已付款，還在交稿、審核或發佈" },
             ]}
           />
@@ -57,6 +61,9 @@ export async function CreatorEarningsSection({ searchParams }: { searchParams: S
       ) : (
         <>
           <ViewChips basePath="/creator/earnings" views={CREATOR_EARNINGS_VIEWS} current={view} label="收入分類" />
+          {view === "all" && hasUncountedRows(all) && (
+            <p className="mt-3 text-sm text-muted">邀約中與等待付款的合作案還沒有計入上面的金額。</p>
+          )}
           <MoneyRows side="creator" items={shown} empty={<FilterEmpty />} />
         </>
       )}
@@ -83,8 +90,10 @@ export async function BrandPaymentsSection({ searchParams }: { searchParams: Sea
       </div>
     );
   }
+  const testMode = isTestPaymentMode(paymentAvailability());
   return (
     <div>
+      {testMode && <TestModeNote />}
       <SummaryCard
         label="付款摘要"
         figures={[

@@ -110,3 +110,13 @@ export function brandPaymentsRows(items: CollabListItem[], view: BrandPaymentsVi
   const unpaid = items.filter((i) => inGroup(i, BRAND_UNPAID));
   return sortNewestFirst(view === "paid" ? paid : view === "awaiting_payment" ? unpaid : [...paid, ...unpaid]);
 }
+
+/** 付款是測試模式（綠界 stage）時，金額不是實際收款，頁面要提示。 */
+export function isTestPaymentMode(a: { enabled: boolean; env: "stage" | "prod" | null }): boolean {
+  return a.enabled && a.env === "stage";
+}
+
+/** 創作者「全部」列表裡有沒有還沒計入金額的合作案（邀約中、等待付款）。 */
+export function hasUncountedRows(items: Pick<CollabListItem, "status">[]): boolean {
+  return items.some((i) => i.status === "invited" || i.status === "awaiting_payment");
+}

@@ -120,3 +120,14 @@ describe("loadMyCollabsForTotals", () => {
     expect((await loadMyCollabsForTotals()).maybeTruncated).toBe(false);
   });
 });
+
+describe("loadMyCollabsForTotals 截斷（進行中分頁）", () => {
+  it("進行中分頁滿 200 筆也標記可能被截斷", async () => {
+    const { loadMyCollabsForTotals } = await import("./load");
+    const row = (i: number) => ({ id: `id-${i}`, title: "t", amount_twd: 1, status: "in_review", updated_at: "2026-11-01T00:00:00Z", my_side: "creator" });
+    rpc.mockImplementation(async (_n: string, a: { p_tab: string }) => ({
+      data: a.p_tab === "completed" ? [] : Array.from({ length: 200 }, (_, i) => row(i)), error: null,
+    }));
+    expect((await loadMyCollabsForTotals()).maybeTruncated).toBe(true);
+  });
+});
