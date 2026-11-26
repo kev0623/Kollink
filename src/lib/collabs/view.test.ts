@@ -99,7 +99,7 @@ describe("詳情", () => {
     }
     expect(actionCardCopy("in_review", "brand")).toMatchObject({ mine: true, title: "輪到你：審核交稿" });
     expect(actionCardCopy("in_review", "creator")).toMatchObject({ mine: false, title: "等對方審核" });
-    expect(actionCardCopy("awaiting_payment", "brand").body).toContain("等待付款確認");
+    expect(actionCardCopy("awaiting_payment", "brand").body).toContain("信用卡或 ATM 轉帳");
   });
   it("審核倒數", () => {
     const now = Date.parse("2026-11-25T00:00:00Z");
@@ -123,6 +123,9 @@ describe("交稿與事件", () => {
     expect(eventText(ev({ action: "request_changes", actorName: "花粉", note: "亮一點" }))).toBe("花粉 要求修改：亮一點");
     expect(eventText(ev({ action: "mark_paid", actorKind: "system", actorName: "系統" }))).toBe("款項已託管");
     expect(eventText(ev({ action: "auto_approve" }))).toBe("審核期限已到，自動通過");
+    expect(eventText(ev({ action: "payment_requires_refund", actorKind: "system" }))).toBe("收到一筆額外的付款，平台會處理退款");
+    expect(eventText(ev({ action: "payment_refunded", actorKind: "admin" }))).toBe("平台已退回一筆額外的付款");
+    expect(eventText(ev({ action: "payment_anomaly", actorKind: "system" }))).toBe("平台正在確認一筆付款");
     expect(eventText(ev({ action: "weird" }))).toBe("小美：狀態已更新");
     expect(eventText(ev({ action: "weird", actorName: "" }))).toBe("狀態已更新");
   });

@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { requireRole } from "@/lib/auth/current-user";
 import { isDevLoginEnabled } from "@/lib/auth/dev-login";
+import { paymentAvailability } from "@/lib/payments/config";
 import { isUuid } from "@/lib/briefs/query";
 import { loadCollabDetail, loadMyCollabs } from "@/lib/collabs/load";
 import { nowMs, parseCollabTab, type CollabSide } from "@/lib/collabs/view";
@@ -30,7 +31,12 @@ export async function CollabDetailSection({ side, params }: { side: CollabSide; 
   const data = await loadCollabDetail(id);
   if (!data || data.collab.side !== side) notFound();
   // requireRole 之後才能讀現在時間（getCurrentUser 已 await connection()）
-  return <CollabDetail data={data} side={side} uid={me.id} nowMs={nowMs()} devPaymentEnabled={isDevLoginEnabled()} />;
+  return (
+    <CollabDetail
+      data={data} side={side} uid={me.id} nowMs={nowMs()}
+      devPaymentEnabled={isDevLoginEnabled()} payment={paymentAvailability()}
+    />
+  );
 }
 
 export function CollabListSkeleton() {

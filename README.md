@@ -97,13 +97,44 @@ update public.creator_profiles set handle = '新代稱' where handle = '舊代�
 commit;
 ```
 
-## 合作案的付款與撥款（金流與管理後台完成前）
+## 合作案的付款與撥款
 
-計畫 8（綠界金流）與計畫 9（管理後台）完成前，**整個流程不會真的收錢**：品牌按「確認並付款」只會看到說明，由管理員在 Supabase Studio 的 SQL Editor 標記。案號 = 合作案 id 的前 8 碼，顯示在合作案詳情的標題區。
+案號 = 合作案 id 的前 8 碼，顯示在合作案詳情的標題區。
 
-兩段 SQL 都要**整段一起執行**（`begin` 到 `commit`），只改 `填入案號` 這一個地方（例如 `1a2b3c4d`），直接複製、不要手打。案號格式不對或找不到剛好一個合作案時會報錯，整段不會生效。
+### 線上付款（綠界）
 
-**標記已付款**（`awaiting_payment` → `awaiting_submission`）。和綠界上線後走同一條路：先建付款單，再呼叫 `record_payment_success`（不要直接改狀態，資料庫也不允許）：
+- 品牌在合作案詳情（等待付款）選「信用卡」或「ATM 轉帳」，按「確認並付款」後整頁轉到綠界付款頁。款項全額給創作者，平台不收手續費；不開電子發票。
+- 付款狀態只以綠界的伺服器通知為準（`/api/payments/ecpay/notify`）。ATM 的取號結果由 `/api/payments/ecpay/payment-info` 接收，品牌在詳情頁看到銀行代碼、虛擬帳號與期限（3 天，到期日 23:59 截止）；轉帳後才進入交稿。
+- 單筆上限 NT$200,000（`src/lib/payments/limits.ts` 與 `create_payment_order`，實際限額以綠界合約為準）。超過上限、或綠界通知遺失（綠界一天最多重送 4 次）時，用下方「人工標記已付款」。
+- 環境變數（只在伺服器端，**絕對不要加 `NEXT_PUBLIC_`**）：
+
+| 變數 | 測試環境（現在） | 正式環境（之後） |
+|---|---|---|
+| `ECPAY_ENV` | `stage` | `prod` |
+| `ECPAY_MERCHANT_ID` | `3002607` | 綠界給的特店編號 |
+| `ECPAY_HASH_KEY` | `pwFHCqoQZGmho4w6` | 綠界給的 HashKey |
+| `ECPAY_HASH_IV` | `EkRm7iFT261dpevs` | 綠界給的 HashIV |
+| `SITE_URL` | 本機 `http://localhost:3000` | `https://kollink.vercel.app` |
+
+測試環境的值是綠界公開的（https://developers.ecpay.com.tw/2856/）。**正式環境的值不要寫進 repo、文件或對話。** 少任何一個變數時「確認並付款」會停用並顯示說明；`ECPAY_ENV=prod` 搭配測試商店 3002607 也會停用。
+
+**目前決定：正式站在拿到綠界正式金鑰前不開付款。** Vercel 的 Production 與 Preview 都**不要**設任何 `ECPAY_*`（測試金鑰只在本機驗證）。程式另有一道保險：在 Vercel 的正式環境（`VERCEL_ENV=production`，或在 Vercel 上 `VERCEL=1` 且 `VERCEL_ENV` 為空）上，只要 `ECPAY_ENV` 不是 `prod`、或用到公開的測試商店，一律視為「未設定」（付款按鈕停用、通知 route 不接受測試環境的簽章）。這道保險靠 Vercel 的系統環境變數 `VERCEL_ENV`，所以專案設定的「Enable access to System Environment Variables」必須保持開啟（預設就是開）；即使 `VERCEL_ENV` 讀不到，只要 `VERCEL=1` 也會當成正式環境。
+
+**絕對不要把測試金鑰放在任何連到正式 Supabase 專案的部署上**：測試金鑰是公開的，任何人都能偽造付款通知。
+
+**測試模式**（`ECPAY_ENV=stage`）：不會真的扣款。測試卡 `4311-9522-2222-2222`，有效月年填晚於現在的值，安全碼任意三碼，3D 驗證碼固定 `1234`。測試金鑰是公開的，任何人都能偽造付款通知，所以測試付款在畫面上標「測試付款（未實際收款）」，下方的撥款 SQL 會拒絕。綠界的測試廠商後台（網址與公開帳號見上面的測試介接資訊頁）可以對 ATM 單按「模擬付款」。
+
+本機開發時綠界的伺服器連不到 `localhost`（綠界只會把通知送到 80／443 埠，本機的 http 與 3000 埠收不到），付款後狀態不會自動改變；用「標記已付款（本機）」按鈕，或照計畫 8 的 E2E 用簽好的通知測試。要驗證真實的伺服器通知，之後用通道（tunnel）或預覽部署，並且只連本機或測試用的 Supabase。
+
+**拿到正式金鑰、準備上線時**：向綠界申請正式特店（依公司規定，API 串接申請可以一併跟 Ken 哥說），拿到 MerchantID／HashKey／HashIV 後，**只在 Vercel Production** 設 `ECPAY_ENV=prod`、`ECPAY_MERCHANT_ID`、`ECPAY_HASH_KEY`、`ECPAY_HASH_IV` 與 `SITE_URL=https://kollink.vercel.app`，重新部署。上線前向綠界確認單筆限額，必要時一起改 `PAYMENT_MAX_TWD` 與 `create_payment_order`。Preview 不設；測試金鑰永遠不要放到連正式 Supabase 的部署上。
+
+### 人工標記已付款（備用）
+
+線上付款上線後，只在「超過線上付款上限」「綠界通知遺失、已在綠界後台確認收到款項」時使用。管理後台（計畫 9）完成後移除。
+
+SQL 都要**整段一起執行**（`begin` 到 `commit`），只改 `填入…` 的地方，直接複製、不要手打。案號格式不對或找不到剛好一個合作案時會報錯，整段不會生效。
+
+**標記已付款：超過線上付款上限／線下付款專用**（`awaiting_payment` → `awaiting_submission`）。為這個合作案建一張 `MAN` 開頭的付款單再呼叫 `record_payment_success`（不要直接改狀態，資料庫也不允許）：先建付款單，再呼叫 `record_payment_success`（不要直接改狀態，資料庫也不允許）：
 ```sql
 begin;
 set local role service_role;
@@ -132,13 +163,32 @@ select p.merchant_trade_no,
                                      '{"source":"manual"}'::jsonb) as result
   from public.payments p
   join public.collaborations c on c.id = p.collaboration_id
- where c.id::text like current_setting('kollink.case_code') || '%' and p.status = 'pending';
+ where c.id::text like current_setting('kollink.case_code') || '%' and p.status = 'pending'
+   and p.merchant_trade_no like 'MAN%';
 select c.status from public.collaborations c where c.id::text like current_setting('kollink.case_code') || '%';
 commit;
 ```
 `result` 是 `paid`、最後的 `status` 是 `awaiting_submission` 就完成了。沒有任何列：合作案已經不是「等待付款」。
 
-**撥款**（`awaiting_payout` → `completed`）：
+**標記已付款：綠界已扣款、但我們沒收到通知**（已在綠界後台確認該筆交易成功）。付款單本來就存在，直接用它的單號（`KL` 開頭，見合作案詳情的付款單或 `payments` 表）。替換三個 `填入…` 的值，整段直接複製、不要手打：
+```sql
+begin;
+set local role service_role;
+select set_config('request.jwt.claims', '{"role":"service_role"}', true);
+select public.record_payment_success(
+  '填入KL開頭的付款單號',
+  填入金額,
+  '填入綠界交易編號',
+  '{"source":"manual"}'::jsonb,
+  'prod'
+) as result;
+commit;
+```
+`result` 是 `paid` 就完成了；金額與付款單不符時函式會記錄異常而不是標記已付款。
+
+### 撥款
+
+**撥款**（`awaiting_payout` → `completed`）。測試付款（綠界測試環境）沒有實際收款，會被拒絕：
 ```sql
 begin;
 set local role service_role;
@@ -156,6 +206,11 @@ begin
   if v_n <> 1 then
     raise exception '案號 % 找到 % 個合作案，請確認', v_code, v_n;
   end if;
+  if exists (select 1 from public.payments p join public.collaborations c on c.id = p.collaboration_id
+              where c.id::text like v_code || '%' and p.status = 'paid' and not p.refund_required
+                and p.provider_env = 'stage') then
+    raise exception '案號 % 的款項是綠界測試環境的付款（沒有實際收款），不能撥款', v_code;
+  end if;
 end;
 $$;
 select c.id, public.transition_collaboration(c.id, 'payout', '人工撥款') as result
@@ -165,7 +220,55 @@ commit;
 ```
 `result` 是 `completed` 就結案了（實際轉帳在平台外處理）。
 
-本機開發另有「標記已付款（本機）」按鈕（開關與測試快速登入相同，正式環境不會出現、`/api/dev/mark-paid` 回 404），走的也是同一條路。
+### 退款（只記錄，實際退款在綠界後台）
+
+合作案取消後才到款、或同一個合作案付了兩次時，資料庫會標記「需退款」，雙方的事件看到「收到一筆額外的付款，平台會處理退款」。
+
+**需要退款的款項**：
+```sql
+select p.id as 付款單, left(c.id::text, 8) as 案號, p.merchant_trade_no as 綠界訂單編號,
+       p.provider_trade_no as 綠界交易編號, p.amount_twd as 金額, p.payment_method as 方式,
+       p.provider_env as 環境, p.paid_at at time zone 'Asia/Taipei' as 付款時間, c.status as 合作案狀態
+  from public.payments p
+  join public.collaborations c on c.id = p.collaboration_id
+ where p.refund_required
+ order by p.paid_at;
+```
+
+在綠界廠商後台用「綠界訂單編號」找到交易辦理退款（信用卡可以刷退；ATM 無法原路退回，要向品牌取得帳號另外轉帳），完成後**處理退款**（`填入付款單` 換成上面查到的付款單 id，`填入說明` 寫退款方式與日期）：
+```sql
+begin;
+set local role service_role;
+select set_config('request.jwt.claims', '{"role":"service_role"}', true);
+select public.resolve_payment_refund('填入付款單'::uuid, '填入說明');
+commit;
+```
+沒有錯誤就完成了，雙方的事件會多一筆「平台已退回一筆額外的付款」。`refund not required`：這筆已經處理過。
+
+### 付款異常
+
+金額不符、找不到付款單等異常不會讓綠界一直重送，而是記下來（Vercel log 也有 `ecpay notify: payment anomaly recorded`）。合作案的事件顯示「平台正在確認一筆付款」。
+
+**付款異常**：
+```sql
+select a.id as 異常, a.created_at at time zone 'Asia/Taipei' as 時間, a.source as 來源, a.kind as 類型,
+       a.merchant_trade_no as 綠界訂單編號, a.provider_trade_no as 綠界交易編號,
+       a.expected_amount_twd as 應付, a.received_amount_twd as 實收, left(a.collaboration_id::text, 8) as 案號
+  from public.payment_anomalies a
+ where a.resolved_at is null
+ order by a.created_at;
+```
+
+在綠界後台確認實際情況並處理（例如退款，或確認款項無誤後用上面的「人工標記已付款」），再**處理異常**（`填入異常` 換成上面的數字 id）：
+```sql
+begin;
+set local role service_role;
+select set_config('request.jwt.claims', '{"role":"service_role"}', true);
+select public.resolve_payment_anomaly(填入異常, '填入說明');
+commit;
+```
+
+本機開發另有「標記已付款（本機）」按鈕（開關與測試快速登入相同，正式環境不會出現、`/api/dev/mark-paid` 回 404），走的也是 `record_payment_success`。
 
 ## 站內訊息（管理後台完成前）
 
@@ -216,7 +319,7 @@ CLI 3.x 的 `db push` 預設推到本機，一定要加 `--remote`。**不要執
 
 `20261124000500_briefs.sql` 會把 `briefs.cover_url` 改名為 `cover_path`。它開頭有保護檢查：**正式資料庫的 `briefs` 只要有任何一列，migration 就會停下來**（錯誤訊息 `briefs has rows …`）。目前沒有任何程式寫入招募，所以應該是 0 筆；如果真的停下來，先確認資料、手動搬移後再推。
 
-**部署順序：先推資料庫，再合併 PR。** Vercel 在 `main` 合併後立刻部署；新版程式會呼叫新 migration 建立的函式（例如計畫 4 的 `search_creators`、計畫 5 的 `save_brief`、`list_opportunities`，`20261124000500_briefs.sql`、`20261124000600_brief_covers.sql`，計畫 6 的 `20261125000100_collab_create.sql`、`20261125000200_deliverables.sql`、`20261125000300_collab_reads.sql`、`20261125000400_collab_review_fixes.sql`，計畫 7 的 `20261126000100_messaging_write.sql`、`20261126000200_messaging_reads.sql`、`20261126000300_messaging_review_fixes.sql`、`20261126000400_messaging_creator_first_message.sql`），資料庫還沒更新時 `/brand`、`/brand/briefs`、`/creator` 會出錯。所以每次 PR 有新 migration 時，先執行上面的 `npx supabase db push --remote`，確認成功後再合併。計畫 6 起還要在合併前把 CRON_SECRET 加到 Vercel（見「部署（Vercel）」）。
+**部署順序：先推資料庫，再合併 PR。** Vercel 在 `main` 合併後立刻部署；新版程式會呼叫新 migration 建立的函式（例如計畫 4 的 `search_creators`、計畫 5 的 `save_brief`、`list_opportunities`，`20261124000500_briefs.sql`、`20261124000600_brief_covers.sql`，計畫 6 的 `20261125000100_collab_create.sql`、`20261125000200_deliverables.sql`、`20261125000300_collab_reads.sql`、`20261125000400_collab_review_fixes.sql`，計畫 7 的 `20261126000100_messaging_write.sql`、`20261126000200_messaging_reads.sql`、`20261126000300_messaging_review_fixes.sql`、`20261126000400_messaging_creator_first_message.sql`，計畫 8 的 `20261127000100_payment_orders.sql`、`20261127000200_payment_review_fixes.sql`），資料庫還沒更新時 `/brand`、`/brand/briefs`、`/creator` 會出錯。所以每次 PR 有新 migration 時，先執行上面的 `npx supabase db push --remote`，確認成功後再合併。計畫 6 起還要在合併前把 CRON_SECRET 加到 Vercel（見「部署（Vercel）」）。計畫 8 的付款在拿到綠界正式金鑰前不在正式站開啟：Vercel 不設 `ECPAY_*`，付款按鈕會停用（見「合作案的付款與撥款」）。
 
 計畫 6 推資料庫前的檢查（只讀，在正式資料庫的 SQL Editor 執行）：
 
@@ -244,6 +347,18 @@ select count(*) as old_policy from pg_policies
 依序代表：沒有超過 2000 字的舊訊息（新的長度檢查才不會讓 migration 失敗）；`supabase_realtime` publication 存在；`messages` 還沒被加進去（`20261126000100` 會加，重複加會報錯）；舊的 insert policy 還在（`20261126000100` 會 drop，不在會報錯）。
 
 計畫 7 推完並合併後的煙霧測試：Supabase Dashboard → Realtime → Settings 必須允許公開頻道（public channels，不能只開 private-only）；用兩個帳號（品牌與創作者）互傳訊息，確認對方畫面即時出現新訊息、導覽列的未讀徽章也會更新。
+
+計畫 8 推資料庫前的檢查（只讀，在正式資料庫的 SQL Editor 執行）：
+
+```sql
+select count(*) as blank_trade_no from public.payments
+ where provider_trade_no is not null and btrim(provider_trade_no) = '';                           -- 必須是 0
+select count(*) as refund_required from public.payments where refund_required;                    -- 只是看看
+```
+
+第一個必須是 0（`20261127000100_payment_orders.sql` 新增「交易編號不能只有空白」的限制）。第二個不是 0 代表之前就有需退款的款項，上線後用 README「退款」的 SQL 處理。
+
+計畫 8 合併後的煙霧測試（正式站；Vercel 沒有 `ECPAY_*`）：用測試品牌帳號開一個「等待付款」的合作案，詳情頁的「確認並付款」應該是停用狀態並顯示付款尚未開放的說明；`/api/payments/ecpay/notify` 收到任何請求都不會改變合作案狀態。完整的付款流程（測試卡、ATM 模擬付款）只在本機用測試環境驗證，等正式金鑰設好後再用小額真實付款做一次煙霧測試。
 
 本機的 `config.toml` 不會自動套用到正式專案，上線前在 Supabase 後台逐項設定：
 
@@ -274,7 +389,9 @@ NEXT_PUBLIC_GOOGLE_AUTH_ENABLED
 CRON_SECRET
 ```
 
-`SUPABASE_SECRET_KEY` 絕對不可加 `NEXT_PUBLIC_` 前綴。綠界相關變數（`ECPAY_*`）等計畫 8 上線付款時再加。
+`SUPABASE_SECRET_KEY`、`ECPAY_*` 絕對不可加 `NEXT_PUBLIC_` 前綴。
+
+綠界變數（`ECPAY_ENV`、`ECPAY_MERCHANT_ID`、`ECPAY_HASH_KEY`、`ECPAY_HASH_IV`）與 `SITE_URL` **目前不要設**（正式站在拿到綠界正式金鑰前不開付款，Preview 也不設；測試金鑰只在本機使用）。上線時只加到 **Production**，值見「合作案的付款與撥款」，改了要重新部署。程式在 `VERCEL_ENV=production` 上會拒絕測試環境與公開測試商店，這需要 Vercel 的「Enable access to System Environment Variables」保持開啟。
 
 `CRON_SECRET`：審核逾期自動通過的 Vercel Cron（`vercel.json`：每天 UTC 01:00 = 台灣 09:00 呼叫 `/api/cron/auto-approve`）。值用一串夠長的亂數（例如 `openssl rand -hex 32` 的結果），加到 **Production** 環境。Vercel 會自動在 cron 請求帶 `Authorization: Bearer <CRON_SECRET>`；沒設定時 route 一律回 500，不會自動通過任何合作案。Hobby 方案的 Cron 一天只跑一次、而且可能在該小時內任何時間觸發（UTC 01:00–01:59，台灣 09:00–09:59），所以實際是「審核期限到了之後最晚隔天自動通過」。本機在 `.env.local` 隨便設一個值即可，手動測試：
 

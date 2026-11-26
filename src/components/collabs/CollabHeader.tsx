@@ -3,7 +3,7 @@ import { caseCode, escrowLabel, sourceLabel, type Collab } from "@/lib/collabs/v
 import { CollabStatusBadge } from "./CollabStatusBadge";
 
 /** 標題區：創作者 × 案名、交付內容、金額與託管狀態、案號、來源。 */
-export function CollabHeader({ c }: { c: Collab }) {
+export function CollabHeader({ c, testPayment }: { c: Collab; testPayment: boolean }) {
   return (
     <header className="space-y-3">
       <div className="flex flex-wrap items-center gap-2">
@@ -22,7 +22,12 @@ export function CollabHeader({ c }: { c: Collab }) {
         <div className="space-y-2">
           <div>
             <dt className="text-xs text-muted">金額</dt>
-            <dd className="mt-0.5 font-semibold text-primary">{escrowLabel(c.status, c.amount)}</dd>
+            <dd className="mt-0.5 flex flex-wrap items-center gap-2 font-semibold text-primary">
+              {escrowLabel(c.status, c.amount)}
+              {testPayment && (
+                <span className="rounded-full border border-danger px-2 py-0.5 text-xs font-semibold text-danger">測試付款（未實際收款）</span>
+              )}
+            </dd>
           </div>
           <div className="flex flex-wrap gap-x-4 gap-y-1">
             <div>

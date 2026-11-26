@@ -261,7 +261,7 @@ export function actionCardCopy(s: CollabStatus, side: CollabSide): ActionCardCop
         : { mine, title: "等對方回覆邀約", body: `創作者接受後就輪到你確認並付款。${none}` };
     case "awaiting_payment":
       return mine
-        ? { mine, title: "輪到你：確認並付款", body: "等待付款確認。款項由平台託管，創作者交稿並發佈後才撥款。" }
+        ? { mine, title: "輪到你：確認並付款", body: "選擇信用卡或 ATM 轉帳付款。款項由平台託管，創作者交稿並發佈後才撥款。" }
         : { mine, title: "等對方付款託管", body: `款項託管後就可以開始製作。${none}` };
     case "awaiting_submission":
       return mine
@@ -398,8 +398,13 @@ export function eventText(e: CollabEvent): string {
       return `${who} 已發佈貼文`;
     case "payout":
       return "平台已撥款，合作完成";
+    // 付款相關的系統事件：雙方都看得到，用中性的說法（不是任何一方的問題）
     case "payment_requires_refund":
-      return "收到付款，但合作案已不在待付款，需退款";
+      return "收到一筆額外的付款，平台會處理退款";
+    case "payment_refunded":
+      return "平台已退回一筆額外的付款";
+    case "payment_anomaly":
+      return "平台正在確認一筆付款";
     default:
       return who ? `${who}：狀態已更新` : "狀態已更新";
   }

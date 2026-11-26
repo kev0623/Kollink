@@ -16,10 +16,26 @@ function subsQuery(data: unknown[]) {
   return q;
 }
 
+/** payments：select → eq → order → limit */
+const paymentsSelect = vi.fn();
+function paymentsQuery(data: unknown[]) {
+  const q = {
+    select: (cols: string) => { paymentsSelect(cols); return q; },
+    eq: () => q, order: () => q, limit: async () => ({ data, error: null }),
+  };
+  return q;
+}
+
+/** from(table)：payments 與 collaboration_submissions 各回各的 */
+function tables(subs: unknown[], payments: unknown[] = []) {
+  return (table: string) => (table === "payments" ? paymentsQuery(payments) : subsQuery(subs));
+}
+
 beforeEach(() => {
   rpc.mockReset();
   from.mockReset();
   createSignedUrls.mockReset();
+  paymentsSelect.mockReset();
 });
 
 describe("loadMyCollabs", () => {
@@ -45,7 +61,7 @@ describe("loadCollabDetail", () => {
     rpc.mockImplementation(async (fn: string) => fn === "get_collaboration"
       ? { data: [{ id: ID, title: "案", status: "in_review", my_side: "brand", amount_twd: 4500 }], error: null }
       : { data: [{ id: 1, action: "request_changes", actor_kind: "brand", actor_name: "花粉", note: "亮一點", created_at: "2026-11-25T02:00:00Z" }], error: null });
-    from.mockReturnValue(subsQuery([
+    from.mockImplementation(tables([
       { id: "s1", round: 1, note: null, links: [], file_paths: [FILE], created_at: "2026-11-25T01:00:00Z" },
     ]));
     createSignedUrls.mockResolvedValue({ data: [{ path: FILE, signedUrl: "https://signed/x", error: null }], error: null });
@@ -60,9 +76,19 @@ describe("loadCollabDetail", () => {
     rpc.mockImplementation(async (fn: string) => fn === "get_collaboration"
       ? { data: [{ id: ID, status: "awaiting_submission", my_side: "creator" }], error: null }
       : { data: [], error: null });
-    from.mockReturnValue(subsQuery([]));
+    from.mockImplementation(tables([]));
     const d = await loadCollabDetail(ID);
     expect(createSignedUrls).not.toHaveBeenCalled();
     expect(d?.submissions).toEqual([]);
+  });
+  it("一起讀付款單（不讀 raw_notify）", async () => {
+    rpc.mockImplementation(async (fn: string) => fn === "get_collaboration"
+      ? { data: [{ id: ID, status: "awaiting_payment", my_side: "brand" }], error: null }
+      : { data: [], error: null });
+    const pay = { status: "pending", payment_method: "atm", atm_v_account: "9103522850" };
+    from.mockImplementation(tables([], [pay]));
+    const d = await loadCollabDetail(ID);
+    expect(d?.payments).toEqual([pay]);
+    expect(paymentsSelect.mock.calls[0][0]).not.toContain("raw_notify");
   });
 });
