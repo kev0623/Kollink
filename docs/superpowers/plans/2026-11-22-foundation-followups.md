@@ -33,12 +33,17 @@
 | 建立合作案只走函式 | `collaborations`、`conversations` 收回所有 API 角色的寫入（只剩 SELECT）；建立只能經由 `accept_application_with_collab`、`invite_creator`。同一對品牌／創作者只有一個對話（取得或建立並鎖住），同一個品牌對同一位創作者同時只能有一個 invited。 |
 | 合作案讀取 | 列表 `list_my_collaborations`（只列自己參與的）、詳情 `get_collaboration` 與事件 `list_collaboration_events`（參與者與管理員）是 definer 函式；交稿紀錄用 RLS 直接讀。頁面另外要求視角等於該區。 |
 | 交稿 | 私密 bucket `deliverables`（50 MB、圖片／影片／PDF），路徑 `<合作案>/<創作者>/<uuid>.<副檔名>`；只有創作者在 awaiting_submission 能上傳到自己的資料夾；交出去的檔案不能刪、不能換。交稿紀錄只能經由 `submit_deliverables`（同時推進到 in_review；創作者的 `submit` 轉換也只能走這個函式）。原始檔名不保存。 |
-| 付款與撥款（計畫 8、9 前） | 不收錢。管理員用 README 的 SQL 標記：已付款一律「service_role 建付款單 → `record_payment_success`」；撥款以 service_role 呼叫 `transition_collaboration(..., 'payout')`。本機另有 `/api/dev/mark-paid`（開關同測試快速登入）。 |
+| 付款與撥款 | 計畫 8 起品牌用綠界付款（信用卡、ATM），付款狀態只以伺服器通知為準；撥款仍由管理員用 README 的 SQL（計畫 9 後台前）。人工標記已付款的 SQL 保留為備用（超過線上付款上限、綠界通知遺失）。本機另有 `/api/dev/mark-paid`（開關同測試快速登入）。 |
 | 審核逾期自動通過 | Vercel Cron（`vercel.json`，每天 UTC 01:00）→ `/api/cron/auto-approve`（`CRON_SECRET`、常數時間比對）→ service_role 呼叫只授權給 service_role 的 `auto_approve_due()`；一件失敗不影響其他件。用 `vercel.json` 而不是 `vercel.ts`（後者要新增 `@vercel/config` 套件）。 |
 | 站內訊息只走函式 | `messages` 收回所有 API 角色的寫入與 anon 讀取（只剩 authenticated／service_role 的 SELECT）；送出只能經由 `send_message`（參與者、內文 1–2000 字、對話未暫停、每人每分鐘 20 則）。`flagged_contact` 一律由 BEFORE INSERT trigger（`has_contact_info`）計算，規則與 `src/lib/messages/contact.ts` 相同。 |
 | 誰能開啟對話 | 只有品牌，經由 `start_conversation`（已審核創作者；已有對話直接回傳；24 小時最多 30 個新對話）。創作者（包括報名過的）不能主動開啟。品牌開了但還沒傳訊息、也沒有合作案的空對話，創作者看不到。 |
 | 對話暫停 | 創作者不是 approved 時，雙方都不能再送訊息，歷史訊息照常顯示。 |
 | 已讀與即時 | `conversation_reads.last_read_at` = 最後一則訊息的 `created_at`，由 client 在開啟對話與收到訊息時呼叫 `mark_conversation_read`。即時更新用 Realtime Postgres Changes（`messages` 在 `supabase_realtime` publication；RLS 以訂閱者身分過濾），訂閱前先 `realtime.setAuth()`。 |
+| 綠界建單 | `create_payment_order` 由品牌自己的 client 呼叫（品牌、`awaiting_payment`、金額 = 報價、≤ 200000、一小時 10 張），付款單編號 `KL`+台灣日期+12 位亂數由資料庫產生；每次付款都建新單，從不重送舊編號。 |
+| 付款異常不報錯 | 找不到付款單、金額不符、付款單與報價不符：記進 `payment_anomalies`（去重）、寫 audit `payment_anomaly`、回綠界 `1|OK`（綠界只重送 4 次）。 |
+| 測試付款 | `payments.provider_env` 記錄驗證通知的金鑰環境；`stage` 的付款畫面標「測試付款（未實際收款）」，README 的撥款 SQL 拒絕。`SimulatePaid=1` 只在 stage 記錄。 |
+| raw_notify 白名單 | TS `NOTIFY_FIELDS` 與 SQL `payment_raw_whitelist` 相同；authenticated 讀不到 `raw_notify`、`created_by`、`refund_note`（欄位權限）。 |
+| 正式站不開付款 | 使用者決定（2026-11-26）：拿到綠界正式金鑰前 Vercel 不設 `ECPAY_*`；程式在 `VERCEL_ENV=production` 且 `ECPAY_ENV` 不是 `prod`（或用公開測試商店）時視為未設定。測試只在本機驗證。需要 Vercel 的「Enable access to System Environment Variables」開啟。 |
 
 ## 各計畫需要處理的事項
 
@@ -209,19 +214,36 @@
   - 對話頁的 404 在 Suspense 內渲染，HTTP 狀態碼仍是 200（soft 404）。
   - 對話頁的捲動在手機是整頁捲動，輸入區用 sticky 固定在底部導覽列上方；iOS 鍵盤彈出時的表現只在 E2E 的 390 寬模擬過。
 
-### 8. 付款建單與撥款（**真的收錢之前必須完成**）
-- `create_payment_order(collab_id)`：definer 函式，檢查呼叫者是品牌、狀態是 `awaiting_payment`、金額等於合作案報價，並由函式產生 `merchant_trade_no`。
-- 付款金額和合作案報價不符時，目前會報錯，沒有留下任何紀錄，綠界還會一直重送 → 要記錄這筆異常並發出警示。
-- 退款流程：清除 `refund_required` 的函式；`failed → paid` 的規則要寫清楚。
-- `raw_notify` 只保留白名單欄位（可能含有 card4no / card6no）。
-- `provider_trade_no` 不接受只有空白的值；金額設定上限（綠界單筆限額）。
-- route 補單元測試（mock `createAdminClient`）；用真實的沙盒通知補一項簽章測試。
-- 帳號刪除改用 soft delete（`collaborations` 和 `payments` 的外鍵會擋住實體刪除）。
-- 「確認並付款」按鈕目前只顯示說明；接綠界時改成建單（create_payment_order）並導向付款頁。README 的人工標記 SQL 在金流上線後移除。
+### 8. 付款建單與撥款
+- `create_payment_order`：definer 函式，檢查品牌、`awaiting_payment`、金額 = 報價，付款單編號由函式產生。→ 已完成（計畫 8）
+- 金額不符等異常：記錄並警示，不讓綠界一直重送。→ 已完成（計畫 8：`payment_anomalies`、audit `payment_anomaly`、Vercel log）
+- 退款：`resolve_payment_refund` 清除 `refund_required`；`failed → paid` 允許（以綠界最後的成功通知為準）。→ 已完成（計畫 8）
+- `raw_notify` 白名單；`provider_trade_no` 不接受空白；金額上限。→ 已完成（計畫 8）
+- route 單元測試（mock `createAdminClient`）；真實沙盒通知的簽章測試。→ 已完成（計畫 8；真實樣本來自 E2E 的 OrderResultURL，見 `src/lib/payments/stage-sample.test.ts`；E2E 沒攔到時改在正式站煙霧測試取得）
+- 「確認並付款」建單並導向綠界。→ 已完成（計畫 8）
+- 帳號刪除改用 soft delete → 移到計畫 9（目前沒有刪除帳號功能）。
+- README 的人工標記已付款 SQL：保留為備用，計畫 9 後台完成後移除。
+- 計畫 8 新增的後續事項：
+  - 單筆上限 NT$200,000 是暫定值，綠界文件沒有寫，上線收真錢前要向綠界確認（TS 與 SQL 兩處）。
+  - 測試金鑰公開，任何人都能偽造付款通知：所以測試金鑰絕不能放在連正式 Supabase 的部署上（正式站目前根本不設 `ECPAY_*`）。
+  - 綠界通知一天最多重送 4 次；全部失敗時沒有自動補查（QueryTradeInfo），要管理員在綠界後台確認後用人工 SQL。
+  - 放棄的付款單永遠是 `pending`，沒有清理；一小時 10 張的頻率限制也把放棄的單算進去。
+  - 退款只記錄，沒有串綠界的退款 API；ATM 付款的退款要另外轉帳。
+  - `failed` 狀態目前沒有程式寫入（付款失敗的通知只留 log）。
+  - `payment_anomaly` 的 audit note 是英文技術字串，畫面不顯示，但 `list_collaboration_events` 會回傳給參與者。
+  - ATM 轉帳資訊只顯示在品牌端；RLS 允許創作者讀付款單的 ATM 欄位（不是敏感資料）。
+  - 沒有付款完成的 Email 通知；品牌與創作者要重新整理才看到狀態改變。
+  - 超過上限時只顯示「請聯絡平台」，沒有站內的聯絡管道。
+  - 正式站不開付款（使用者決定）：上線時才設 Production 的 `ECPAY_*` 與 `SITE_URL`；程式保險靠 `VERCEL_ENV`，需保持 Vercel 系統環境變數開啟。
+  - `merchant_trade_no` 若撞號（`23505`）目前沒有重試，使用者會看到錯誤、再按一次即可。
+  - 正式環境保險應該也擋掉其他綠界公開測試金鑰組（3365120、3002599）與開頭為 0 的特店編號（合併前可能就會修）。
+  - `buildCheckoutForm` 的輸入驗證（防禦性檢查）。
+  - 本機 http 收不到綠界的 ReturnURL（綠界只送 80／443 埠）：之後用通道或預覽部署驗證真實通知。
 
 ### 9. 管理後台
 - 管理員目前只能讀取。需要 `set_creator_status()`（definer 函式，檢查 `is_admin()`），以及取消或爭議處理的狀態轉換。
 - `is_admin()`、`my_role()`、`is_conversation_participant()` 的 EXECUTE 權限從 PUBLIC 收回。brand-logos 的 insert/update policy 以 authenticated 身分呼叫 my_role()，收回後要再 grant 給 authenticated。（計畫 7 已收回 is_conversation_participant 的 PUBLIC／anon；is_admin、my_role 仍待處理）
+- 付款相關的後台：付款單、需退款（`resolve_payment_refund`）、付款異常（`resolve_payment_anomaly`）的列表與操作；完成後移除 README 的人工標記已付款 SQL。帳號刪除改用 soft delete（計畫 8 移過來的）。
 
 ### 10. 審核逾期自動通過
 - `transition_collaboration` 的 system 身分要求「透過 PostgREST 以 service_role 呼叫」；**pg_cron 以 postgres 身分執行會被判定為「不是參與者」**。可以改用 Next route 搭配 Cron 和 secret，再以 service_role 呼叫 RPC；或另外寫一個只授權給 service_role 的 `auto_approve_due()` definer 函式。
