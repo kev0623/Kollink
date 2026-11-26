@@ -21,14 +21,14 @@ export type Database = {
                   ]
                 },"audit_logs": {
                   Row: {
-                    "action": string,"actor_id": string | null,"actor_kind": string,"collaboration_id": string | null,"created_at": string,"from_status": Database["public"]['Enums']["collab_status"] | null,"id": number,"note": string | null,"to_status": Database["public"]['Enums']["collab_status"] | null
+                    "action": string,"actor_id": string | null,"actor_kind": string,"collaboration_id": string | null,"created_at": string,"from_status": Database["public"]['Enums']["collab_status"] | null,"id": number,"note": string | null,"subject_id": string | null,"to_status": Database["public"]['Enums']["collab_status"] | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "action": string,"actor_id"?: string | null,"actor_kind": string,"collaboration_id"?: string | null,"created_at"?: string,"from_status"?: Database["public"]['Enums']["collab_status"] | null,"id"?: never,"note"?: string | null,"to_status"?: Database["public"]['Enums']["collab_status"] | null
+                    "action": string,"actor_id"?: string | null,"actor_kind": string,"collaboration_id"?: string | null,"created_at"?: string,"from_status"?: Database["public"]['Enums']["collab_status"] | null,"id"?: never,"note"?: string | null,"subject_id"?: string | null,"to_status"?: Database["public"]['Enums']["collab_status"] | null
                   }
                   Update: {
-                    "action"?: string,"actor_id"?: string | null,"actor_kind"?: string,"collaboration_id"?: string | null,"created_at"?: string,"from_status"?: Database["public"]['Enums']["collab_status"] | null,"id"?: never,"note"?: string | null,"to_status"?: Database["public"]['Enums']["collab_status"] | null
+                    "action"?: string,"actor_id"?: string | null,"actor_kind"?: string,"collaboration_id"?: string | null,"created_at"?: string,"from_status"?: Database["public"]['Enums']["collab_status"] | null,"id"?: never,"note"?: string | null,"subject_id"?: string | null,"to_status"?: Database["public"]['Enums']["collab_status"] | null
                   }
                   Relationships: [
                     {
@@ -103,6 +103,26 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "brand_profiles"
       referencedColumns: ["user_id"]
+    }
+                  ]
+                },"collaboration_payouts": {
+                  Row: {
+                    "account_last4": string,"account_name": string,"actor_kind": string,"amount_twd": number,"bank_code": string,"branch_code": string | null,"collaboration_id": string,"created_at": string,"paid_out_by": string | null,"transfer_note": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "account_last4": string,"account_name": string,"actor_kind": string,"amount_twd": number,"bank_code": string,"branch_code"?: string | null,"collaboration_id": string,"created_at"?: string,"paid_out_by"?: string | null,"transfer_note": string
+                  }
+                  Update: {
+                    "account_last4"?: string,"account_name"?: string,"actor_kind"?: string,"amount_twd"?: number,"bank_code"?: string,"branch_code"?: string | null,"collaboration_id"?: string,"created_at"?: string,"paid_out_by"?: string | null,"transfer_note"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "collaboration_payouts_collaboration_id_fkey"
+      columns: ["collaboration_id"]
+isOneToOne: true
+      referencedRelation: "collaborations"
+      referencedColumns: ["id"]
     }
                   ]
                 },"collaboration_submissions": {
@@ -241,6 +261,26 @@ isOneToOne: false
       referencedColumns: ["user_id"]
     }
                   ]
+                },"creator_payout_accounts": {
+                  Row: {
+                    "account_last4": string | null,"account_name": string,"account_number": string,"bank_code": string,"branch_code": string | null,"updated_at": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "account_last4"?: never,"account_name": string,"account_number": string,"bank_code": string,"branch_code"?: string | null,"updated_at"?: string,"user_id": string
+                  }
+                  Update: {
+                    "account_last4"?: never,"account_name"?: string,"account_number"?: string,"bank_code"?: string,"branch_code"?: string | null,"updated_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "creator_payout_accounts_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: true
+      referencedRelation: "creator_profiles"
+      referencedColumns: ["user_id"]
+    }
+                  ]
                 },"creator_portfolio_items": {
                   Row: {
                     "created_at": string,"creator_id": string,"id": string,"image_path": string,"link_url": string | null,"position": number
@@ -263,14 +303,14 @@ isOneToOne: false
                   ]
                 },"creator_profiles": {
                   Row: {
-                    "audience_age": string | null,"avatar_path": string | null,"bio": string | null,"categories": (string)[],"collab_types": (string)[],"created_at": string,"engagement_rate": number | null,"follower_count": number,"handle": string,"handle_locked_at": string | null,"ig_username": string,"region": string | null,"status": string,"style_tags": (string)[],"user_id": string
+                    "audience_age": string | null,"avatar_path": string | null,"bio": string | null,"categories": (string)[],"collab_types": (string)[],"created_at": string,"engagement_rate": number | null,"follower_count": number,"handle": string,"handle_locked_at": string | null,"ig_username": string,"region": string | null,"review_note": string | null,"status": string,"style_tags": (string)[],"user_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "audience_age"?: string | null,"avatar_path"?: string | null,"bio"?: string | null,"categories"?: (string)[],"collab_types"?: (string)[],"created_at"?: string,"engagement_rate"?: number | null,"follower_count"?: number,"handle": string,"handle_locked_at"?: string | null,"ig_username": string,"region"?: string | null,"status"?: string,"style_tags"?: (string)[],"user_id": string
+                    "audience_age"?: string | null,"avatar_path"?: string | null,"bio"?: string | null,"categories"?: (string)[],"collab_types"?: (string)[],"created_at"?: string,"engagement_rate"?: number | null,"follower_count"?: number,"handle": string,"handle_locked_at"?: string | null,"ig_username": string,"region"?: string | null,"review_note"?: string | null,"status"?: string,"style_tags"?: (string)[],"user_id": string
                   }
                   Update: {
-                    "audience_age"?: string | null,"avatar_path"?: string | null,"bio"?: string | null,"categories"?: (string)[],"collab_types"?: (string)[],"created_at"?: string,"engagement_rate"?: number | null,"follower_count"?: number,"handle"?: string,"handle_locked_at"?: string | null,"ig_username"?: string,"region"?: string | null,"status"?: string,"style_tags"?: (string)[],"user_id"?: string
+                    "audience_age"?: string | null,"avatar_path"?: string | null,"bio"?: string | null,"categories"?: (string)[],"collab_types"?: (string)[],"created_at"?: string,"engagement_rate"?: number | null,"follower_count"?: number,"handle"?: string,"handle_locked_at"?: string | null,"ig_username"?: string,"region"?: string | null,"review_note"?: string | null,"status"?: string,"style_tags"?: (string)[],"user_id"?: string
                   }
                   Relationships: [
                     {
@@ -319,6 +359,26 @@ isOneToOne: false
 isOneToOne: true
       referencedRelation: "creator_profiles"
       referencedColumns: ["user_id"]
+    }
+                  ]
+                },"message_reviews": {
+                  Row: {
+                    "message_id": string,"reviewed_at": string,"reviewed_by": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "message_id": string,"reviewed_at"?: string,"reviewed_by"?: string | null
+                  }
+                  Update: {
+                    "message_id"?: string,"reviewed_at"?: string,"reviewed_by"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "message_reviews_message_id_fkey"
+      columns: ["message_id"]
+isOneToOne: true
+      referencedRelation: "messages"
+      referencedColumns: ["id"]
     }
                   ]
                 },"messages": {
@@ -375,14 +435,14 @@ isOneToOne: false
                   ]
                 },"payments": {
                   Row: {
-                    "amount_twd": number,"atm_bank_code": string | null,"atm_expire_date": string | null,"atm_v_account": string | null,"collaboration_id": string,"created_at": string,"created_by": string | null,"id": string,"merchant_trade_no": string,"paid_at": string | null,"payment_info_at": string | null,"payment_method": string | null,"provider": string,"provider_env": string | null,"provider_trade_no": string | null,"raw_notify": Json | null,"refund_note": string | null,"refund_required": boolean,"refunded_at": string | null,"status": string
+                    "admin_note": string | null,"amount_twd": number,"atm_bank_code": string | null,"atm_expire_date": string | null,"atm_v_account": string | null,"collaboration_id": string,"created_at": string,"created_by": string | null,"id": string,"merchant_trade_no": string,"paid_at": string | null,"payment_info_at": string | null,"payment_method": string | null,"provider": string,"provider_env": string | null,"provider_trade_no": string | null,"raw_notify": Json | null,"refund_note": string | null,"refund_required": boolean,"refunded_at": string | null,"status": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "amount_twd": number,"atm_bank_code"?: string | null,"atm_expire_date"?: string | null,"atm_v_account"?: string | null,"collaboration_id": string,"created_at"?: string,"created_by"?: string | null,"id"?: string,"merchant_trade_no": string,"paid_at"?: string | null,"payment_info_at"?: string | null,"payment_method"?: string | null,"provider": string,"provider_env"?: string | null,"provider_trade_no"?: string | null,"raw_notify"?: Json | null,"refund_note"?: string | null,"refund_required"?: boolean,"refunded_at"?: string | null,"status"?: string
+                    "admin_note"?: string | null,"amount_twd": number,"atm_bank_code"?: string | null,"atm_expire_date"?: string | null,"atm_v_account"?: string | null,"collaboration_id": string,"created_at"?: string,"created_by"?: string | null,"id"?: string,"merchant_trade_no": string,"paid_at"?: string | null,"payment_info_at"?: string | null,"payment_method"?: string | null,"provider": string,"provider_env"?: string | null,"provider_trade_no"?: string | null,"raw_notify"?: Json | null,"refund_note"?: string | null,"refund_required"?: boolean,"refunded_at"?: string | null,"status"?: string
                   }
                   Update: {
-                    "amount_twd"?: number,"atm_bank_code"?: string | null,"atm_expire_date"?: string | null,"atm_v_account"?: string | null,"collaboration_id"?: string,"created_at"?: string,"created_by"?: string | null,"id"?: string,"merchant_trade_no"?: string,"paid_at"?: string | null,"payment_info_at"?: string | null,"payment_method"?: string | null,"provider"?: string,"provider_env"?: string | null,"provider_trade_no"?: string | null,"raw_notify"?: Json | null,"refund_note"?: string | null,"refund_required"?: boolean,"refunded_at"?: string | null,"status"?: string
+                    "admin_note"?: string | null,"amount_twd"?: number,"atm_bank_code"?: string | null,"atm_expire_date"?: string | null,"atm_v_account"?: string | null,"collaboration_id"?: string,"created_at"?: string,"created_by"?: string | null,"id"?: string,"merchant_trade_no"?: string,"paid_at"?: string | null,"payment_info_at"?: string | null,"payment_method"?: string | null,"provider"?: string,"provider_env"?: string | null,"provider_trade_no"?: string | null,"raw_notify"?: Json | null,"refund_note"?: string | null,"refund_required"?: boolean,"refunded_at"?: string | null,"status"?: string
                   }
                   Relationships: [
                     {
@@ -415,6 +475,81 @@ isOneToOne: false
           Functions: {
             "accept_application_with_collab":
 { Args: { "p_amount_twd": number,"p_application_id": string,"p_deliverables": string }; Returns: string
+                           },
+"admin_actor":
+{ Args: Record<PropertyKey, never>; Returns: string
+                           },
+"admin_cancel_collaboration":
+{ Args: { "p_collab_id": string,"p_reason": string }; Returns: number
+                           },
+"admin_clean_note":
+{ Args: { "p": string,"p_field": string }; Returns: string
+                           },
+"admin_get_payout_account":
+{ Args: { "p_collab_id": string }; Returns: {
+              "account_name": string,"account_number": string,"bank_code": string,"branch_code": string,"updated_at": string
+            }[]
+                           },
+"admin_list_collaborations":
+{ Args: { "p_limit": number,"p_offset": number,"p_query": string,"p_status": string }; Returns: {
+              "amount_twd": number,"brand_name": string,"created_at": string,"creator_handle": string,"creator_name": string,"id": string,"paid": boolean,"refund_pending": boolean,"status": string,"test_paid": boolean,"title": string,"total_count": number,"updated_at": string
+            }[]
+                           },
+"admin_list_creators":
+{ Args: { "p_limit": number,"p_offset": number,"p_query": string,"p_status": string }; Returns: {
+              "categories": (string)[],"created_at": string,"display_name": string,"follower_count": number,"handle": string,"ig_username": string,"region": string,"review_note": string,"status": string,"total_count": number,"user_id": string,"verification_code": string
+            }[]
+                           },
+"admin_list_flagged_messages":
+{ Args: { "p_limit": number,"p_offset": number,"p_view": string }; Returns: {
+              "body": string,"brand_id": string,"brand_name": string,"conversation_id": string,"created_at": string,"creator_handle": string,"creator_id": string,"creator_name": string,"id": string,"reviewed_at": string,"sender_side": string,"total_count": number
+            }[]
+                           },
+"admin_list_payments":
+{ Args: { "p_collab_id"?: string,"p_limit": number,"p_offset": number,"p_view": string }; Returns: {
+              "admin_note": string,"amount_twd": number,"brand_name": string,"collab_status": string,"collab_title": string,"collaboration_id": string,"created_at": string,"creator_handle": string,"id": string,"merchant_trade_no": string,"paid_at": string,"payment_method": string,"provider_env": string,"provider_trade_no": string,"refund_note": string,"refund_required": boolean,"refunded_at": string,"status": string,"total_count": number
+            }[]
+                           },
+"admin_list_payouts":
+{ Args: { "p_limit": number,"p_offset": number }; Returns: {
+              "account_last4": string,"account_updated_at": string,"amount_twd": number,"bank_code": string,"brand_name": string,"creator_handle": string,"creator_id": string,"creator_name": string,"id": string,"refund_pending": boolean,"test_paid": boolean,"title": string,"total_count": number,"updated_at": string
+            }[]
+                           },
+"admin_lock_collab":
+{ Args: { "p_actor": string,"p_collab_id": string }; Returns: {
+              "amount_twd": number,
+"brand_id": string,
+"brief_id": string | null,
+"conversation_id": string,
+"created_at": string,
+"creator_id": string,
+"deliverables": string,
+"id": string,
+"published_url": string | null,
+"review_due_at": string | null,
+"status": Database["public"]['Enums']["collab_status"],
+"title": string,
+"updated_at": string
+            }
+                          SetofOptions: {
+        from: "*"
+        to: "collaborations"
+        isOneToOne: true
+        isSetofReturn: false
+      } },
+"admin_mark_payout":
+{ Args: { "p_collab_id": string,"p_expected_last4": string,"p_note": string }; Returns: undefined
+                           },
+"admin_overview":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "awaiting_payment": number,"awaiting_payout": number,"open_anomalies": number,"open_flagged_messages": number,"pending_creators": number,"refund_required": number
+            }[]
+                           },
+"admin_record_lost_payment":
+{ Args: { "p_amount_twd": number,"p_env": string,"p_merchant_trade_no": string,"p_note": string,"p_provider_trade_no": string }; Returns: string
+                           },
+"admin_record_offline_payment":
+{ Args: { "p_collab_id": string,"p_note": string }; Returns: string
                            },
 "apply_to_brief":
 { Args: { "p_brief_id": string,"p_message"?: string,"p_proposed_price"?: number }; Returns: string
@@ -567,6 +702,9 @@ isOneToOne: false
 "mark_conversation_read":
 { Args: { "p_conversation_id": string }; Returns: undefined
                            },
+"mark_message_reviewed":
+{ Args: { "p_message_id": string }; Returns: boolean
+                           },
 "match_brief":
 { Args: { "p_brief": Omit<Database["public"]['Tables']["briefs"]['Row'], Database["public"]['Tables']["briefs"]['ComputedFields']>,"p_creator": Omit<Database["public"]['Tables']["creator_profiles"]['Row'], Database["public"]['Tables']["creator_profiles"]['ComputedFields']> }; Returns: Database["public"]['CompositeTypes']["brief_match"]
                           SetofOptions: {
@@ -595,6 +733,9 @@ isOneToOne: false
 "record_payment_success":
 { Args: { "p_amount_twd": number,"p_env"?: string,"p_merchant_trade_no": string,"p_provider_trade_no": string,"p_raw": Json }; Returns: string
                            },
+"request_creator_review":
+{ Args: Record<PropertyKey, never>; Returns: undefined
+                           },
 "resolve_payment_anomaly":
 { Args: { "p_id": number,"p_note": string }; Returns: undefined
                            },
@@ -619,6 +760,12 @@ isOneToOne: false
                            },
 "set_creator_rates":
 { Args: { "p_rates": Json }; Returns: undefined
+                           },
+"set_creator_status":
+{ Args: { "p_action": string,"p_reason"?: string,"p_user_id": string }; Returns: string
+                           },
+"set_my_payout_account":
+{ Args: { "p_account_name": string,"p_account_number": string,"p_bank_code": string,"p_branch_code": string }; Returns: undefined
                            },
 "start_conversation":
 { Args: { "p_creator_id": string }; Returns: string

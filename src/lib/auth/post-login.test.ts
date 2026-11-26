@@ -49,3 +49,20 @@ describe("isRole / homeFor", () => {
     expect(homeFor("creator")).toBe("/creator");
   });
 });
+
+describe("管理員（計畫 9）", () => {
+  it("沒有 profile 的管理員 → /admin（不進填資料頁）", () => {
+    expect(resolvePostLoginPath({ role: null, requestedRole: "brand", next: null, isAdmin: true })).toBe("/admin");
+  });
+  it("next 在 /admin 底下才採用", () => {
+    expect(resolvePostLoginPath({ role: null, requestedRole: null, next: "/admin/payments?view=refunds", isAdmin: true }))
+      .toBe("/admin/payments?view=refunds");
+    expect(resolvePostLoginPath({ role: "brand", requestedRole: null, next: "/admin", isAdmin: true })).toBe("/admin");
+    expect(resolvePostLoginPath({ role: "brand", requestedRole: null, next: "/adminx", isAdmin: true })).toBe("/brand");
+    expect(resolvePostLoginPath({ role: null, requestedRole: null, next: "//evil.com/admin", isAdmin: true })).toBe("/admin");
+  });
+  it("不是管理員：/admin 的 next 不採用", () => {
+    expect(resolvePostLoginPath({ role: "brand", requestedRole: null, next: "/admin", isAdmin: false })).toBe("/brand");
+    expect(resolvePostLoginPath({ role: null, requestedRole: null, next: "/admin" })).toBe("/onboarding");
+  });
+});

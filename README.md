@@ -28,7 +28,7 @@ npm run dev                        # http://127.0.0.1:3000
 
 ### 測試快速登入（只在本機）
 
-本機 `npm run dev` 且 `NEXT_PUBLIC_SUPABASE_URL` 指向 `127.0.0.1` 或 `localhost` 時，登入頁下方會出現「測試快速登入」，按「測試品牌」或「測試創作者」就能直接登入，不用收驗證碼（帳號 `dev-brand@kollink.test`、`dev-creator@kollink.test`，第一次按會自動建立，創作者直接是已審核狀態）。正式建置（`NODE_ENV=production`）或連到雲端專案時不會顯示，API 也回 404。需要 `.env.local` 有 `SUPABASE_SECRET_KEY`。
+本機 `npm run dev` 且 `NEXT_PUBLIC_SUPABASE_URL` 指向 `127.0.0.1` 或 `localhost` 時，登入頁下方會出現「測試快速登入」，按「測試品牌」「測試創作者」或「測試管理員」就能直接登入，不用收驗證碼（帳號 `dev-brand@kollink.test`、`dev-creator@kollink.test`、`dev-admin@kollink.test`，第一次按會自動建立；創作者直接是已審核狀態，管理員沒有品牌或創作者資料、登入後到 `/admin`）。正式建置（`NODE_ENV=production`）或連到雲端專案時不會顯示，API 也回 404。需要 `.env.local` 有 `SUPABASE_SECRET_KEY`。
 
 ## 登入方式
 
@@ -62,39 +62,73 @@ npm run dev                        # http://127.0.0.1:3000
 
 正式環境的 Google 設定見下面的檢查清單。
 
-## 審核創作者（管理後台完成前）
+## 管理後台（/admin）
 
-在 Supabase Studio 的 SQL Editor 執行（直接複製）。本機也可以用 psql 連線：
-```
-postgresql://postgres:postgres@127.0.0.1:54322/postgres
-```
+審核創作者、合作案總覽、人工標記已付款、撥款、退款、付款異常、違規訊息都在 `/admin` 操作。每個動作都經由資料庫函式並寫 audit log；下面的 SQL 只在後台無法使用時備用。
 
-先列出待審核的創作者與 IG 驗證碼：
+### 新增管理員（只用 SQL）
+
+1. 請對方先用要當管理員的 Email 登入一次（建議用專用的 Email，不要填品牌或創作者資料；沒有資料的管理員帳號登入後會直接到 `/admin`）。
+2. 在 Supabase Studio 的 SQL Editor 執行（只改 `填入…`，直接複製、不要手打）：
 ```sql
-select cp.handle, cp.ig_username, cp.follower_count, v.code, cp.created_at
-from public.creator_profiles cp
-join public.creator_verifications v on v.user_id = cp.user_id
-where cp.status = 'pending'
-order by cp.created_at;
+insert into public.admins (user_id)
+select id from auth.users where email = lower('填入管理員的 Email')
+on conflict (user_id) do nothing
+returning user_id;
 ```
+有一列 `user_id` 就完成了。沒有任何列：Email 打錯、對方還沒登入過，或本來就是管理員。
 
-打開 `https://www.instagram.com/<ig_username>/`，確認自我介紹裡有驗證碼、粉絲數合理，然後執行下面的核准指令。`handle` 與 `ig_username` 請直接從上面查詢結果複製，不要照創作者填的內容手打，因為 handle 儲存時會被正規化（例如填 `e2e-handle-one` 會存成 `e2ehandleone`）：
+移除管理員：
 ```sql
-update public.creator_profiles set status = 'approved'
-  where handle = '填入網址代稱' and ig_username = '填入你確認過的 IG 帳號';
+delete from public.admins
+ where user_id = (select id from auth.users where email = lower('填入管理員的 Email'))
+returning user_id;
 ```
-結果顯示 `UPDATE 0` 代表沒有任何列被更新，原因是兩者之一：handle 或 ig_username 打錯（請從查詢結果複製），或創作者在審核期間改了 IG 帳號（改 IG 會退回審核並換新驗證碼），請重新查詢並確認新的 IG 與驗證碼後再核准。
 
-核准後公開頁 `/c/<handle>` 立刻對所有人顯示（公開頁不快取）；把 `status` 改成 `suspended` 也會立刻下架。
+管理員若同時是某個合作案的品牌或創作者，那個合作案只能以參與者身分操作，後台不會顯示管理員動作（請另一位管理員處理）。管理員也不能處理自己（核准、停權自己的創作者資料、標記自己的訊息已檢視會回 `admin is subject`）。
+
+本機開發：登入頁的「測試管理員」（`dev-admin@kollink.test`，見上方「測試快速登入」）。
+
+### 審核創作者
+
+`/admin/creators`：打開 IG，確認自我介紹裡有驗證碼、粉絲數合理，再按「核准」。不通過按「退回」並寫原因（創作者看得到，修正後可以重新送審）。停權（原因必填，創作者看得到）會讓公開頁下架、所有對話暫停；「解除停權」恢復。
+
+**備用 SQL**（後台無法使用時；`填入網址代稱` 從 Studio 的 `creator_profiles` 複製）。動作是 `approve`（核准）、`reject`（退回）、`suspend`（停權）、`unsuspend`（解除停權）；退回與停權要填原因，核准與解除填 `null`：
+```sql
+begin;
+set local role service_role;
+select set_config('request.jwt.claims', '{"role":"service_role"}', true);
+select public.set_creator_status(
+  (select cp.user_id from public.creator_profiles cp where cp.handle = '填入網址代稱'),
+  'approve',
+  null
+) as result;
+commit;
+```
+`result` 是新的狀態就完成了。`creator not found`：網址代稱打錯；`admin is subject`：不能處理自己；`creator status changed`：目前的狀態不能做這個動作（例如已審核的不能退回）。
 
 ### 修改已鎖定的網址代稱（handle）
 
-審核通過（或曾離開 pending）後，handle 會被鎖定，創作者自己不能改。管理員要改時，必須以 postgres 身分、在**同一個 transaction** 內先開旗標：
+審核通過（或停權）後，handle 會被鎖定，創作者自己不能改（退回不會鎖定）。管理員要改時，必須以 postgres 身分、在**同一個 transaction** 內先開旗標：
 ```sql
 begin;
 set local kollink.allow_handle_change = 'on';
 update public.creator_profiles set handle = '新代稱' where handle = '舊代稱';
 commit;
+```
+
+### 查詢後台的操作紀錄
+
+```sql
+select l.created_at at time zone 'Asia/Taipei' as 台灣時間, l.actor_kind as 身分, u.email as 管理員,
+       l.action as 動作, left(l.collaboration_id::text, 8) as 案號, s.email as 對象, l.note as 說明
+  from public.audit_logs l
+  left join auth.users u on u.id = l.actor_id
+  left join auth.users s on s.id = l.subject_id
+ where l.actor_kind in ('admin', 'system')
+    or l.action in ('payout_account_updated', 'creator_resubmit')
+ order by l.created_at desc
+ limit 200;
 ```
 
 ## 合作案的付款與撥款
@@ -128,114 +162,83 @@ commit;
 
 **拿到正式金鑰、準備上線時**：向綠界申請正式特店（依公司規定，API 串接申請可以一併跟 Ken 哥說），拿到 MerchantID／HashKey／HashIV 後，**只在 Vercel Production** 設 `ECPAY_ENV=prod`、`ECPAY_MERCHANT_ID`、`ECPAY_HASH_KEY`、`ECPAY_HASH_IV` 與 `SITE_URL=https://kollink.vercel.app`，重新部署。上線前向綠界確認單筆限額，必要時一起改 `PAYMENT_MAX_TWD` 與 `create_payment_order`。Preview 不設；測試金鑰永遠不要放到連正式 Supabase 的部署上。
 
-### 人工標記已付款（備用）
+### 人工標記已付款
 
-線上付款上線後，只在「超過線上付款上限」「綠界通知遺失、已在綠界後台確認收到款項」時使用。管理後台（計畫 9）完成後移除。
+只在「超過線上付款上限、品牌線下匯款」或「綠界已扣款、但我們沒收到通知」時使用。到 `/admin/collabs/<id>`（或在 `/admin/collabs` 用案號搜尋）的「平台處理」：
 
-SQL 都要**整段一起執行**（`begin` 到 `commit`），只改 `填入…` 的地方，直接複製、不要手打。案號格式不對或找不到剛好一個合作案時會報錯，整段不會生效。
+- **線下付款**（`awaiting_payment` → `awaiting_submission`）：確認款項入帳後按「標記已付款（線下付款）」，說明寫匯款日期與帳號末五碼（只有管理員看得到）。系統會建一張 `MAN` 開頭的付款單，再走 `record_payment_success`。
+- **綠界已扣款但沒收到通知**（綠界一天最多重送 4 次）：先在綠界廠商後台查這張 `KL` 開頭的付款單，確認交易成功；在對應的表單填綠界交易編號與後台顯示的金額。金額與付款單不符時不會標記已付款，而是記成付款異常（來源標為 `admin`）。付款環境用這個部署的 `ECPAY_ENV`（綠界未設定時後台會拒絕，改用下面的備用 SQL）。
 
-**標記已付款：超過線上付款上限／線下付款專用**（`awaiting_payment` → `awaiting_submission`）。為這個合作案建一張 `MAN` 開頭的付款單再呼叫 `record_payment_success`（不要直接改狀態，資料庫也不允許）：先建付款單，再呼叫 `record_payment_success`（不要直接改狀態，資料庫也不允許）：
+**備用 SQL：線下付款**（`填入案號` 是 8 碼案號；找到不只一個合作案時會報錯，整段不會生效）：
 ```sql
 begin;
 set local role service_role;
 select set_config('request.jwt.claims', '{"role":"service_role"}', true);
-select set_config('kollink.case_code', lower('填入案號'), true);
-do $$
-declare
-  v_code text := current_setting('kollink.case_code');
-  v_n integer;
-begin
-  if v_code !~ '^[0-9a-f]{8}$' then
-    raise exception '案號格式不對：%', v_code;
-  end if;
-  select count(*) into v_n from public.collaborations c where c.id::text like v_code || '%';
-  if v_n <> 1 then
-    raise exception '案號 % 找到 % 個合作案，請確認', v_code, v_n;
-  end if;
-end;
-$$;
-insert into public.payments (collaboration_id, provider, merchant_trade_no, amount_twd)
-select c.id, 'ecpay', 'MAN' || upper(left(md5(random()::text), 17)), c.amount_twd
-  from public.collaborations c
- where c.id::text like current_setting('kollink.case_code') || '%' and c.status = 'awaiting_payment';
-select p.merchant_trade_no,
-       public.record_payment_success(p.merchant_trade_no, p.amount_twd, 'MANUAL-' || p.merchant_trade_no,
-                                     '{"source":"manual"}'::jsonb) as result
-  from public.payments p
-  join public.collaborations c on c.id = p.collaboration_id
- where c.id::text like current_setting('kollink.case_code') || '%' and p.status = 'pending'
-   and p.merchant_trade_no like 'MAN%';
-select c.status from public.collaborations c where c.id::text like current_setting('kollink.case_code') || '%';
-commit;
-```
-`result` 是 `paid`、最後的 `status` 是 `awaiting_submission` 就完成了。沒有任何列：合作案已經不是「等待付款」。
-
-**標記已付款：綠界已扣款、但我們沒收到通知**（已在綠界後台確認該筆交易成功）。付款單本來就存在，直接用它的單號（`KL` 開頭，見合作案詳情的付款單或 `payments` 表）。替換三個 `填入…` 的值，整段直接複製、不要手打：
-```sql
-begin;
-set local role service_role;
-select set_config('request.jwt.claims', '{"role":"service_role"}', true);
-select public.record_payment_success(
-  '填入KL開頭的付款單號',
-  填入金額,
-  '填入綠界交易編號',
-  '{"source":"manual"}'::jsonb,
-  'prod'
+select public.admin_record_offline_payment(
+  (select c.id from public.collaborations c where c.id::text like lower('填入案號') || '%'),
+  '填入說明'
 ) as result;
 commit;
 ```
-`result` 是 `paid` 就完成了；金額與付款單不符時函式會記錄異常而不是標記已付款。
 
-### 撥款
-
-**撥款**（`awaiting_payout` → `completed`）。測試付款（綠界測試環境）沒有實際收款，會被拒絕：
+**備用 SQL：綠界已扣款但沒收到通知**（環境：正式金鑰的付款填 `prod`，測試環境的付款填 `stage`）：
 ```sql
 begin;
 set local role service_role;
 select set_config('request.jwt.claims', '{"role":"service_role"}', true);
-select set_config('kollink.case_code', lower('填入案號'), true);
-do $$
-declare
-  v_code text := current_setting('kollink.case_code');
-  v_n integer;
-begin
-  if v_code !~ '^[0-9a-f]{8}$' then
-    raise exception '案號格式不對：%', v_code;
-  end if;
-  select count(*) into v_n from public.collaborations c where c.id::text like v_code || '%';
-  if v_n <> 1 then
-    raise exception '案號 % 找到 % 個合作案，請確認', v_code, v_n;
-  end if;
-  if exists (select 1 from public.payments p join public.collaborations c on c.id = p.collaboration_id
-              where c.id::text like v_code || '%' and p.status = 'paid' and not p.refund_required
-                and p.provider_env = 'stage') then
-    raise exception '案號 % 的款項是綠界測試環境的付款（沒有實際收款），不能撥款', v_code;
-  end if;
-end;
-$$;
-select c.id, public.transition_collaboration(c.id, 'payout', '人工撥款') as result
-  from public.collaborations c
- where c.id::text like current_setting('kollink.case_code') || '%' and c.status = 'awaiting_payout';
+select public.admin_record_lost_payment(
+  '填入KL開頭的付款單號',
+  '填入綠界交易編號',
+  填入金額,
+  'prod',
+  '填入說明'
+) as result;
 commit;
 ```
-`result` 是 `completed` 就結案了（實際轉帳在平台外處理）。
+`result` 是 `paid` 就完成了；`anomaly`：金額不符，已記成付款異常；`paid_refund_required`：合作案已經不在等待付款，款項標記為需退款。
 
-### 退款（只記錄，實際退款在綠界後台）
+### 撥款
 
-合作案取消後才到款、或同一個合作案付了兩次時，資料庫會標記「需退款」，雙方的事件看到「收到一筆額外的付款，平台會處理退款」。
+`/admin/payments` 的「待撥款」列出所有 `awaiting_payout` 的合作案（等最久的在前）。點進合作案：
 
-**需要退款的款項**：
+1. 「平台處理」的撥款區顯示創作者的完整收款帳戶（銀行代碼、分行、帳號、戶名；打開這一頁會記錄查看）。帳戶 7 天內改過會有紅字提醒，轉帳前先跟創作者確認。
+2. 在銀行轉帳（金額 = 合作案金額，平台不收手續費）。
+3. 按「已轉帳，標記撥款」，寫轉帳說明（日期、轉出帳戶、交易序號；只有管理員看得到）。合作案結案，雙方看到「平台已撥款，合作完成」。
+
+不能撥款的情況（畫面會寫原因，資料庫也會擋）：測試付款（綠界測試環境，沒有實際收款）、有待退款的款項、創作者還沒填收款帳戶（請創作者到「我的 → 收款帳戶」填寫）。
+
+**備用 SQL：查完整帳戶、標記撥款**：
 ```sql
-select p.id as 付款單, left(c.id::text, 8) as 案號, p.merchant_trade_no as 綠界訂單編號,
-       p.provider_trade_no as 綠界交易編號, p.amount_twd as 金額, p.payment_method as 方式,
-       p.provider_env as 環境, p.paid_at at time zone 'Asia/Taipei' as 付款時間, c.status as 合作案狀態
-  from public.payments p
-  join public.collaborations c on c.id = p.collaboration_id
- where p.refund_required
- order by p.paid_at;
+begin;
+set local role service_role;
+select set_config('request.jwt.claims', '{"role":"service_role"}', true);
+select * from public.admin_get_payout_account(
+  (select c.id from public.collaborations c where c.id::text like lower('填入案號') || '%'));
+commit;
 ```
+轉帳後：
+```sql
+begin;
+set local role service_role;
+select set_config('request.jwt.claims', '{"role":"service_role"}', true);
+select public.admin_mark_payout(
+  (select c.id from public.collaborations c where c.id::text like lower('填入案號') || '%'),
+  '填入轉帳說明',
+  '填入帳號末四碼'
+);
+commit;
+```
+`填入帳號末四碼` 是上一步看到的帳號最後 4 碼（資料庫用它確認撥款前創作者沒改過收款帳戶）。沒有錯誤就結案了。`payout account changed`：帳戶在你查看之後被改過，重新查詢帳戶再撥款。`test payment cannot be paid out`、`payout account missing`、`refund pending`：見上面不能撥款的情況。
 
-在綠界廠商後台用「綠界訂單編號」找到交易辦理退款（信用卡可以刷退；ATM 無法原路退回，要向品牌取得帳號另外轉帳），完成後**處理退款**（`填入付款單` 換成上面查到的付款單 id，`填入說明` 寫退款方式與日期）：
+### 平台取消（爭議處理）
+
+合作案詳情的「平台取消」：任何還沒結束的合作案都可以取消，原因必填（雙方在事件裡看得到「平台取消合作：原因」）。已付款的款項會自動標記為需退款，之後照下面「退款」處理。只做全額退款。
+
+### 退款（實際退款在綠界後台）
+
+合作案取消後才到款、同一個合作案付了兩次、或平台取消已付款的合作案時，款項會標記「需退款」。`/admin/payments` 的「需退款」列出這些款項：在綠界廠商後台用付款單號辦理退款（信用卡可以刷退；ATM 無法原路退回，要向品牌取得帳號另外轉帳），完成後按「已退款」寫說明（方式與日期）。雙方的事件會多一筆「平台已退回一筆額外的付款」。
+
+**備用 SQL**（`填入付款單` 是 `payments.id`）：
 ```sql
 begin;
 set local role service_role;
@@ -243,23 +246,12 @@ select set_config('request.jwt.claims', '{"role":"service_role"}', true);
 select public.resolve_payment_refund('填入付款單'::uuid, '填入說明');
 commit;
 ```
-沒有錯誤就完成了，雙方的事件會多一筆「平台已退回一筆額外的付款」。`refund not required`：這筆已經處理過。
 
 ### 付款異常
 
-金額不符、找不到付款單等異常不會讓綠界一直重送，而是記下來（Vercel log 也有 `ecpay notify: payment anomaly recorded`）。合作案的事件顯示「平台正在確認一筆付款」。
+金額不符、找不到付款單等異常不會讓綠界一直重送，而是記下來（Vercel log 也有 `ecpay notify: payment anomaly recorded`）。合作案的事件顯示「平台正在確認一筆付款」。`/admin/payments` 的「付款異常」列出未處理的異常：在綠界後台確認實際情況並處理（例如退款，或確認款項無誤後用上面的「綠界已扣款但沒收到通知」），再按「已處理」寫說明。
 
-**付款異常**：
-```sql
-select a.id as 異常, a.created_at at time zone 'Asia/Taipei' as 時間, a.source as 來源, a.kind as 類型,
-       a.merchant_trade_no as 綠界訂單編號, a.provider_trade_no as 綠界交易編號,
-       a.expected_amount_twd as 應付, a.received_amount_twd as 實收, left(a.collaboration_id::text, 8) as 案號
-  from public.payment_anomalies a
- where a.resolved_at is null
- order by a.created_at;
-```
-
-在綠界後台確認實際情況並處理（例如退款，或確認款項無誤後用上面的「人工標記已付款」），再**處理異常**（`填入異常` 換成上面的數字 id）：
+**備用 SQL**（`填入異常` 是 `payment_anomalies.id` 數字）：
 ```sql
 begin;
 set local role service_role;
@@ -270,26 +262,11 @@ commit;
 
 本機開發另有「標記已付款（本機）」按鈕（開關與測試快速登入相同，正式環境不會出現、`/api/dev/mark-paid` 回 404），走的也是 `record_payment_success`。
 
-## 站內訊息（管理後台完成前）
+## 站內訊息
 
 - 品牌在創作者公開頁按「傳訊息」開啟對話；創作者不能主動開啟，只能在已有的對話裡回覆（由品牌傳訊息、錄取或邀請建立）。
-- 訊息含電話、Email、LINE ID 或外部連結時，送出前會提醒；仍可送出，資料庫會自動標記 `flagged_contact`。違規訊息列表是計畫 9 的後台，在那之前用 SQL 查（Supabase Studio 的 SQL Editor，直接複製整段）：
-
-```sql
-select m.created_at at time zone 'Asia/Taipei' as 台灣時間,
-       bp.brand_name as 品牌, cp.handle as 創作者,
-       case when m.sender_id = cv.brand_id then '品牌' else '創作者' end as 發送者,
-       m.body as 內容, m.conversation_id as 對話
-  from public.messages m
-  join public.conversations cv on cv.id = m.conversation_id
-  left join public.brand_profiles bp on bp.user_id = cv.brand_id
-  left join public.creator_profiles cp on cp.user_id = cv.creator_id
- where m.flagged_contact
- order by m.created_at desc
- limit 100;
-```
-
-- 創作者停權（`creator_profiles.status = 'suspended'`，見上方「審核創作者」）時，他的所有對話自動暫停：雙方都看得到歷史訊息，但不能再送。改回 `approved` 就恢復。
+- 訊息含電話、Email、LINE ID 或外部連結時，送出前會提醒；仍可送出，資料庫會自動標記 `flagged_contact`。管理員在 `/admin/messages` 看未檢視的訊息、按「標記已檢視」；需要處理時到「創作者審核」停權，或到合作案「平台取消」。
+- 創作者停權（`creator_profiles.status = 'suspended'`）時，他的所有對話自動暫停：雙方都看得到歷史訊息，但不能再送。解除停權就恢復。
 - 頻率限制：每人 1 分鐘最多 20 則訊息；每個品牌 24 小時最多開 30 個新對話。
 - 即時更新用 Supabase Realtime（migration 已把 `messages` 加進 `supabase_realtime` publication，不需要在 Dashboard 另外開）。
 
@@ -398,3 +375,43 @@ CRON_SECRET
 ```bash
 curl -i -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/cron/auto-approve
 ```
+
+### 計畫 9（管理後台）上線
+
+0. 推送前的唯讀檢查（都不會改資料）：
+
+   ```bash
+   # 預覽會套用哪些 migration：必須剛好列出 20261128000100、000200、000300、000400（只預覽，不會套用）
+   npx supabase db push --remote --dry-run
+   ```
+
+   ```sql
+   -- 應回傳 2 列：creator_profiles_status_check、payment_anomalies_source_check（migration 會先 drop 再重建）
+   select conname from pg_constraint
+   where conname in ('creator_profiles_status_check', 'payment_anomalies_source_check');
+
+   -- 只能出現 pending、approved、suspended
+   select status, count(*) from public.creator_profiles group by 1;
+
+   -- 目前待撥款的合作案（上線空窗期的處理方式見下方）
+   select id, status from public.collaborations where status = 'awaiting_payout';
+   ```
+
+   部署空窗期不要使用舊的撥款 SQL（現在會報 `invalid transition`）：撥款一律在部署後經由 `/admin`，且創作者必須已填收款帳戶。
+
+1. 合併前：`npx supabase db push --remote`（`20261128000100_admin_core.sql`、`20261128000200_admin_money.sql`、`20261128000300_admin_review_fixes.sql`、`20261128000400_admin_refund_participant_guard.sql`，依序）。migration 會改 `transition_collaboration`：之後撥款只能經由後台或 `admin_mark_payout`（舊的撥款 SQL 會報 `invalid transition`）；`admin_mark_payout` 現在要帶帳號末四碼。
+2. 合併後：照「管理後台 → 新增管理員」把營運人員的帳號加進 `admins`，用該帳號登入確認進得了 `/admin`。
+3. 通知所有已審核的創作者到「我的 → 收款帳戶」填寫（沒有帳戶時不能撥款）。目前 `awaiting_payout` 的合作案在創作者填好前會顯示「創作者還沒填收款帳戶」。
+4. 推送後的匿名檢查（用 anon 的 publishable key，`<PROJECT_REF>`、`<PUBLISHABLE_KEY>`、`<handle>` 換成實際值，直接複製貼上）：
+
+   ```bash
+   URL="https://<PROJECT_REF>.supabase.co"; KEY="<PUBLISHABLE_KEY>"
+   # 1) 必須被拒絕（permission denied，HTTP 401/403，不可回傳 true/false）
+   curl -s -X POST "$URL/rest/v1/rpc/is_admin" -H "apikey: $KEY" -H "Content-Type: application/json" -d '{}'
+   # 2) 必須被拒絕
+   curl -s -X POST "$URL/rest/v1/rpc/admin_overview" -H "apikey: $KEY" -H "Content-Type: application/json" -d '{}'
+   # 3) 必須仍回傳已審核創作者的資料列（不是空陣列）
+   curl -s "$URL/rest/v1/creator_profiles?status=eq.approved&select=handle&limit=3" -H "apikey: $KEY"
+   ```
+
+   最後用瀏覽器（未登入）開 `/c/<已審核創作者的 handle>`，確認頁面正常顯示。

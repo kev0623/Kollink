@@ -19,4 +19,12 @@ export function isDevLoginEnabled(
 export const DEV_ACCOUNTS = {
   brand: "dev-brand@kollink.test",
   creator: "dev-creator@kollink.test",
+  // 計畫 9：管理員（沒有 profile，只在 admins 表）
+  admin: "dev-admin@kollink.test",
 } as const;
+
+export type DevAccount = keyof typeof DEV_ACCOUNTS;
+
+export function isDevAccount(v: unknown): v is DevAccount {
+  return v === "brand" || v === "creator" || v === "admin";
+}

@@ -44,6 +44,14 @@
 | 測試付款 | `payments.provider_env` 記錄驗證通知的金鑰環境；`stage` 的付款畫面標「測試付款（未實際收款）」，README 的撥款 SQL 拒絕。`SimulatePaid=1` 只在 stage 記錄。 |
 | raw_notify 白名單 | TS `NOTIFY_FIELDS` 與 SQL `payment_raw_whitelist` 相同；authenticated 讀不到 `raw_notify`、`created_by`、`refund_note`（欄位權限）。 |
 | 正式站不開付款 | 使用者決定（2026-11-26）：拿到綠界正式金鑰前 Vercel 不設 `ECPAY_*`；程式在 `VERCEL_ENV=production` 且 `ECPAY_ENV` 不是 `prod`（或用公開測試商店）時視為未設定。測試只在本機驗證。需要 Vercel 的「Enable access to System Environment Variables」開啟。 |
+| 管理員身分 | `admins` 表為準，與 `profiles.role` 無關；管理員通常是沒有 profile 的專用帳號，登入後到 `/admin`。`requireAdmin()` 守每個 `/admin` 頁面與 action。管理員是合作案參與者時只能以參與者身分操作（`admin is participant`）；也不能處理自己（`admin is subject`）。 |
+| 後台寫入只走函式 | 每個後台寫入是 definer 函式，開頭 `admin_actor()`（admin／service_role 的 system／其他 42501），寫 `audit_logs`；對人的動作記 `subject_id`（沒有合作案的 audit 只有管理員看得到）。Server Action 用管理員自己的 client。README 的 SQL 改成以 service_role 呼叫同一批函式的備用 SQL。 |
+| `is_admin`／`my_role` | 收回 PUBLIC／anon 的 EXECUTE（只 grant 給 authenticated、service_role）；anon 的 `creator_profiles`／`creator_portfolio_items` policy 拆成 anon 專用（不呼叫函式）。新增給 anon 的 policy 不可呼叫這兩個函式。 |
+| 創作者退回 | 新狀態 `rejected`；原因在 `review_note`（只有 rejected／suspended 有值）；`request_creator_review()` 回到 pending；退回不鎖 handle（只有 approved／suspended 鎖）。 |
+| 收款帳戶 | `creator_payout_accounts`：銀行 3 碼、分行 4 碼選填、帳號 7–16 碼、戶名 ≤ 40；`account_number` 不授權讀取，戶名不可含控制字元，完整帳號只經由 `admin_get_payout_account`（只在 awaiting_payout、寫 audit、10 分鐘去重）。 |
+| 撥款 | 只經由 `admin_mark_payout`（`kollink.paying_out` 旗標）：拒絕測試付款、沒有已付款、待退款、沒有收款帳戶；`collaboration_payouts` 留帳戶快照（末四碼）與轉帳說明；`admin_mark_payout(p_collab_id, p_note, p_expected_last4)` 會確認帳戶末四碼沒變（`payout account changed`）。 |
+| 平台取消 | `admin_cancel_collaboration`（`kollink.admin_cancelling` 旗標）：任何未結束的狀態 → cancelled，原因雙方看得到；已付款的款項自動 `refund_required`、事件 `refund_scheduled`。 |
+| 人工付款 | `admin_record_offline_payment`（MAN 單）與 `admin_record_lost_payment`（KL 單、環境由 `ECPAY_ENV` 帶入），都經由 `record_payment_success`；`mark_paid` 允許 admin（仍要 `kollink.recording_payment`）。說明存 `payments.admin_note`（authenticated 讀不到）。 |
 
 ## 各計畫需要處理的事項
 
@@ -60,7 +68,7 @@
   - 要加排程清理：刪除沒有被任何 `brand_profiles.logo_path` 引用、且超過 24 小時的 `brand-logos` 物件。
   - 若日後新增上傳用的 server action，要驗證圖片 magic bytes，不能只信 MIME type 與副檔名。
 - 計畫 2 新增的後續事項：
-  - 管理員目前登入後會被導去 `/onboarding`（計畫 9）。
+  - 管理員目前登入後會被導去 `/onboarding`（計畫 9）。→ 已完成（計畫 9：沒有 profile 的管理員到 `/admin`）
   - 正式環境 SMTP 與 Google OAuth 網址（部署，見 README）。
   - `create_*_account` 尚未限制同一 IP 的註冊頻率（上線前評估）。
   - 品牌 Logo 孤兒物件清理排程尚未實作（見上方 Logo 注意事項）；計畫 3 的 `creator-media` 共用同一項。
@@ -77,7 +85,7 @@
 - 收藏 ♡ 需要一張資料表 → 移到計畫 4。
 - 計畫 2 Task 3 收回了 bio / style_tags / collab_types / engagement_rate 的直接 UPDATE → 已完成（計畫 3：`update_creator_public_profile`）。
 - 計畫 3 新增的後續事項：
-  - 計畫 9 加入 `set_creator_status()` 與核准的 Server Action 後，評估公開資料改用 `cacheTag('creator:<handle>')` 快取，並在核准、停權、創作者儲存時 `updateTag`。
+  - 計畫 9 加入 `set_creator_status()` 與核准的 Server Action 後，評估公開資料改用 `cacheTag('creator:<handle>')` 快取，並在核准、停權、創作者儲存時 `updateTag`。（計畫 9 已加入 `set_creator_status`；快取仍未做，公開頁照舊不快取）
   - `creator-media` 孤兒物件清理與 `brand-logos` 共用同一個排程（尚未實作）。
   - OG 圖片的頭像只支援 PNG／JPEG；WebP 頭像在 OG 圖片顯示名字首字。中文字型由 `next/og` 在請求時從 Google Fonts 下載，Google Fonts 連不到時中文會缺字。
   - `get_public_creator` 會回傳 `user_id`（頭像網址本來就含 user_id）。
@@ -155,7 +163,7 @@
   - 交稿檔案不保存原始檔名，畫面顯示「圖片 1」「PDF 2」；需要原始檔名時另外存一欄。
   - 上傳只檢查 MIME type 與大小（bucket 也擋一次），沒有檢查 magic bytes；檔案只給雙方看、用 signed URL 開新分頁。
   - signed URL 在頁面渲染時產生、有效 1 小時；頁面開超過 1 小時後點檔案要重新整理。
-  - 列表最多 200 筆、沒有分頁；管理員的全部合作案列表在計畫 9。
+  - 列表最多 200 筆、沒有分頁；管理員的全部合作案列表在計畫 9。→ 管理員列表已完成（計畫 9：`/admin/collabs`，每頁 50 筆）
   - 沒有任何通知（spec 不在範圍內）；對方動作後要重新整理才看得到（即時更新在計畫 7）。
   - Hobby 方案的 Cron 一天一次，實際是「到期後最晚隔天自動通過」；升級 Pro 後可改成每小時。Hobby 的 Cron 會在 UTC 01:00–01:59（台灣 09:00–09:59）內任何時間觸發；Vercel Production 沒設 `CRON_SECRET` 時 route 回 500、不會自動通過任何合作案。
   - 錄取時案名固定是招募名稱（表單沒有案名欄）；修改金額、爭議處理、評價都不在範圍內。
@@ -174,7 +182,7 @@
   - 最終審查留下的項目（程式與畫面）：
     - `src/app/api/cron/auth.ts` 沒有 `import "server-only"`。
     - `/api/dev/mark-paid` 會回傳原始資料庫錯誤、沒有 CSRF 防護（僅限本機開發）。
-    - dev-login route 對沒有 body 的 POST 會當掉（僅限本機開發）。
+    - dev-login route 對沒有 body 的 POST 會當掉（僅限本機開發）。→ 已修（計畫 9，`src/app/auth/dev-login/route.ts` 的 `formData().catch`）
     - `PublishForm` 的 client 錯誤訊息在編輯輸入時不會消失。
     - `OfferForm` 重新送出時，上一次的伺服器錯誤會閃一下。
     - 合作案分頁列在窄螢幕沒有 `overflow-x-auto`。
@@ -189,7 +197,7 @@
 - ~~待決定：誰可以主動開啟對話~~ → 已決定（計畫 7）：只有品牌，對象是已審核的創作者。
 - 補測試：偽造 sender、第三方建立對話、update / delete 被拒絕、管理員可見性。→ 已完成（計畫 7：`18_messaging_write.test.sql`）
 - 計畫 7 新增的後續事項：
-  - 違規訊息列表、停權操作在計畫 9 的後台；目前用 README 的 SQL 查。
+  - 違規訊息列表、停權操作 → 已完成（計畫 9：`/admin/messages`、`/admin/creators`）
   - 聯絡方式偵測抓不到中文數字電話、「at」寫法的 Email、拆成多則的號碼；IG 帳號（`@xxx`）刻意不算。誤判（例如「訂單編號 0912345678」）只會多一個標記。
   - 沒有離線通知（Email／推播）：對方不在線上時只能靠下次登入看到徽章。
   - 沒有封鎖、檢舉、刪除或編輯訊息、附件、已讀回條。
@@ -221,8 +229,8 @@
 - `raw_notify` 白名單；`provider_trade_no` 不接受空白；金額上限。→ 已完成（計畫 8）
 - route 單元測試（mock `createAdminClient`）→ 已完成（計畫 8）。真實沙盒通知的簽章測試 → **未完成**：`src/lib/payments/stage-sample.test.ts` 不存在；E2E 用自行簽章的內容，因為綠界測試環境結帳頁出現「測試環境」提示視窗，沒走完。
 - 「確認並付款」建單並導向綠界。→ 已完成（計畫 8）
-- 帳號刪除改用 soft delete → 移到計畫 9（目前沒有刪除帳號功能）。
-- README 的人工標記已付款 SQL：保留為備用，計畫 9 後台完成後移除。
+- 帳號刪除改用 soft delete → 計畫 9 決定不做：沒有刪除帳號功能、外鍵擋住實體刪除、違規用停權；做「刪除帳號」時再一起設計（保留期限、個資匿名化、進行中合作案）。
+- README 的人工標記已付款 SQL → 已改成後台操作，SQL 保留為以 service_role 呼叫 `admin_record_*` 的備用（計畫 9）。
 - 計畫 8 新增的後續事項：
   - 單筆上限 NT$200,000 是暫定值，綠界文件沒有寫，上線收真錢前要向綠界確認（TS 與 SQL 兩處）。
   - 測試金鑰公開，任何人都能偽造付款通知：所以測試金鑰絕不能放在連正式 Supabase 的部署上（正式站目前根本不設 `ECPAY_*`）。
@@ -243,9 +251,37 @@
   - 上線前向綠界確認單筆 NT$200,000 上限。
 
 ### 9. 管理後台
-- 管理員目前只能讀取。需要 `set_creator_status()`（definer 函式，檢查 `is_admin()`），以及取消或爭議處理的狀態轉換。
-- `is_admin()`、`my_role()`、`is_conversation_participant()` 的 EXECUTE 權限從 PUBLIC 收回。brand-logos 的 insert/update policy 以 authenticated 身分呼叫 my_role()，收回後要再 grant 給 authenticated。（計畫 7 已收回 is_conversation_participant 的 PUBLIC／anon；is_admin、my_role 仍待處理）
-- 付款相關的後台：付款單、需退款（`resolve_payment_refund`）、付款異常（`resolve_payment_anomaly`）的列表與操作；完成後移除 README 的人工標記已付款 SQL。帳號刪除改用 soft delete（計畫 8 移過來的）。
+- `set_creator_status()`（definer，檢查管理員）與核准、退回、停權的後台 → 已完成（計畫 9）
+- 取消或爭議處理的狀態轉換 → 已完成（計畫 9：`admin_cancel`，只能經由 `admin_cancel_collaboration`）
+- `is_admin()`、`my_role()` 收回 PUBLIC／anon 的 EXECUTE，authenticated 仍可呼叫 → 已完成（計畫 9；anon 的兩條 policy 已拆開）
+- 付款單、需退款、付款異常的列表與操作；README 的人工 SQL 改成後台 → 已完成（計畫 9）
+- 帳號刪除改用 soft delete → 不做（見「8. 付款建單與撥款」）
+- 計畫 9 新增的後續事項：
+  - 沒有管理員管理畫面：新增、移除管理員只用 SQL（README）。
+  - 沒有任何通知：退回、停權、撥款、平台取消都只在站內顯示（創作者要重新登入或重新整理才看到橫幅）。
+  - 撥款是人工轉帳後標記，沒有串銀行或綠界的撥款 API；沒有批次撥款。
+  - 平台取消只做全額退款標記；部分退款、補償不在範圍。退款仍在綠界後台操作，ATM 退款要另外向品牌取得帳號。
+  - 收款帳戶只驗格式，沒有驗證帳戶真的存在、戶名與創作者是否相符；7 天內改過只在撥款畫面提醒。
+  - 完整帳號會出現在 `/admin/collabs/[id]`（待撥款時）的 RSC payload；管理員的瀏覽器快取、截圖要注意。
+  - 看完整帳號的 audit 是 10 分鐘去重，所以不是每次查看都有紀錄。
+  - 後台的操作紀錄只能用 SQL 查（README「查詢後台的操作紀錄」），沒有查詢頁面。
+  - 「綠界已扣款但沒收到通知」的環境用部署的 `ECPAY_ENV`；若之後同一個部署換過環境（stage → prod），舊的 KL 單要用 README 的備用 SQL 指定環境。
+  - 列表的關鍵字是 `ilike '%…%'`，用不到索引（資料量變大再評估 `pg_trgm`）。
+  - 管理員看不到雙方的完整對話，只看被標記的訊息。
+  - 撥款前的末四碼檢查沒有一併比對 `bank_code`：換了銀行但帳號末四碼相同時檢查不會擋下。
+  - `requireAdmin()` 在 session 過期的競態時會丟掉原本要去的深層路徑（登入後回到 `/admin`）。
+  - `is_admin` RPC 失敗時所有登入都被擋（fail-closed）；之後評估降級（例如只擋 `/admin`）。
+  - `resolveRefundAction` 沒有 revalidate 參與者的頁面（雙方要重新整理才看到「已退回」事件）。
+  - `recordLostPaymentAction` 對用戶端傳來的 `collabId` 做 revalidate（只影響快取，不影響權限；之後改由資料庫回傳）。
+  - `service_role` 仍可直接 UPDATE `creator_profiles.status`（繞過 audit）；營運一律用 `set_creator_status`，之後評估收回權限。
+  - 後台 SignOutButton 的點擊範圍不到 40px。
+  - `NoteAction` 的 aria 屬性與開啟後的焦點管理待補。
+  - handle 或 IG 為空時畫面會顯示單獨的 `@`。
+  - 「綠界已扣款但沒收到通知」的環境取自部署的 `ECPAY_ENV`，不是從該筆付款單判斷。
+  - `resolve_payment_anomaly` 沒有參與者檢查（管理員是該合作案參與者時仍可處理），也沒有 audit 與處理者紀錄。
+  - `mark_message_reviewed` 只擋管理員自己的訊息；管理員是對話的一方時，仍可審核對方的訊息。
+  - `admin_list_collaborations` 的 `test_paid` 沒有排除 `refund_required` 的付款單。
+  - `admin_get_payout_account` 在 RSC 渲染期間執行；若之後行為改變（例如 prefetch 預先載入），可能產生多餘的查看 audit 紀錄。
 
 ### 10. 審核逾期自動通過
 - `transition_collaboration` 的 system 身分要求「透過 PostgREST 以 service_role 呼叫」；**pg_cron 以 postgres 身分執行會被判定為「不是參與者」**。可以改用 Next route 搭配 Cron 和 secret，再以 service_role 呼叫 RPC；或另外寫一個只授權給 service_role 的 `auto_approve_due()` definer 函式。

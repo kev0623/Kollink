@@ -1,7 +1,7 @@
 import type { Role } from "@/lib/auth/post-login";
 
-export type CreatorStatus = "pending" | "approved" | "suspended";
-const STATUSES: readonly string[] = ["pending", "approved", "suspended"];
+export type CreatorStatus = "pending" | "approved" | "suspended" | "rejected";
+const STATUSES: readonly string[] = ["pending", "approved", "suspended", "rejected"];
 
 export type PublicCreator = {
   userId: string;

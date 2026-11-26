@@ -44,7 +44,11 @@ export function ProfileView({ creator: c, portfolio, rates, viewer, favorite }: 
 function SelfPreviewBanner({ status }: { status: CreatorStatus }) {
   return (
     <div role="note" className="mb-4 rounded-card border border-line bg-surface p-4 text-sm text-ink md:mb-6">
-      <b>{status === "suspended" ? "帳號已暫停，公開頁目前不會顯示給其他人。" : "審核通過後才會公開。"}</b>
+      <b>{status === "suspended"
+        ? "帳號已暫停，公開頁目前不會顯示給其他人。"
+        : status === "rejected"
+          ? "審核沒有通過，修正並重新送審、通過後才會公開。"
+          : "審核通過後才會公開。"}</b>
       <span className="text-muted"> 這是只有你看得到的預覽。</span>
     </div>
   );

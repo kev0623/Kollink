@@ -15,11 +15,13 @@ type Props = {
   devPaymentEnabled: boolean;
   payment: PaymentAvailability;
   summary: PaymentSummary;
+  /** 事件紀錄裡是否有平台取消（admin_cancel） */
+  adminCancelled: boolean;
 };
 
 /** 「現在要做什麼」卡片（主色外框）：輪到自己時顯示動作；輪到對方時明確寫「你不用做任何事」。 */
-export function ActionCard({ c, side, uid, latest, nowMs, devPaymentEnabled, payment, summary }: Props) {
-  const copy = actionCardCopy(c.status, side);
+export function ActionCard({ c, side, uid, latest, nowMs, devPaymentEnabled, payment, summary, adminCancelled }: Props) {
+  const copy = actionCardCopy(c.status, side, adminCancelled);
   const countdown = c.status === "in_review" ? reviewCountdown(c.reviewDueAt, nowMs) : null;
   return (
     <section aria-labelledby="action-title" className={`rounded-card border-2 bg-surface p-4 md:p-5 ${copy.mine ? "border-primary" : "border-line"}`}>

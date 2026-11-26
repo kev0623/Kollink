@@ -251,7 +251,8 @@ export function sourceLabel(c: { briefId: string | null; briefTitle: string | nu
 export type ActionCardCopy = { mine: boolean; title: string; body: string };
 
 /** 「現在要做什麼」卡片的標題與說明。輪到對方時一定寫「你不用做任何事」。 */
-export function actionCardCopy(s: CollabStatus, side: CollabSide): ActionCardCopy {
+/** adminCancelled：事件紀錄裡有平台取消（admin_cancel）時才指向下方紀錄，其餘取消用中性文字。 */
+export function actionCardCopy(s: CollabStatus, side: CollabSide, adminCancelled = false): ActionCardCopy {
   const none = "你不用做任何事。";
   const mine = turnOf(s) === side;
   switch (s) {
@@ -282,7 +283,7 @@ export function actionCardCopy(s: CollabStatus, side: CollabSide): ActionCardCop
     case "declined":
       return { mine: false, title: "已婉拒", body: "創作者婉拒了這次邀約。" };
     case "cancelled":
-      return { mine: false, title: "已取消", body: "品牌已取消這個合作案。" };
+      return { mine: false, title: "已取消", body: adminCancelled ? "這個合作案已由平台取消，原因見下方的紀錄。" : "合作已取消。" };
   }
 }
 
@@ -405,6 +406,11 @@ export function eventText(e: CollabEvent): string {
       return "平台已退回一筆額外的付款";
     case "payment_anomaly":
       return "平台正在確認一筆付款";
+    // 計畫 9：平台取消（爭議處理）；原因雙方都看得到
+    case "admin_cancel":
+      return `平台取消合作：${e.note ?? ""}`;
+    case "refund_scheduled":
+      return "平台會退回已託管的款項";
     default:
       return who ? `${who}：狀態已更新` : "狀態已更新";
   }

@@ -13,7 +13,10 @@ export async function postLoginPath(
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return "/login";
-  const { data: profile, error } = await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle();
-  if (error) return "/login?error=profile";
-  return resolvePostLoginPath({ role: profile?.role ?? null, requestedRole, next });
+  const [{ data: profile, error }, { data: isAdmin, error: adminErr }] = await Promise.all([
+    supabase.from("profiles").select("role").eq("id", user.id).maybeSingle(),
+    supabase.rpc("is_admin"),
+  ]);
+  if (error || adminErr) return "/login?error=profile";
+  return resolvePostLoginPath({ role: profile?.role ?? null, requestedRole, next, isAdmin: isAdmin === true });
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { BRAND_NAV, CREATOR_NAV, isActive } from "./nav";
+import { ADMIN_NAV, BRAND_NAV, CREATOR_NAV, isActive } from "./nav";
 
 describe("isActive", () => {
   it("首頁只比對完全相同", () => {
@@ -36,5 +36,14 @@ describe("訊息（計畫 7）", () => {
     expect(CREATOR_NAV.find((i) => i.label === "訊息")).toMatchObject({ href: "/creator/messages", badge: "messages" });
     expect(isActive("/brand/messages", "/brand/messages/00000000-0000-0000-0000-000000000001")).toBe(true);
     expect(BRAND_NAV.filter((i) => i.badge).length).toBe(1);
+  });
+});
+
+describe("管理後台（計畫 9）", () => {
+  it("5 項都開放（手機底部導覽列放得下），總覽只比對完全相同", () => {
+    expect(ADMIN_NAV.map((i) => i.href)).toEqual(["/admin", "/admin/creators", "/admin/collabs", "/admin/payments", "/admin/messages"]);
+    expect(isActive("/admin", "/admin")).toBe(true);
+    expect(isActive("/admin", "/admin/creators")).toBe(false);
+    expect(isActive("/admin/collabs", "/admin/collabs/00000000-0000-0000-0000-000000000001")).toBe(true);
   });
 });
