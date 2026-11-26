@@ -25,11 +25,21 @@ describe("狀態", () => {
 
 describe("進度條", () => {
   it("7 步", () => expect(COLLAB_STEPS).toHaveLength(7));
-  it("待付款：邀約已完成、確認是目前步驟", () => {
-    expect(stepStates("awaiting_payment")).toEqual(["done", "current", "todo", "todo", "todo", "todo", "todo"]);
-    expect(stepNumber("awaiting_payment")).toBe(2);
+  it("邀約中：邀約已完成、確認是目前步驟", () => {
+    expect(stepStates("invited")).toEqual(["done", "current", "todo", "todo", "todo", "todo", "todo"]);
+    expect(stepNumber("invited")).toBe(2);
   });
-  it("待交稿：付款託管已完成", () => {
+  it("等待付款：付款是目前步驟", () => {
+    expect(stepStates("awaiting_payment")).toEqual(["done", "done", "current", "todo", "todo", "todo", "todo"]);
+    expect(stepNumber("awaiting_payment")).toBe(3);
+  });
+  it("審核中與待發佈", () => {
+    expect(stepStates("in_review")).toEqual(["done", "done", "done", "done", "current", "todo", "todo"]);
+    expect(stepNumber("in_review")).toBe(5);
+    expect(stepNumber("awaiting_publish")).toBe(6);
+  });
+  it("COLLAB_STEPS 的標籤", () => expect([...COLLAB_STEPS]).toEqual(["邀約", "確認", "付款", "交稿", "審核", "發佈", "撥款"]));
+  it("待交稿：付款已完成", () => {
     expect(stepStates("awaiting_submission")).toEqual(["done", "done", "done", "current", "todo", "todo", "todo"]);
     expect(stepNumber("awaiting_submission")).toBe(4);
   });
@@ -45,9 +55,10 @@ describe("進度條", () => {
 });
 
 describe("金額與案號", () => {
-  it("託管文字", () => {
+  it("金額與付款文字", () => {
     expect(escrowLabel("awaiting_payment", 4500)).toBe("NT$4,500 待付款");
-    expect(escrowLabel("in_review", 4500)).toBe("NT$4,500 已託管");
+    expect(escrowLabel("in_review", 4500)).toBe("NT$4,500 已付款，由平台保管");
+    expect(escrowLabel("in_review", 4500, true)).toBe("NT$4,500 平台保管中");
     expect(escrowLabel("completed", 4500)).toBe("NT$4,500 已撥款");
     expect(escrowLabel("cancelled", 4500)).toBe("NT$4,500 未成立");
   });
@@ -106,6 +117,15 @@ describe("詳情", () => {
     expect(leave).toContain("付款前可以退出");
     expect(leave).not.toContain("你不用做任何事");
   });
+  it("卡片：創作者沒有收款帳戶時不寫「你不用做任何事」", () => {
+    for (const s of ["in_review", "awaiting_payout"] as CollabStatus[]) {
+      const c = actionCardCopy(s, "creator", false, false, true);
+      expect(c.body).not.toContain("不用做任何事");
+    }
+    expect(actionCardCopy("in_review", "creator", false, false, true).body).toBe("品牌通過後你再發佈貼文。");
+    expect(actionCardCopy("awaiting_payout", "creator", false, false, true).body).toBe("平台撥款前需要你的收款帳戶，請先設定。");
+    expect(actionCardCopy("in_review", "creator").body).toContain("你不用做任何事");
+  });
   it("卡片：來自報名、等待創作者確認（錄取金額低於報價）", () => {
     expect(actionCardCopy("invited", "brand", false, true)).toMatchObject({ mine: false, title: "等待創作者確認" });
     expect(actionCardCopy("invited", "brand", false, true).body).toContain("你不用做任何事");
@@ -138,7 +158,7 @@ describe("交稿與事件", () => {
     expect(eventText(ev({ action: "accept" }))).toBe("小美 接受邀約");
     expect(eventText(ev({ action: "submit" }))).toBe("小美 已交稿");
     expect(eventText(ev({ action: "request_changes", actorName: "花粉", note: "亮一點" }))).toBe("花粉 要求修改：亮一點");
-    expect(eventText(ev({ action: "mark_paid", actorKind: "system", actorName: "系統" }))).toBe("款項已託管");
+    expect(eventText(ev({ action: "mark_paid", actorKind: "system", actorName: "系統" }))).toBe("款項已由平台收到並保管");
     expect(eventText(ev({ action: "auto_approve" }))).toBe("審核期限已到，自動通過");
     expect(eventText(ev({ action: "payment_requires_refund", actorKind: "system" }))).toBe("收到一筆額外的付款，平台會處理退款");
     expect(eventText(ev({ action: "payment_refunded", actorKind: "admin" }))).toBe("平台已退回一筆額外的付款");
@@ -178,7 +198,7 @@ describe("平台取消（計畫 9）", () => {
   });
   it("事件文字：原因雙方都看得到；退款排程", () => {
     expect(eventText(ev({ action: "admin_cancel", note: "雙方同意取消" }))).toBe("平台取消合作：雙方同意取消");
-    expect(eventText(ev({ action: "refund_scheduled" }))).toBe("平台會退回已託管的款項");
+    expect(eventText(ev({ action: "refund_scheduled" }))).toBe("平台會退回已收到的款項");
   });
   it("已取消的卡片：一般取消用中性文字，平台取消才指向紀錄", () => {
     expect(actionCardCopy("cancelled", "creator").body).toBe("合作已取消。");

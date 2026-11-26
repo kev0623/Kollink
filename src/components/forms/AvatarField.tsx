@@ -21,7 +21,7 @@ type Props = {
   /** 路徑變了（上傳成功／移除）。 */
   onPathChange?: (path: string | null) => void;
   /** 上傳成功、路徑已更新之後（頁面據此「上傳即儲存」）。 */
-  onUploaded?: () => void;
+  onUploaded?: (path: string) => void;
   /** 使用者動了這個欄位（選檔、移除）：頁面據此隱藏「已儲存」。 */
   onTouch?: () => void;
   /** 每次儲存成功加一：之後這個頭像就是資料庫在引用的檔案，換檔時不能再刪它。 */
@@ -65,7 +65,7 @@ export function AvatarField({ userId, name, initialPath, error, onBusyChange, di
       ownedRef.current = plan.path;
       setPath(plan.path);
       onPathChange?.(plan.path);
-      onUploaded?.();
+      onUploaded?.(plan.path);
     } catch {
       setMsg("上傳失敗，請再試一次");
     } finally {

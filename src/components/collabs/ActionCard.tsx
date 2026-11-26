@@ -24,12 +24,12 @@ type Props = {
 /** 「現在要做什麼」卡片（主色外框）：輪到自己時顯示動作；輪到對方時說明在等什麼（文字見 actionCardCopy）。 */
 export function ActionCard({ c, side, uid, latest, nowMs, devPaymentEnabled, payment, summary, adminCancelled, payoutPrompt }: Props) {
   const fromApplication = c.briefId !== null;
-  const copy = actionCardCopy(c.status, side, adminCancelled, fromApplication);
+  const copy = actionCardCopy(c.status, side, adminCancelled, fromApplication, payoutPrompt === true && side === "creator");
   const countdown = c.status === "in_review" ? reviewCountdown(c.reviewDueAt, nowMs) : null;
   return (
     <section aria-labelledby="action-title" className={`rounded-card border p-4 md:p-6 ${copy.mine ? "border-primary bg-primary-soft" : "border-line bg-surface"}`}>
       <h2 id="action-title" className="text-lg font-bold text-ink">{copy.title}</h2>
-      <p className={`mt-1 text-sm ${copy.mine ? "text-ink" : "text-muted"}`}>{payoutPrompt && side === "creator" && c.status === "awaiting_payout" ? "平台撥款前需要你的收款帳戶，請先設定。" : copy.body}</p>
+      <p className={`mt-1 text-sm ${copy.mine ? "text-ink" : "text-muted"}`}>{copy.body}</p>
       {countdown && <p className="mt-2 text-sm font-semibold text-ink">{countdown}</p>}
       {c.status === "awaiting_payout" && c.publishedUrl && (
         <p className="mt-2 min-w-0 break-all text-sm">

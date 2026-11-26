@@ -48,6 +48,10 @@ export function CreatorSettingsForm(p: Props) {
   });
   return (
     <form action={action} noValidate className={`${cardPad} max-w-2xl space-y-5`}>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h3 className="text-lg font-bold text-ink">帳號資料</h3>
+        <UnsavedBadge show={dirty} />
+      </div>
       <Field label="顯示名稱" error={fe.displayName}>
         {(c) => <input {...c} name="displayName" maxLength={40} {...bind("displayName")} className={input} />}
       </Field>
@@ -81,7 +85,6 @@ export function CreatorSettingsForm(p: Props) {
       {state.notice && <p role="status" className="text-sm text-ink">{state.notice}</p>}
       <div className="flex flex-wrap items-center gap-4">
         <button disabled={pending} className={btn.primary}>{pending ? "儲存中…" : "儲存"}</button>
-        <UnsavedBadge show={dirty} />
         <SavedMark show={showSaved && !dirty && state.ok === true && !state.notice} />
       </div>
     </form>

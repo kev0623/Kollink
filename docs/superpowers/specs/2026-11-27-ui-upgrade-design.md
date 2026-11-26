@@ -287,7 +287,7 @@
 
 ### 9.10 通知與 toast
 
-- `Notice`（頁內、持續存在）：`tone` = `info`（`subtle`）／`success`（`success-soft`＋`CheckCircle2`）／`warning`（`primary-soft`＋`AlertTriangle`）／`danger`（`danger-soft`＋`AlertCircle`）；有圖示＋文字；錯誤用 `role="alert"`，其他 `role="status"`。
+- `Notice`（頁內、持續存在）：`tone` = `info`（`subtle`）／`success`（`success-soft`＋`CheckCircle2`）／`warning`（`subtle`＋`line-strong` 邊框＋`AlertTriangle`，不用紅色，避免與 `danger` 混淆）／`danger`（`danger-soft`＋`AlertCircle`）；有圖示＋文字；錯誤用 `role="alert"`，其他 `role="status"`。
 - 不做浮動 toast（Server Action 結果都在動作所在位置就地顯示，螢幕閱讀器與手機都比較可靠）。「已儲存」之類的成功訊息：下次編輯任一欄位或出現錯誤時清掉（修 m11 的殘留）。
 - 測試模式（綠界 stage）的提示改成 `info` 而不是紅色錯誤樣式（修 p6）。
 

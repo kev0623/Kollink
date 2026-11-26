@@ -6,6 +6,7 @@ import { requireRole } from "@/lib/auth/current-user";
 import { mapAccountError, type FormState, type FormValues } from "@/lib/auth/account-errors";
 import { loadOwnPublicProfile } from "@/lib/creators/own-profile";
 import { validatePortfolio, validatePublicProfileInput, validateRates } from "@/lib/validation/creator-profile";
+import { avatarSaveArgs, portfolioAppendItems } from "@/lib/creators/image-save";
 import { parsePortfolioForm, parsePublicProfileForm, parseRatesForm } from "@/lib/validation/form-data";
 
 function failure(error: { code?: string; message?: string }, values?: FormValues): FormState {
@@ -84,6 +85,40 @@ export async function updateRatesAction(_prev: FormState, fd: FormData): Promise
     p_rates: rates.map((r) => ({ collab_type: r.collabType, price_twd: Number(r.price) })),
   });
   if (error) return failure(error, values);
+  revalidateProfile(me.creator.handle);
+  return { ok: true };
+}
+
+/** 頭像上傳後只儲存頭像：其他欄位用資料庫裡已儲存的值，表單上還沒儲存的修改不受影響。 */
+export async function saveAvatarImageAction(avatarPath: string): Promise<FormState> {
+  const me = await requireRole("creator");
+  if (!me.creator) return { formError: "找不到創作者資料，請重新登入" };
+  if (typeof avatarPath !== "string" || avatarPath.trim() === "" || avatarPath.length > 300) {
+    return { formError: "頭像檔案不正確，請重新選擇" };
+  }
+  const { profile } = await loadOwnPublicProfile(me.id);
+  const args = avatarSaveArgs(profile, avatarPath);
+  if (!args) return { formError: "已儲存的基本資料有問題，請先修正並儲存基本資料" };
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("update_creator_public_profile", args);
+  if (error) return failure(error);
+  revalidateProfile(me.creator.handle);
+  return { ok: true };
+}
+
+/** 作品圖片上傳後只儲存這張新圖：清單用資料庫裡已儲存的，新圖排最後；還沒儲存的連結修改不受影響。 */
+export async function addPortfolioImageAction(imagePath: string): Promise<FormState> {
+  const me = await requireRole("creator");
+  if (!me.creator) return { formError: "找不到創作者資料，請重新登入" };
+  if (typeof imagePath !== "string" || imagePath.trim() === "" || imagePath.length > 300) {
+    return { formError: "圖片檔案不正確，請重新選擇" };
+  }
+  const { portfolio } = await loadOwnPublicProfile(me.id);
+  const plan = portfolioAppendItems(portfolio, imagePath);
+  if ("error" in plan) return { formError: plan.error };
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("set_creator_portfolio", { p_items: plan.items });
+  if (error) return failure(error);
   revalidateProfile(me.creator.handle);
   return { ok: true };
 }

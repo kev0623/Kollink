@@ -9,7 +9,7 @@ import { btn, cardPad, input, textarea } from "@/components/ui/styles";
 import { AUDIENCE_AGES, COLLAB_TYPES } from "@/lib/options";
 import type { FormState } from "@/lib/auth/account-errors";
 import type { OwnProfileFields } from "@/lib/creators/view";
-import { updatePublicProfileAction } from "./actions";
+import { saveAvatarImageAction, updatePublicProfileAction } from "./actions";
 
 type Values = { bio: string; styleTags: string; collabTypes: string[]; engagementRate: string; audienceAge: string; avatarPath: string };
 
@@ -28,20 +28,21 @@ export function PublicProfileForm({ userId, displayName, initial, onCollabTypesC
 }) {
   // 受控欄位：伺服器回錯誤時不會被重設；「尚未儲存」也由這裡算
   const [values, setValues] = useState<Values>(() => toValues(initial));
-  const [saved, setSaved] = useState(() => snapshot(toValues(initial)));
+  const [savedValues, setSavedValues] = useState<Values>(() => toValues(initial));
+  const saved = snapshot(savedValues);
   const [savedCount, setSavedCount] = useState(0);
   const [showSaved, setShowSaved] = useState(false);
-  const autoSave = useRef(false);
   const [uploading, setUploading] = useState(false);
-  const formRef = useRef<HTMLFormElement>(null);
+  const [avatarSaving, setAvatarSaving] = useState(false);
+  const [avatarErr, setAvatarErr] = useState<string | null>(null);
   const valuesRef = useRef(values);
   useEffect(() => { valuesRef.current = values; }, [values]);
 
   const [state, action, pending] = useActionState<FormState, FormData>(async (prev, fd) => {
-    const submitted = snapshot(valuesRef.current);
+    const submitted = valuesRef.current;
     const res = await updatePublicProfileAction(prev, fd);
     if (res.ok) {
-      setSaved(submitted);
+      setSavedValues(submitted);
       setSavedCount((n) => n + 1);
     }
     setShowSaved(res.ok === true);
@@ -51,12 +52,24 @@ export function PublicProfileForm({ userId, displayName, initial, onCollabTypesC
   const dirty = snapshot(values) !== saved;
   useUnsavedChanges(dirty);
 
-  // 頭像上傳成功後，等路徑寫進表單再送出（上傳即儲存）
-  useEffect(() => {
-    if (!autoSave.current) return;
-    autoSave.current = false;
-    formRef.current?.requestSubmit();
-  }, [values.avatarPath]);
+  // 頭像上傳成功後只儲存頭像（伺服器用已儲存的其他欄位）；表單上還沒儲存的修改維持「尚未儲存」
+  async function saveAvatarOnly(path: string) {
+    setAvatarSaving(true);
+    setAvatarErr(null);
+    try {
+      const res = await saveAvatarImageAction(path);
+      if (res.ok) {
+        setSavedValues((v) => ({ ...v, avatarPath: path }));
+        setSavedCount((n) => n + 1);
+      } else {
+        setAvatarErr(`頭像已上傳但還沒儲存：${res.formError ?? res.fieldErrors?.avatarPath ?? "儲存失敗"}。可以再選一次圖片，或按「儲存基本資料」。`);
+      }
+    } catch {
+      setAvatarErr("頭像已上傳但還沒儲存，請再選一次圖片，或按「儲存基本資料」。");
+    } finally {
+      setAvatarSaving(false);
+    }
+  }
 
   const fe = state.fieldErrors ?? {};
   function set<K extends keyof Values>(key: K, value: Values[K]) {
@@ -70,20 +83,20 @@ export function PublicProfileForm({ userId, displayName, initial, onCollabTypesC
   }
 
   return (
-    <form ref={formRef} action={action} noValidate className={`${cardPad} max-w-2xl space-y-5`}>
+    <form action={action} noValidate className={`${cardPad} max-w-2xl space-y-5`}>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 className="text-lg font-bold text-ink">基本資料</h3>
         <UnsavedBadge show={dirty} />
       </div>
       <AvatarField
         userId={userId} name={displayName} initialPath={initial.avatarPath}
-        error={fe.avatarPath} onBusyChange={setUploading} disabled={pending}
+        error={avatarErr ?? fe.avatarPath} onBusyChange={setUploading} disabled={pending || avatarSaving}
         savedCount={savedCount}
         onPathChange={(p) => setValues((v) => ({ ...v, avatarPath: p ?? "" }))}
-        onUploaded={() => { autoSave.current = true; }}
+        onUploaded={(p) => void saveAvatarOnly(p)}
         onTouch={() => setShowSaved(false)}
       />
-      <p className="-mt-3 text-xs text-muted">選好頭像圖片會直接儲存；移除頭像要按下方「儲存基本資料」。</p>
+      <p className="-mt-3 text-xs text-muted">圖片上傳後會直接儲存；其他還沒儲存的修改不受影響。移除頭像要按下方「儲存基本資料」。</p>
       <Field label="自我介紹（選填）" hint="300 字以內" error={fe.bio}>
         {(c) => <textarea {...c} name="bio" rows={4} maxLength={300} value={values.bio} onChange={(e) => set("bio", e.target.value)} className={textarea} />}
       </Field>
@@ -119,7 +132,7 @@ export function PublicProfileForm({ userId, displayName, initial, onCollabTypesC
       </Field>
       <ErrorText message={state.formError} />
       <div className="flex flex-wrap items-center gap-4">
-        <button disabled={pending || uploading} className={btn.primary}>{pending ? "儲存中…" : "儲存基本資料"}</button>
+        <button disabled={pending || uploading || avatarSaving} className={btn.primary}>{pending ? "儲存中…" : "儲存基本資料"}</button>
         <SavedMark show={showSaved && !dirty && state.ok === true} />
       </div>
     </form>

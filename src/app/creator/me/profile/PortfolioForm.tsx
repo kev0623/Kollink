@@ -12,29 +12,29 @@ import { FilePicker } from "@/components/ui/FilePicker";
 import { btn, cardPad, input } from "@/components/ui/styles";
 import type { FormState } from "@/lib/auth/account-errors";
 import type { PortfolioItem } from "@/lib/creators/view";
-import { updatePortfolioAction } from "./actions";
+import { addPortfolioImageAction, updatePortfolioAction } from "./actions";
 
 type Row = { imagePath: string; linkUrl: string };
 
 export function PortfolioForm({ userId, initial }: { userId: string; initial: PortfolioItem[] }) {
   const initialRows = (): Row[] => initial.map((it) => ({ imagePath: it.imagePath, linkUrl: it.linkUrl ?? "" }));
   const [rows, setRows] = useState<Row[]>(initialRows);
-  const [saved, setSaved] = useState(() => JSON.stringify(initialRows()));
+  const [savedRows, setSavedRows] = useState<Row[]>(initialRows);
+  const saved = JSON.stringify(savedRows);
   const [showSaved, setShowSaved] = useState(false);
-  const autoSave = useRef(false);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
-  const formRef = useRef<HTMLFormElement>(null);
+  const [imgSaving, setImgSaving] = useState(false);
   const rowsRef = useRef(rows);
   useEffect(() => { rowsRef.current = rows; }, [rows]);
   // 本次上傳、尚未儲存的檔案；儲存成功後清空（之後就是資料庫在引用的檔案，不能刪）
   const owned = useRef(new Set<string>());
   const [state, action, pending] = useActionState<FormState, FormData>(async (prev, fd) => {
-    const submitted = JSON.stringify(rowsRef.current);
+    const submitted = rowsRef.current;
     const result = await updatePortfolioAction(prev, fd);
     if (result.ok) {
       owned.current.clear();
-      setSaved(submitted);
+      setSavedRows(submitted);
     }
     setShowSaved(result.ok === true);
     return result;
@@ -42,13 +42,6 @@ export function PortfolioForm({ userId, initial }: { userId: string; initial: Po
   const headingId = useId();
   const dirty = JSON.stringify(rows) !== saved;
   useUnsavedChanges(dirty);
-
-  // 上傳成功後，等新的一列寫進表單再送出（上傳即儲存）
-  useEffect(() => {
-    if (!autoSave.current) return;
-    autoSave.current = false;
-    formRef.current?.requestSubmit();
-  }, [rows]);
 
   async function onFile(file: File | undefined) {
     if (!file) return;
@@ -62,9 +55,24 @@ export function PortfolioForm({ userId, initial }: { userId: string; initial: Po
       const { error } = await createClient().storage.from(CREATOR_MEDIA_BUCKET)
         .upload(plan.path, file, { contentType: file.type });
       if (error) return setMsg(uploadErrorMessage(error, "creator-media"));
-      owned.current.add(plan.path);
-      setRows((r) => [...r, { imagePath: plan.path, linkUrl: "" }]);
-      autoSave.current = true;
+      const row: Row = { imagePath: plan.path, linkUrl: "" };
+      setRows((r) => [...r, row]);
+      // 只儲存這張新圖（清單用已儲存的）；沒存成功時這張留在清單裡，標示尚未儲存
+      setImgSaving(true);
+      try {
+        const res = await addPortfolioImageAction(plan.path);
+        if (res.ok) {
+          setSavedRows((s) => [...s, row]);
+        } else {
+          owned.current.add(plan.path);
+          setMsg(`圖片已上傳但還沒儲存：${res.formError ?? "儲存失敗"}。可以按下方「儲存作品」再試。`);
+        }
+      } catch {
+        owned.current.add(plan.path);
+        setMsg("圖片已上傳但還沒儲存，請按下方「儲存作品」再試。");
+      } finally {
+        setImgSaving(false);
+      }
     } catch {
       setMsg("上傳失敗，請再試一次");
     } finally {
@@ -101,7 +109,7 @@ export function PortfolioForm({ userId, initial }: { userId: string; initial: Po
   const error = state.fieldErrors?.portfolio ?? state.formError;
   const noteId = useId();
   return (
-    <form ref={formRef} action={action} noValidate className={`${cardPad} max-w-2xl space-y-5`}>
+    <form action={action} noValidate className={`${cardPad} max-w-2xl space-y-5`}>
       <div>
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h3 id={headingId} className="text-lg font-bold text-ink">作品（最多 {MAX_PORTFOLIO} 張）</h3>
@@ -139,17 +147,17 @@ export function PortfolioForm({ userId, initial }: { userId: string; initial: Po
       <div>
         <FilePicker
           label="新增作品圖片" ariaLabel="上傳作品圖片" accept="image/png,image/jpeg,image/webp"
-          busy={busy} disabled={pending || rows.length >= MAX_PORTFOLIO} fileName={null}
+          busy={busy} disabled={pending || imgSaving || rows.length >= MAX_PORTFOLIO} fileName={null}
           describedBy={msg ? noteId : undefined} invalid={msg ? true : undefined}
           onFiles={(files) => void onFile(files[0])}
         />
-        <span className="mt-1.5 block text-xs text-muted">JPG、PNG、WebP，5MB 以內。選好圖片會直接儲存。</span>
+        <span className="mt-1.5 block text-xs text-muted">JPG、PNG、WebP，5MB 以內。圖片上傳後會直接儲存；其他還沒儲存的修改（連結、順序、刪除）不受影響。</span>
         {msg && <span id={noteId} role="status" className="mt-1.5 block text-xs text-danger">{msg}</span>}
       </div>
       <input type="hidden" name="items" value={JSON.stringify(rows)} />
       <ErrorText message={error} />
       <div className="flex flex-wrap items-center gap-4">
-        <button disabled={pending || busy} className={btn.primary}>{pending ? "儲存中…" : "儲存作品"}</button>
+        <button disabled={pending || busy || imgSaving} className={btn.primary}>{pending ? "儲存中…" : "儲存作品"}</button>
         <SavedMark show={showSaved && !dirty && state.ok === true} />
       </div>
     </form>

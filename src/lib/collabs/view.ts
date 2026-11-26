@@ -52,12 +52,12 @@ export function turnOf(s: CollabStatus): Turn {
   }
 }
 
-export const COLLAB_STEPS = ["邀約", "確認", "付款託管", "交稿", "審核", "發佈", "撥款"] as const;
+export const COLLAB_STEPS = ["邀約", "確認", "付款", "交稿", "審核", "發佈", "撥款"] as const;
 
-// 目前步驟（0 起算）；completed = 7 代表全部完成；declined／cancelled 沒有進度條
+// 目前步驟（0 起算，對應 COLLAB_STEPS）：邀約已發出，現在等「確認」；completed = 7 代表全部完成；declined／cancelled 沒有進度條
 const STEP_INDEX: Partial<Record<CollabStatus, number>> = {
-  invited: 0,
-  awaiting_payment: 1,
+  invited: 1,
+  awaiting_payment: 2,
   awaiting_submission: 3,
   in_review: 4,
   awaiting_publish: 5,
@@ -80,8 +80,8 @@ export function stepNumber(s: CollabStatus): number | null {
   return Math.min(i + 1, COLLAB_STEPS.length);
 }
 
-/** 金額與託管狀態：「NT$4,500 待付款」「NT$4,500 已託管」「NT$4,500 已撥款」「NT$4,500 未成立」。 */
-export function escrowLabel(s: CollabStatus, amount: number): string {
+/** 金額與付款狀態：「NT$4,500 待付款」「NT$4,500 已付款，由平台保管」「NT$4,500 已撥款」「NT$4,500 未成立」。 */
+export function escrowLabel(s: CollabStatus, amount: number, short = false): string {
   const money = formatTwd(amount);
   switch (s) {
     case "invited":
@@ -93,7 +93,7 @@ export function escrowLabel(s: CollabStatus, amount: number): string {
     case "cancelled":
       return `${money} 未成立`;
     default:
-      return `${money} 已託管`;
+      return `${money} ${short ? "平台保管中" : "已付款，由平台保管"}`;
   }
 }
 
@@ -253,31 +253,33 @@ export type ActionCardCopy = { mine: boolean; title: string; body: string };
 /**
  * 「現在要做什麼」卡片的標題與說明。輪到對方時寫「你不用做任何事」；
  * 例外是創作者在待付款時（付款前可以退出，所以改寫成可以退出的說明）。
+ * needsPayoutAccount：創作者已付款未撥款卻沒有收款帳戶（needsPayoutPrompt）；此時不寫「你不用做任何事」。
  * adminCancelled：事件紀錄裡有平台取消（admin_cancel）時才指向下方紀錄，其餘取消用中性文字。
  * fromApplication：合作案來自招募報名（briefId 不是 null）。報名的合作案只有在錄取金額低於創作者報價時
  * 才會是 invited（accept_application_with_collab），卡片改寫成「確認合作條件」。
  */
 export function actionCardCopy(
-  s: CollabStatus, side: CollabSide, adminCancelled = false, fromApplication = false,
+  s: CollabStatus, side: CollabSide, adminCancelled = false, fromApplication = false, needsPayoutAccount = false,
 ): ActionCardCopy {
-  const none = "你不用做任何事。";
+  // 創作者還沒有收款帳戶時，上方有「請設定收款帳戶」的提醒，卡片不能再說「你不用做任何事」
+  const none = needsPayoutAccount ? "" : "你不用做任何事。";
   const mine = turnOf(s) === side;
   switch (s) {
     case "invited":
       if (fromApplication) {
         return mine
-          ? { mine, title: "輪到你：確認合作條件", body: "品牌錄取了你的報名，但金額低於你的報價。接受後由品牌付款託管，款項託管後再開始製作。" }
+          ? { mine, title: "輪到你：確認合作條件", body: "品牌錄取了你的報名，但金額低於你的報價。接受後由品牌付款，款項由平台保管，付款完成後再開始製作。" }
           : { mine, title: "等待創作者確認", body: `金額低於創作者的報價，對方確認後就輪到你付款。${none}` };
       }
       return mine
-        ? { mine, title: "輪到你：回覆邀約", body: "接受後由品牌確認並付款託管，款項託管後再開始製作。" }
+        ? { mine, title: "輪到你：回覆邀約", body: "接受後由品牌確認並付款，款項由平台保管，付款完成後再開始製作。" }
         : { mine, title: "等對方回覆邀約", body: `創作者接受後就輪到你確認並付款。${none}` };
     case "awaiting_payment":
       return mine
-        ? { mine, title: "輪到你：確認並付款", body: "選擇信用卡或 ATM 轉帳付款。款項由平台託管，創作者交稿並發佈後才撥款。" }
+        ? { mine, title: "輪到你：確認並付款", body: "選擇信用卡或 ATM 轉帳付款。款項由平台保管，創作者交稿並發佈後才撥款。" }
         : side === "creator"
-          ? { mine, title: "等對方付款託管", body: "等待品牌付款，款項託管後就可以開始製作。條件不合適的話，付款前可以退出。" }
-          : { mine, title: "等對方付款託管", body: `款項託管後就可以開始製作。${none}` };
+          ? { mine, title: "等對方付款", body: "等待品牌付款，付款完成後就可以開始製作。條件不合適的話，付款前可以退出。" }
+          : { mine, title: "等對方付款", body: `付款完成後就可以開始製作。${none}` };
     case "awaiting_submission":
       return mine
         ? { mine, title: "輪到你：交稿", body: "上傳作品檔案，或附上雲端連結與說明。" }
@@ -291,7 +293,10 @@ export function actionCardCopy(
         ? { mine, title: "輪到你：發佈並填入貼文連結", body: "依審核通過的內容發佈，再把貼文連結貼在這裡。" }
         : { mine, title: "等對方發佈貼文", body: `創作者填入貼文連結後，平台會撥款。${none}` };
     case "awaiting_payout":
-      return { mine: false, title: "撥款處理中", body: `平台確認後會把款項撥給創作者。${none}` };
+      return {
+        mine: false, title: "撥款處理中",
+        body: needsPayoutAccount && side === "creator" ? "平台撥款前需要你的收款帳戶，請先設定。" : `平台確認後會把款項撥給創作者。${none}`,
+      };
     case "completed":
       return { mine: false, title: "合作已完成", body: "款項已撥給創作者，謝謝你們的合作。" };
     case "declined":
@@ -404,7 +409,7 @@ export function eventText(e: CollabEvent, fromApplication = false): string {
       // 資安修正：創作者可以在品牌付款前退出
       return e.actorKind === "creator" ? "創作者退出合作" : `${who} 取消合作`;
     case "mark_paid":
-      return "款項已託管";
+      return "款項已由平台收到並保管";
     case "submit":
       return `${who} 已交稿`;
     case "approve":
@@ -428,7 +433,7 @@ export function eventText(e: CollabEvent, fromApplication = false): string {
     case "admin_cancel":
       return `平台取消合作：${e.note ?? ""}`;
     case "refund_scheduled":
-      return "平台會退回已託管的款項";
+      return "平台會退回已收到的款項";
     default:
       return who ? `${who}：狀態已更新` : "狀態已更新";
   }

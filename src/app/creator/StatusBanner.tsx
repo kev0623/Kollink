@@ -17,7 +17,7 @@ export function StatusBanner({ me }: { me: CurrentUser }) {
   const s = me.creator?.status;
   if (s === "pending") {
     return (
-      <Notice tone="info" title="審核中，通常 1–2 個工作天" className="mb-6">
+      <Notice tone="info" title="審核中" className="mb-6">
         {me.verificationCode && (
           <>
             <p>請把驗證碼暫時加到 IG 自我介紹，審核通過後就可以刪掉。</p>

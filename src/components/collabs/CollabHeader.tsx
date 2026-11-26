@@ -2,7 +2,7 @@ import Link from "next/link";
 import { caseCode, escrowLabel, sourceLabel, type Collab } from "@/lib/collabs/view";
 import { CollabStatusBadge } from "./CollabStatusBadge";
 
-/** 標題區：創作者 × 案名、交付內容、金額與託管狀態、案號、來源。 */
+/** 標題區：創作者 × 案名、交付內容、金額與付款狀態、案號、來源。 */
 export function CollabHeader({ c, testPayment }: { c: Collab; testPayment: boolean }) {
   return (
     <header className="space-y-3">
@@ -23,7 +23,7 @@ export function CollabHeader({ c, testPayment }: { c: Collab; testPayment: boole
           <div>
             <dt className="text-xs text-muted">金額</dt>
             <dd className="mt-0.5 flex flex-wrap items-center gap-2 font-serif text-2xl font-bold tabular-nums text-ink">
-              {escrowLabel(c.status, c.amount)}
+              {(() => { const [money, ...rest] = escrowLabel(c.status, c.amount).split(" "); return <><span>{money}</span><span className="font-sans text-sm font-semibold text-muted">{rest.join(" ")}</span></>; })()}
               {testPayment && (
                 <span className="rounded-full border border-danger bg-danger-soft px-2 py-0.5 font-sans text-xs font-bold text-danger">測試付款（未實際收款）</span>
               )}
