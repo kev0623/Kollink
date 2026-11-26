@@ -105,6 +105,26 @@ isOneToOne: false
       referencedColumns: ["user_id"]
     }
                   ]
+                },"collaboration_submissions": {
+                  Row: {
+                    "collaboration_id": string,"created_at": string,"file_paths": (string)[],"id": string,"links": (string)[],"note": string | null,"round": number
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "collaboration_id": string,"created_at"?: string,"file_paths"?: (string)[],"id"?: string,"links"?: (string)[],"note"?: string | null,"round": number
+                  }
+                  Update: {
+                    "collaboration_id"?: string,"created_at"?: string,"file_paths"?: (string)[],"id"?: string,"links"?: (string)[],"note"?: string | null,"round"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "collaboration_submissions_collaboration_id_fkey"
+      columns: ["collaboration_id"]
+isOneToOne: false
+      referencedRelation: "collaborations"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"collaborations": {
                   Row: {
                     "amount_twd": number,"brand_id": string,"brief_id": string | null,"conversation_id": string,"created_at": string,"creator_id": string,"deliverables": string,"id": string,"published_url": string | null,"review_due_at": string | null,"status": Database["public"]['Enums']["collab_status"],"title": string,"updated_at": string
@@ -341,19 +361,41 @@ isOneToOne: false
             [_ in never]: never
           }
           Functions: {
-            "apply_to_brief":
+            "accept_application_with_collab":
+{ Args: { "p_amount_twd": number,"p_application_id": string,"p_deliverables": string }; Returns: string
+                           },
+"apply_to_brief":
 { Args: { "p_brief_id": string,"p_message"?: string,"p_proposed_price"?: number }; Returns: string
+                           },
+"auto_approve_due":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "approved": number,"failed": (string)[]
+            }[]
                            },
 "brief_application_counts":
 { Args: { "p_ids": (string)[] }; Returns: {
               "applicant_count": number,"brief_id": string,"pending_count": number
             }[]
                            },
+"can_delete_deliverable":
+{ Args: { "p_name": string }; Returns: boolean
+                           },
+"can_read_deliverable":
+{ Args: { "p_name": string }; Returns: boolean
+                           },
+"can_upload_deliverable":
+{ Args: { "p_name": string }; Returns: boolean
+                           },
 "can_view_brief":
 { Args: { "p_brand_id": string,"p_deadline": string,"p_id": string,"p_status": string }; Returns: boolean
                            },
 "check_categories":
 { Args: { "p": (string)[] }; Returns: (string)[]
+                           },
+"check_collab_offer":
+{ Args: { "p_amount_twd": number,"p_deliverables": string,"p_title": string }; Returns: {
+              "deliverables": string,"title": string
+            }[]
                            },
 "check_instagram_url":
 { Args: { "p": string }; Returns: string
@@ -373,6 +415,9 @@ isOneToOne: false
 "close_brief":
 { Args: { "p_id": string }; Returns: undefined
                            },
+"collab_turn":
+{ Args: { "p_status": Database["public"]['Enums']["collab_status"] }; Returns: string
+                           },
 "create_brand_account":
 { Args: { "p_brand_name": string,"p_industry": string,"p_logo_path"?: string }; Returns: undefined
                            },
@@ -385,8 +430,19 @@ isOneToOne: false
 "delete_brief":
 { Args: { "p_id": string }; Returns: string
                            },
+"deliverable_path_ok":
+{ Args: { "p_collab_id": string,"p_creator_id": string,"p_name": string }; Returns: boolean
+                           },
+"ensure_conversation":
+{ Args: { "p_brand_id": string,"p_creator_id": string }; Returns: string
+                           },
 "gen_verification_code":
 { Args: Record<PropertyKey, never>; Returns: string
+                           },
+"get_collaboration":
+{ Args: { "p_id": string }; Returns: {
+              "amount_twd": number,"brand_id": string,"brand_logo_path": string,"brand_name": string,"brief_id": string,"brief_title": string,"created_at": string,"creator_avatar_path": string,"creator_handle": string,"creator_id": string,"creator_name": string,"deliverables": string,"id": string,"my_side": string,"published_url": string,"review_due_at": string,"status": string,"title": string,"updated_at": string
+            }[]
                            },
 "get_opportunity":
 { Args: { "p_id": string }; Returns: {
@@ -404,6 +460,9 @@ isOneToOne: false
 "hook_reject_password":
 { Args: { "event": Json }; Returns: Json
                            },
+"invite_creator":
+{ Args: { "p_amount_twd": number,"p_creator_id": string,"p_deliverables": string,"p_title": string }; Returns: string
+                           },
 "is_admin":
 { Args: Record<PropertyKey, never>; Returns: boolean
                            },
@@ -412,7 +471,17 @@ isOneToOne: false
                            },
 "list_brief_applicants":
 { Args: { "p_brief_id": string }; Returns: {
-              "avatar_path": string,"created_at": string,"creator_id": string,"display_name": string,"engagement_rate": number,"follower_count": number,"handle": string,"id": string,"message": string,"proposed_price_twd": number,"region": string,"status": string
+              "avatar_path": string,"collaboration_id": string,"created_at": string,"creator_id": string,"display_name": string,"engagement_rate": number,"follower_count": number,"handle": string,"id": string,"message": string,"proposed_price_twd": number,"region": string,"status": string
+            }[]
+                           },
+"list_collaboration_events":
+{ Args: { "p_id": string }; Returns: {
+              "action": string,"actor_kind": string,"actor_name": string,"created_at": string,"from_status": string,"id": number,"note": string,"to_status": string
+            }[]
+                           },
+"list_my_collaborations":
+{ Args: { "p_tab"?: string }; Returns: {
+              "amount_twd": number,"brief_id": string,"counterpart_handle": string,"counterpart_image_path": string,"counterpart_name": string,"id": string,"my_side": string,"my_turn": boolean,"status": string,"title": string,"updated_at": string
             }[]
                            },
 "list_opportunities":
@@ -452,6 +521,9 @@ isOneToOne: false
                            },
 "set_creator_rates":
 { Args: { "p_rates": Json }; Returns: undefined
+                           },
+"submit_deliverables":
+{ Args: { "p_collab_id": string,"p_file_paths"?: (string)[],"p_links"?: (string)[],"p_note"?: string }; Returns: number
                            },
 "text_items_within":
 { Args: { "p": (string)[],"p_max_len": number }; Returns: boolean

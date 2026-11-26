@@ -1,0 +1,18 @@
+import { Suspense } from "react";
+import Link from "next/link";
+import { CollabDetailSection } from "@/components/collabs/CollabPages";
+
+type Props = { params: Promise<{ id: string }> };
+
+export default function BrandCollabPage({ params }: Props) {
+  return (
+    <div>
+      <Link href="/brand/collabs" className="text-sm text-muted">← 合作案</Link>
+      <div className="mt-2">
+        <Suspense fallback={<p className="text-muted">載入中…</p>}>
+          <CollabDetailSection side="brand" params={params} />
+        </Suspense>
+      </div>
+    </div>
+  );
+}

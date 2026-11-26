@@ -72,7 +72,11 @@ async function BriefDetail({ params }: Props) {
           ) : applicants.length === 0 ? (
             <p className="rounded-card border border-line bg-surface p-6 text-center text-sm text-muted">還沒有人報名</p>
           ) : (
-            <ApplicantList briefId={brief.id} applicants={applicants} />
+            <ApplicantList
+              briefId={brief.id}
+              brief={{ budgetMin: brief.budgetMin, budgetMax: brief.budgetMax, collabTypes: brief.collabTypes, description: brief.description }}
+              applicants={applicants}
+            />
           )}
         </div>
       </section>

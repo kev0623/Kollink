@@ -97,6 +97,76 @@ update public.creator_profiles set handle = '新代稱' where handle = '舊代�
 commit;
 ```
 
+## 合作案的付款與撥款（金流與管理後台完成前）
+
+計畫 8（綠界金流）與計畫 9（管理後台）完成前，**整個流程不會真的收錢**：品牌按「確認並付款」只會看到說明，由管理員在 Supabase Studio 的 SQL Editor 標記。案號 = 合作案 id 的前 8 碼，顯示在合作案詳情的標題區。
+
+兩段 SQL 都要**整段一起執行**（`begin` 到 `commit`），只改 `填入案號` 這一個地方（例如 `1a2b3c4d`），直接複製、不要手打。案號格式不對或找不到剛好一個合作案時會報錯，整段不會生效。
+
+**標記已付款**（`awaiting_payment` → `awaiting_submission`）。和綠界上線後走同一條路：先建付款單，再呼叫 `record_payment_success`（不要直接改狀態，資料庫也不允許）：
+```sql
+begin;
+set local role service_role;
+select set_config('request.jwt.claims', '{"role":"service_role"}', true);
+select set_config('kollink.case_code', lower('填入案號'), true);
+do $$
+declare
+  v_code text := current_setting('kollink.case_code');
+  v_n integer;
+begin
+  if v_code !~ '^[0-9a-f]{8}$' then
+    raise exception '案號格式不對：%', v_code;
+  end if;
+  select count(*) into v_n from public.collaborations c where c.id::text like v_code || '%';
+  if v_n <> 1 then
+    raise exception '案號 % 找到 % 個合作案，請確認', v_code, v_n;
+  end if;
+end;
+$$;
+insert into public.payments (collaboration_id, provider, merchant_trade_no, amount_twd)
+select c.id, 'ecpay', 'MAN' || upper(left(md5(random()::text), 17)), c.amount_twd
+  from public.collaborations c
+ where c.id::text like current_setting('kollink.case_code') || '%' and c.status = 'awaiting_payment';
+select p.merchant_trade_no,
+       public.record_payment_success(p.merchant_trade_no, p.amount_twd, 'MANUAL-' || p.merchant_trade_no,
+                                     '{"source":"manual"}'::jsonb) as result
+  from public.payments p
+  join public.collaborations c on c.id = p.collaboration_id
+ where c.id::text like current_setting('kollink.case_code') || '%' and p.status = 'pending';
+select c.status from public.collaborations c where c.id::text like current_setting('kollink.case_code') || '%';
+commit;
+```
+`result` 是 `paid`、最後的 `status` 是 `awaiting_submission` 就完成了。沒有任何列：合作案已經不是「等待付款」。
+
+**撥款**（`awaiting_payout` → `completed`）：
+```sql
+begin;
+set local role service_role;
+select set_config('request.jwt.claims', '{"role":"service_role"}', true);
+select set_config('kollink.case_code', lower('填入案號'), true);
+do $$
+declare
+  v_code text := current_setting('kollink.case_code');
+  v_n integer;
+begin
+  if v_code !~ '^[0-9a-f]{8}$' then
+    raise exception '案號格式不對：%', v_code;
+  end if;
+  select count(*) into v_n from public.collaborations c where c.id::text like v_code || '%';
+  if v_n <> 1 then
+    raise exception '案號 % 找到 % 個合作案，請確認', v_code, v_n;
+  end if;
+end;
+$$;
+select c.id, public.transition_collaboration(c.id, 'payout', '人工撥款') as result
+  from public.collaborations c
+ where c.id::text like current_setting('kollink.case_code') || '%' and c.status = 'awaiting_payout';
+commit;
+```
+`result` 是 `completed` 就結案了（實際轉帳在平台外處理）。
+
+本機開發另有「標記已付款（本機）」按鈕（開關與測試快速登入相同，正式環境不會出現、`/api/dev/mark-paid` 回 404），走的也是同一條路。
+
 ## 正式環境（Hosted Supabase）設定
 
 正式專案：`Kollink`（東京，project ref `gujmnohzmivnaxdxpdjn`）。
@@ -117,9 +187,23 @@ CLI 3.x 的 `db push` 預設推到本機，一定要加 `--remote`。**不要執
 
 招募封面的 Storage bucket `brief-covers` 由 migration `20261124000600_brief_covers.sql` 建立（公開、5 MB、只接受 JPG／PNG／WebP，只有品牌能上傳到自己的資料夾），同樣隨 `db push --remote` 一起建好。
 
+交稿檔案的 Storage bucket `deliverables` 由 migration `20261125000200_deliverables.sql` 建立（**私密**、每個檔案 50 MB、只接受 JPG／PNG／WebP／MP4／MOV／PDF；只有該合作案的品牌、創作者與管理員讀得到，畫面用 1 小時的 signed URL），同樣隨 `db push --remote` 一起建好。Supabase 專案的全域檔案上限（Storage → Settings）必須至少 50 MB，否則大檔案會被擋。
+
 `20261124000500_briefs.sql` 會把 `briefs.cover_url` 改名為 `cover_path`。它開頭有保護檢查：**正式資料庫的 `briefs` 只要有任何一列，migration 就會停下來**（錯誤訊息 `briefs has rows …`）。目前沒有任何程式寫入招募，所以應該是 0 筆；如果真的停下來，先確認資料、手動搬移後再推。
 
-**部署順序：先推資料庫，再合併 PR。** Vercel 在 `main` 合併後立刻部署；新版程式會呼叫新 migration 建立的函式（例如計畫 4 的 `search_creators`、計畫 5 的 `save_brief`、`list_opportunities`，`20261124000500_briefs.sql`、`20261124000600_brief_covers.sql`），資料庫還沒更新時 `/brand`、`/brand/briefs`、`/creator` 會出錯。所以每次 PR 有新 migration 時，先執行上面的 `npx supabase db push --remote`，確認成功後再合併。
+**部署順序：先推資料庫，再合併 PR。** Vercel 在 `main` 合併後立刻部署；新版程式會呼叫新 migration 建立的函式（例如計畫 4 的 `search_creators`、計畫 5 的 `save_brief`、`list_opportunities`，`20261124000500_briefs.sql`、`20261124000600_brief_covers.sql`，計畫 6 的 `20261125000100_collab_create.sql`、`20261125000200_deliverables.sql`、`20261125000300_collab_reads.sql`、`20261125000400_collab_review_fixes.sql`），資料庫還沒更新時 `/brand`、`/brand/briefs`、`/creator` 會出錯。所以每次 PR 有新 migration 時，先執行上面的 `npx supabase db push --remote`，確認成功後再合併。計畫 6 起還要在合併前把 CRON_SECRET 加到 Vercel（見「部署（Vercel）」）。
+
+計畫 6 推資料庫前的檢查（只讀，在正式資料庫的 SQL Editor 執行）：
+
+```sql
+select count(*) as accepted_without_collab from public.brief_applications a
+ where a.status = 'accepted'
+   and not exists (select 1 from public.collaborations c where c.brief_id = a.brief_id and c.creator_id = a.creator_id);
+select brief_id, creator_id, count(*) from public.collaborations
+ where brief_id is not null group by 1, 2 having count(*) > 1;
+```
+
+第一個查詢必須是 0：不是 0 代表有「已錄取但沒有合作案」的報名（舊版的錄取按鈕只改報名狀態），這些品牌需要改用「直接邀請」。第二個查詢必須沒有任何列：有列代表同一則招募、同一位創作者有多個合作案，`20261125000100_collab_create.sql` 建立唯一索引時會失敗，需先手動處理重複的合作案再推。
 
 本機的 `config.toml` 不會自動套用到正式專案，上線前在 Supabase 後台逐項設定：
 
@@ -134,7 +218,7 @@ CLI 3.x 的 `db push` 預設推到本機，一定要加 `--remote`。**不要執
 6. Authentication → SMTP Settings：設定自訂 SMTP（例如 Resend）。內建寄信上限約每小時 2 封，不能用於正式環境。
 7. Authentication → Attack Protection：建議開啟 CAPTCHA（Turnstile 或 hCaptcha），並在登入頁加上對應元件。
 8. Google OAuth：Providers → Google 填入用戶端 ID／密鑰；Google Cloud Console 的重新導向 URI 加上 `https://<專案>.supabase.co/auth/v1/callback`。
-9. 排程清理沒被引用的 Storage 物件：`brand-logos`（沒被 `brand_profiles.logo_path` 引用）、`creator-media`（沒被 `creator_profiles.avatar_path`、`creator_portfolio_items.image_path` 引用）與 `brief-covers`（沒被 `briefs.cover_path` 引用），都只刪超過 24 小時的，見 `docs/superpowers/plans/2026-11-22-foundation-followups.md`。
+9. 排程清理沒被引用的 Storage 物件：`brand-logos`（沒被 `brand_profiles.logo_path` 引用）、`creator-media`（沒被 `creator_profiles.avatar_path`、`creator_portfolio_items.image_path` 引用）`brief-covers`（沒被 `briefs.cover_path` 引用）與 `deliverables`（沒被任何 `collaboration_submissions.file_paths` 引用的，例如上傳後沒有交稿），都只刪超過 24 小時的，見 `docs/superpowers/plans/2026-11-22-foundation-followups.md`。
 
 ## 部署（Vercel）
 
@@ -147,6 +231,13 @@ NEXT_PUBLIC_SUPABASE_URL
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
 SUPABASE_SECRET_KEY
 NEXT_PUBLIC_GOOGLE_AUTH_ENABLED
+CRON_SECRET
 ```
 
 `SUPABASE_SECRET_KEY` 絕對不可加 `NEXT_PUBLIC_` 前綴。綠界相關變數（`ECPAY_*`）等計畫 8 上線付款時再加。
+
+`CRON_SECRET`：審核逾期自動通過的 Vercel Cron（`vercel.json`：每天 UTC 01:00 = 台灣 09:00 呼叫 `/api/cron/auto-approve`）。值用一串夠長的亂數（例如 `openssl rand -hex 32` 的結果），加到 **Production** 環境。Vercel 會自動在 cron 請求帶 `Authorization: Bearer <CRON_SECRET>`；沒設定時 route 一律回 500，不會自動通過任何合作案。Hobby 方案的 Cron 一天只跑一次、而且可能在該小時內任何時間觸發（UTC 01:00–01:59，台灣 09:00–09:59），所以實際是「審核期限到了之後最晚隔天自動通過」。本機在 `.env.local` 隨便設一個值即可，手動測試：
+
+```bash
+curl -i -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/cron/auto-approve
+```

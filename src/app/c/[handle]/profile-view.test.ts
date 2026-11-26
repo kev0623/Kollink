@@ -2,6 +2,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 vi.mock("@/app/brand/actions", () => ({ setFavoriteAction: vi.fn() }));
+vi.mock("@/app/brand/collabs/actions", () => ({ inviteCreatorAction: vi.fn() }));
 import { ProfileView } from "./ProfileView";
 import type { PublicCreator, ViewerKind } from "@/lib/creators/view";
 

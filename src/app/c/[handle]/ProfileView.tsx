@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ExternalLink, Lock, MapPin, Star } from "lucide-react";
+import { InvitePanel } from "@/components/collabs/InvitePanel";
 import { FavoriteButton } from "@/components/square/FavoriteButton";
 import { creatorMediaUrl } from "@/lib/creator-media";
 import { formatNumber, formatPercent, formatTwd, initialOf } from "@/lib/format";
@@ -23,7 +24,7 @@ export function ProfileView({ creator: c, portfolio, rates, viewer, favorite }: 
           )}
         </div>
         <div className="space-y-4 md:space-y-6">
-          <Invite viewer={viewer} />
+          <Invite viewer={viewer} creatorId={c.userId} creatorName={c.displayName} />
           {portfolio.length > 0 && <PortfolioGrid name={c.displayName} items={portfolio} />}
           <Section title="想接的合作">
             {c.collabTypes.length > 0
@@ -198,13 +199,11 @@ function RatesSection({ viewer, handle, rates }: { viewer: ViewerKind; handle: s
   );
 }
 
-/** 邀請合作：訪客 → 註冊品牌；品牌 → 停用（計畫 4/6）；創作者（含本人）→ 不顯示。 */
-function Invite({ viewer }: { viewer: ViewerKind }) {
+/** 邀請合作：訪客 → 註冊品牌；品牌 → 頁面內的邀請表單（計畫 6）；創作者（含本人）→ 不顯示。 */
+function Invite({ viewer, creatorId, creatorName }: { viewer: ViewerKind; creatorId: string; creatorName: string }) {
   if (viewer === "creator") return null;
-  const btn = "flex h-11 w-full items-center justify-center rounded-btn bg-ink font-semibold text-on-ink";
-  const button = viewer === "guest"
-    ? <Link href="/signup?role=brand" className={btn}>邀請合作</Link>
-    : <button type="button" disabled className={`${btn} opacity-60`}>邀請合作（即將推出）</button>;
+  if (viewer === "brand") return <InvitePanel creatorId={creatorId} creatorName={creatorName} />;
+  const button = <Link href="/signup?role=brand" className="flex h-11 w-full items-center justify-center rounded-btn bg-ink font-semibold text-on-ink">邀請合作</Link>;
   return (
     <>
       <div className="fixed inset-x-0 bottom-0 z-10 border-t border-line bg-surface px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] md:hidden">

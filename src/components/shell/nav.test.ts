@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { BRAND_NAV, isActive } from "./nav";
+import { BRAND_NAV, CREATOR_NAV, isActive } from "./nav";
 
 describe("isActive", () => {
   it("首頁只比對完全相同", () => {
@@ -19,5 +19,13 @@ describe("BRAND_NAV", () => {
     expect(BRAND_NAV.find((i) => i.label === "我的招募")?.href).toBe("/brand/briefs");
     expect(isActive("/brand/briefs", "/brand/briefs/new")).toBe(true);
     expect(isActive("/brand", "/brand/briefs")).toBe(false);
+  });
+});
+
+describe("合作案（計畫 6）", () => {
+  it("品牌「合作案」與創作者「合作」已開放，詳情頁也會亮起", () => {
+    expect(BRAND_NAV.find((i) => i.label === "合作案")?.href).toBe("/brand/collabs");
+    expect(CREATOR_NAV.find((i) => i.label === "合作")?.href).toBe("/creator/collabs");
+    expect(isActive("/creator/collabs", "/creator/collabs/00000000-0000-0000-0000-000000000001")).toBe(true);
   });
 });

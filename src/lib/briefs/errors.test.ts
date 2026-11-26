@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { briefErrorMessage, briefFieldError } from "./errors";
+import { briefErrorMessage, briefFieldError, isStaleStateMessage } from "./errors";
 
 describe("briefErrorMessage", () => {
   it("已知的錯誤轉成中文", () => {
@@ -24,5 +24,13 @@ describe("briefFieldError", () => {
   it("其他錯誤回傳 null", () => {
     expect(briefFieldError({ code: "22023", message: "invalid accept" })).toBeNull();
     expect(briefFieldError({ code: "42501", message: "invalid title" })).toBeNull();
+  });
+});
+
+describe("isStaleStateMessage", () => {
+  it("招募與合作案的「狀態已變」都不當成錯誤", () => {
+    expect(isStaleStateMessage("這筆報名已經處理過了")).toBe(true);
+    expect(isStaleStateMessage("合作案的狀態已經更新")).toBe(true);
+    expect(isStaleStateMessage("發生錯誤，請稍後再試")).toBe(false);
   });
 });
