@@ -8,8 +8,8 @@ export const alt = `${SITE_NAME} 創作者公開頁`;
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
-// ImageResponse 不吃 Tailwind class；值與 src/app/globals.css 的 token 相同
-const OG_COLORS = { bg: "#F3F3F2", surface: "#FFFFFF", line: "#E4E4E7", ink: "#18181B", muted: "#686872", onInk: "#FFFFFF" };
+// ImageResponse 不吃 Tailwind class；值與 src/app/globals.css 的深色 token 相同（規格 §2.1、§8）
+const OG_COLORS = { bg: "#0D1424", surface: "#1A2540", line: "#2A3654", ink: "#EEF1F7", muted: "#9AA6BF", thread: "#F0483E" };
 
 // 最多顯示前 3 個類別，避免超出 1200x630
 const MAX_OG_CATEGORIES = 3;
@@ -26,16 +26,20 @@ export default async function Image({ params }: { params: Promise<{ handle: stri
       <div
         style={{
           width: "100%", height: "100%", display: "flex", flexDirection: "column", justifyContent: "space-between",
-          background: OG_COLORS.bg, color: OG_COLORS.ink, padding: 72,
+          background: OG_COLORS.bg, color: OG_COLORS.ink, padding: 72, position: "relative",
         }}
       >
+        <svg width="1200" height="630" viewBox="0 0 1200 630" style={{ position: "absolute", left: 0, top: 0 }}>
+          <path d="M172 272 C 420 520, 760 560, 1080 540" fill="none" stroke={OG_COLORS.thread} strokeWidth="5" strokeLinecap="round" />
+          <circle cx="1080" cy="540" r="10" fill="none" stroke={OG_COLORS.thread} strokeWidth="5" />
+        </svg>
         <div style={{ display: "flex", alignItems: "center", gap: 48 }}>
           {avatar ? (
-            <img src={avatar} alt="" width={200} height={200} style={{ borderRadius: 100, objectFit: "cover" }} />
+            <img src={avatar} alt="" width={200} height={200} style={{ borderRadius: 100, objectFit: "cover", border: `6px solid ${OG_COLORS.thread}` }} />
           ) : (
             <div
               style={{
-                width: 200, height: 200, borderRadius: 100, background: OG_COLORS.ink, color: OG_COLORS.onInk,
+                width: 200, height: 200, borderRadius: 100, background: OG_COLORS.surface, color: OG_COLORS.ink, border: `6px solid ${OG_COLORS.thread}`,
                 display: "flex", alignItems: "center", justifyContent: "center", fontSize: 96,
               }}
             >

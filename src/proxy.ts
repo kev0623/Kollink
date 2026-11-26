@@ -1,10 +1,14 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { updateSession } from "@/lib/supabase/proxy";
-import { authPageRedirect, requiresAuth } from "@/lib/auth/routes";
+import { authPageRedirect, invalidCreatorPath, requiresAuth } from "@/lib/auth/routes";
 import { REQUEST_PATH_HEADER, requestPath } from "@/lib/auth/admin-next";
 
 // 只做樂觀檢查：更新 session cookie、沒登入就導去 /login、已登入者不看登入頁。身分與資料完整度由各區 layout 檢查。
 export async function proxy(request: NextRequest) {
+  // 格式不合法的公開頁：rewrite 到不存在的路由，Next 會以 404 狀態渲染 app/not-found.tsx（Next 文件 loading.md「Status codes」）
+  if (invalidCreatorPath(request.nextUrl.pathname)) {
+    return NextResponse.rewrite(new URL("/_kollink-not-found", request.url));
+  }
   // requireAdmin() 用這個標頭決定管理員通過第二步驟後回哪一頁（一律覆寫用戶端帶的值）
   const { response, user } = await updateSession(request, { [REQUEST_PATH_HEADER]: requestPath(request.nextUrl) });
 

@@ -1,3 +1,5 @@
+import { HANDLE_RE } from "@/lib/validation/onboarding";
+
 const PROTECTED_PREFIXES = ["/brand", "/creator", "/onboarding", "/admin"];
 
 /** proxy 用：這個路徑是否需要登入。 */
@@ -20,4 +22,17 @@ export function authPageRedirect(pathname: string, params: URLSearchParams): str
   if (next) q.set("next", next);
   const s = q.toString();
   return s ? `/auth/continue?${s}` : "/auth/continue";
+}
+
+/** /c/<handle>（只有一段）且 handle 不符合格式：proxy 直接回 404（Suspense 內的 notFound() 只能回 200＋noindex）。 */
+export function invalidCreatorPath(pathname: string): boolean {
+  const m = /^\/c\/([^/]+)$/.exec(pathname);
+  if (!m) return false;
+  let h: string;
+  try {
+    h = decodeURIComponent(m[1]);
+  } catch {
+    return true;
+  }
+  return !HANDLE_RE.test(h);
 }

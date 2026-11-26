@@ -1,12 +1,12 @@
 import Link from "next/link";
 import { ExternalLink, Lock, MapPin, Star } from "lucide-react";
+import { ThreadCanvas } from "@/components/thread/ThreadCanvas";
+import { btn, cardPad, h2 } from "@/components/ui/styles";
 import { InvitePanel } from "@/components/collabs/InvitePanel";
 import { FavoriteButton } from "@/components/square/FavoriteButton";
 import { creatorMediaUrl } from "@/lib/creator-media";
 import { formatNumber, formatPercent, formatTwd, initialOf } from "@/lib/format";
 import type { CreatorStatus, PortfolioItem, PublicCreator, Rate, ViewerKind } from "@/lib/creators/view";
-
-const card = "rounded-card border border-line bg-surface p-5 md:p-8";
 
 /** favorite：品牌是否已收藏；只有品牌瀏覽時才有意義（其他身分不顯示 ♡）。 */
 type Props = { creator: PublicCreator; portfolio: PortfolioItem[]; rates: Rate[]; viewer: ViewerKind; favorite?: boolean };
@@ -56,8 +56,8 @@ function SelfPreviewBanner({ status }: { status: CreatorStatus }) {
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className={card}>
-      <h2 className="text-base font-bold text-ink">{title}</h2>
+    <section className={cardPad}>
+      <h2 className={h2}>{title}</h2>
       <div className="mt-3">{children}</div>
     </section>
   );
@@ -76,41 +76,41 @@ function Chips({ label, items, dark }: { label: string; items: string[]; dark?: 
 function HeaderCard({ c, favorite }: { c: PublicCreator; favorite?: boolean }) {
   const avatar = creatorMediaUrl(c.avatarPath);
   return (
-    <section className={card}>
-      <div className="flex items-center gap-4">
-        {avatar ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={avatar} alt="" className="h-20 w-20 shrink-0 rounded-full border border-line object-cover" />
-        ) : (
-          <div aria-hidden="true" className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-ink text-3xl font-semibold text-on-ink">
-            {initialOf(c.displayName)}
-          </div>
-        )}
-        <div className="min-w-0 flex-1">
-          <div className="flex items-start gap-2">
-            <h1 className="min-w-0 break-words text-2xl font-bold text-ink md:text-[32px]">{c.displayName}</h1>
-            {favorite !== undefined && <FavoriteButton creatorId={c.userId} name={c.displayName} initial={favorite} />}
-          </div>
-          <p className="text-sm text-muted">@{c.handle}</p>
-          {c.region && (
-            <p className="mt-1 flex items-center gap-1 text-sm text-muted">
-              <MapPin size={14} strokeWidth={1.5} aria-hidden="true" />{c.region}
-            </p>
-          )}
-        </div>
+    <section className="relative overflow-hidden rounded-card border border-line bg-surface">
+      {/* 頂部 96px 的紅線帶（規格 §8）：桌面滑鼠裝置用 WebGL，其他一律 SVG */}
+      <div className="relative h-24 bg-panel">
+        <ThreadCanvas variant="ribbon" />
       </div>
-      {c.categories.length > 0 && <div className="mt-4"><Chips label="內容領域" items={c.categories} dark /></div>}
-      <p className="mt-4 flex items-center gap-1 text-sm text-muted">
-        <Star size={14} strokeWidth={1.5} aria-hidden="true" />新創作者・尚無評價
-      </p>
-      {c.bio && <p className="mt-4 whitespace-pre-line break-words text-sm text-ink">{c.bio}</p>}
+      <div className="px-5 pb-5 md:px-8 md:pb-8">
+        <div className="-mt-12 flex items-end justify-between gap-3">
+          {avatar ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={avatar} alt="" className="relative h-24 w-24 shrink-0 rounded-full border-2 border-thread bg-subtle object-cover" />
+          ) : (
+            <div aria-hidden="true" className="relative flex h-24 w-24 shrink-0 items-center justify-center rounded-full border-2 border-thread bg-subtle font-serif text-4xl font-bold text-ink">
+              {initialOf(c.displayName)}
+            </div>
+          )}
+          {favorite !== undefined && <FavoriteButton creatorId={c.userId} name={c.displayName} initial={favorite} />}
+        </div>
+        <h1 className="mt-4 min-w-0 break-words font-serif text-[28px] font-bold leading-tight text-ink md:text-[40px]">{c.displayName}</h1>
+        <p className="mt-1 flex flex-wrap items-center gap-x-3 text-sm text-muted">
+          <span>@{c.handle}</span>
+          {c.region && <span className="inline-flex items-center gap-1"><MapPin size={14} strokeWidth={1.5} aria-hidden="true" />{c.region}</span>}
+        </p>
+        {c.categories.length > 0 && <div className="mt-4"><Chips label="內容領域" items={c.categories} dark /></div>}
+        <p className="mt-4 flex items-center gap-1 text-sm text-muted">
+          <Star size={14} strokeWidth={1.5} aria-hidden="true" />新創作者・尚無評價
+        </p>
+        {c.bio && <p className="mt-4 whitespace-pre-line break-words text-sm text-ink">{c.bio}</p>}
+      </div>
     </section>
   );
 }
 
 function StatsCard({ c }: { c: PublicCreator }) {
   return (
-    <section className={card} aria-label="數據">
+    <section className={cardPad} aria-label="數據">
       <dl className="grid grid-cols-3 gap-2 text-center">
         <Stat label="IG 粉絲" value={formatNumber(c.followerCount)} />
         <Stat label="互動率" value={formatPercent(c.engagementRate)} />
@@ -124,7 +124,7 @@ function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div>
       <dt className="text-xs text-muted">{label}</dt>
-      <dd className="mt-1 text-lg font-bold text-ink">{value}</dd>
+      <dd className="mt-1 font-sans text-2xl font-bold tabular-nums text-ink">{value}</dd>
     </div>
   );
 }
@@ -207,7 +207,7 @@ function RatesSection({ viewer, handle, rates }: { viewer: ViewerKind; handle: s
 function Invite({ viewer, creatorId, creatorName }: { viewer: ViewerKind; creatorId: string; creatorName: string }) {
   if (viewer === "creator") return null;
   if (viewer === "brand") return <InvitePanel creatorId={creatorId} creatorName={creatorName} />;
-  const button = <Link href="/signup?role=brand" className="flex h-11 w-full items-center justify-center rounded-btn bg-ink font-semibold text-on-ink">邀請合作</Link>;
+  const button = <Link href="/signup?role=brand" className={`${btn.primary} w-full`}>邀請合作</Link>;
   return (
     <>
       <div className="fixed inset-x-0 bottom-0 z-10 border-t border-line bg-surface px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] md:hidden">

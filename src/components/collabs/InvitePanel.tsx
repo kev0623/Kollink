@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { inviteCreatorAction } from "@/app/brand/collabs/actions";
+import { btn } from "@/components/ui/styles";
 import { MessageButton } from "@/components/messages/MessageButton";
 import { OfferForm } from "./OfferForm";
 
@@ -16,7 +17,7 @@ export function InvitePanel({ creatorId, creatorName }: { creatorId: string; cre
       {!open ? (
         <div key="open" className="grid grid-cols-2 gap-2">
           <button type="button" onClick={() => setOpen(true)}
-            className="flex h-11 w-full items-center justify-center rounded-btn bg-ink font-semibold text-on-ink">
+            className={`${btn.primary} w-full`}>
             邀請合作
           </button>
           <MessageButton creatorId={creatorId} />

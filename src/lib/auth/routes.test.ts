@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { authPageRedirect, requiresAuth } from "./routes";
+import { authPageRedirect, invalidCreatorPath, requiresAuth } from "./routes";
 
 describe("requiresAuth", () => {
   it.each(["/brand", "/brand/settings", "/creator", "/creator/me", "/onboarding", "/onboarding/brand", "/admin", "/admin/payments"])(
@@ -23,5 +23,15 @@ describe("authPageRedirect（已登入者造訪登入／註冊頁，QA m4）", (
     expect(authPageRedirect("/login", p("error=profile"))).toBeNull();
     expect(authPageRedirect("/brand", p(""))).toBeNull();
     expect(authPageRedirect("/login/x", p(""))).toBeNull();
+  });
+});
+
+describe("invalidCreatorPath（格式不合法的公開頁直接 404，QA m1 的一部分）", () => {
+  it("/c/<不合法> 為 true；合法、多段、其他路徑為 false", () => {
+    expect(invalidCreatorPath("/c/Bad!")).toBe(true);
+    expect(invalidCreatorPath("/c/ab")).toBe(true);
+    expect(invalidCreatorPath("/c/good_handle")).toBe(false);
+    expect(invalidCreatorPath("/c/good_handle/opengraph-image")).toBe(false);
+    expect(invalidCreatorPath("/brand")).toBe(false);
   });
 });

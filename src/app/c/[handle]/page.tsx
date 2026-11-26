@@ -5,6 +5,7 @@ import { getCurrentUser } from "@/lib/auth/current-user";
 import { loadIsFavorite, loadPortfolio, loadPublicCreator, loadRates } from "@/lib/creators/public-profile";
 import { profileMetadata } from "@/lib/creators/metadata";
 import { viewerKindOf } from "@/lib/creators/view";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { ProfileView } from "./ProfileView";
 
 type Props = { params: Promise<{ handle: string }> };
@@ -42,8 +43,11 @@ function ProfileSkeleton() {
   return (
     <div aria-busy="true" className="grid gap-4 pt-2 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] md:gap-6 md:pt-6">
       <p className="sr-only">載入中…</p>
-      <div className="h-64 rounded-card border border-line bg-surface" />
-      <div className="h-64 rounded-card border border-line bg-surface" />
+      <div className="overflow-hidden rounded-card border border-line bg-surface">
+        <div className="h-24 bg-panel" />
+        <div className="space-y-3 p-5"><Skeleton className="-mt-14 h-24 w-24 rounded-full" /><Skeleton className="h-8 w-2/3" /><Skeleton className="h-4 w-1/3" /></div>
+      </div>
+      <div className="space-y-4"><Skeleton className="h-32 w-full" /><Skeleton className="h-48 w-full" /></div>
     </div>
   );
 }
