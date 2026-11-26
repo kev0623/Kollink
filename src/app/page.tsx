@@ -5,6 +5,7 @@ import { HowItWorks } from "@/components/landing/HowItWorks";
 import { LandingFooter } from "@/components/landing/LandingFooter";
 import { TopBar } from "@/components/landing/TopBar";
 import { Trust } from "@/components/landing/Trust";
+import { ThreadCanvas } from "@/components/thread/ThreadCanvas";
 import { SkipLink } from "@/components/ui/SkipLink";
 import { SITE_NAME, SITE_TAGLINE } from "@/lib/site";
 
@@ -16,7 +17,7 @@ export default function Home() {
       <SkipLink />
       <TopBar />
       <main id="main" tabIndex={-1} className="outline-none">
-        <Hero />
+        <Hero scene={<ThreadCanvas variant="hero" />} />
         <HowItWorks />
         <ForBoth />
         <Trust />
