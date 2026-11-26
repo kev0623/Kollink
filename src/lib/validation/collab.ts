@@ -10,6 +10,8 @@ export const DELIVERABLES_MAX = 1000;
 export const NOTE_MAX = 1000;
 export const LINKS_MAX = 5;
 export const LINK_MAX_LEN = 500;
+// 貼文網址上限；與 transition_collaboration 的 char_length(v_url) > 500（20261125000500_collab_text_guards.sql）一致
+export const POST_URL_MAX = 500;
 export const AMOUNT_MAX = 10_000_000;
 // 清理前的截斷長度：至少要是上限的兩倍以上（cleanTextWithin 的規則）
 const LONG_RAW_LIMIT = 2400;
@@ -79,7 +81,7 @@ function hostOk(u: URL): boolean {
 
 /** 貼文連結：https、網域合法、有路徑。 */
 export function isValidPostUrl(v: string): boolean {
-  if (!DB_POST_URL_RE.test(v)) return false;
+  if ([...v].length > POST_URL_MAX || !DB_POST_URL_RE.test(v)) return false;
   try {
     const u = new URL(v);
     return hostOk(u) && u.pathname.length > 1;

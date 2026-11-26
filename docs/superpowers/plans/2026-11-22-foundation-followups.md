@@ -154,6 +154,25 @@
   - 交稿的上傳在沒有交稿時不會被清掉（併入上面 `deliverables` 孤兒物件的清理排程）；交稿與刪除檔案之間有競態（submit／delete 同時發生）。
   - `accept_application_with_collab` 沒有重新檢查創作者仍是 approved（`invite_creator` 有檢查）。
   - `collabErrorMessage` 以完全比對轉中文，遇到動態訊息（例如 `collaboration <uuid> not found`）會落到預設訊息；建議改用錯誤代碼或前綴比對。
+  - 最終審查留下的項目（資料庫與權限）：
+    - 品牌讀得到 `collaborations/<id>/` 資料夾下尚未交稿的上傳檔（`can_read_deliverable` 只看合作案雙方，不看檔案是否已在某次交稿裡）。
+    - 付款事件 `payment_requires_refund` 對創作者顯示的文字要再調整，避免讓創作者以為是自己的問題。
+    - 刪除檔案時檢查 `file_paths` 沒有 GIN 索引（交稿數量大之後再加）。
+    - `auto_approve_due` 的 `skip locked` 沒有並行測試。
+    - pgTAP 測試 16 有一個恆真的斷言，之後改成有實際判斷力的版本。
+    - SQL 註解寫 `DELIVERABLE_NAME_RE`，TS 常數實際叫 `NAME_RE`，兩邊名稱要對齊。
+    - 列表用 inner join，`profiles` 列不存在時整個合作案會從列表消失。
+  - 最終審查留下的項目（程式與畫面）：
+    - `src/app/api/cron/auth.ts` 沒有 `import "server-only"`。
+    - `/api/dev/mark-paid` 會回傳原始資料庫錯誤、沒有 CSRF 防護（僅限本機開發）。
+    - dev-login route 對沒有 body 的 POST 會當掉（僅限本機開發）。
+    - `PublishForm` 的 client 錯誤訊息在編輯輸入時不會消失。
+    - `OfferForm` 重新送出時，上一次的伺服器錯誤會閃一下。
+    - 合作案分頁列在窄螢幕沒有 `overflow-x-auto`。
+    - 狀態徽章與頁面其他文字有重複資訊；載入骨架是靜態的，與實際版面不完全一致。
+    - 「審核通過」按鈕在要求修改的表單展開時沒有 disabled。
+    - 沒有「品牌看得到邀請按鈕」的測試。
+    - 部署空窗期：舊版「錄取」按鈕在資料庫已更新、程式還沒部署時會短暫失敗。
 
 ### 7. 站內訊息
 - `flagged_contact` 用 BEFORE INSERT trigger 計算，不要讓訊息改走 service_role（那樣 `sender_id` 的預設值 `auth.uid()` 會是 null）。

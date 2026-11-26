@@ -19,6 +19,9 @@ describe("collabErrorMessage", () => {
 describe("collabFieldError", () => {
   it("22023 invalid <欄位>", () => {
     expect(collabFieldError({ code: "22023", message: "invalid amount_twd" })).toEqual({ amount: "格式不正確" });
+    expect(collabFieldError({ code: "22023", message: "invalid published_url" })).toBeNull();
+    expect(collabErrorMessage({ code: "22023", message: "invalid published_url" })).toContain("貼文網址");
+    expect(collabFieldError({ code: "22023", message: "invalid note" })).toEqual({ note: "格式不正確" });
     expect(collabFieldError({ code: "22023", message: "invalid file_paths" })).toEqual({ files: "格式不正確" });
     expect(collabFieldError({ code: "22023", message: "invalid transition: x" })).toBeNull();
     expect(collabFieldError({ code: "42501", message: "invalid title" })).toBeNull();

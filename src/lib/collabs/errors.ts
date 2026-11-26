@@ -16,6 +16,8 @@ const MESSAGES: Record<string, string> = {
   "collaboration not found": "找不到這個合作案",
   "collaboration not awaiting submission": COLLAB_STALE_MESSAGE,
   "empty submission": "請上傳檔案或附上連結",
+  "invalid note": "說明含有不允許的字元或超過 1000 字",
+  "invalid published_url": "請貼上完整的貼文網址（https:// 開頭、含路徑，最多 500 字）",
 };
 
 const FIELD_BY_DB: Record<string, string> = {

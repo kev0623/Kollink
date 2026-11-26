@@ -193,6 +193,18 @@ CLI 3.x 的 `db push` 預設推到本機，一定要加 `--remote`。**不要執
 
 **部署順序：先推資料庫，再合併 PR。** Vercel 在 `main` 合併後立刻部署；新版程式會呼叫新 migration 建立的函式（例如計畫 4 的 `search_creators`、計畫 5 的 `save_brief`、`list_opportunities`，`20261124000500_briefs.sql`、`20261124000600_brief_covers.sql`，計畫 6 的 `20261125000100_collab_create.sql`、`20261125000200_deliverables.sql`、`20261125000300_collab_reads.sql`、`20261125000400_collab_review_fixes.sql`），資料庫還沒更新時 `/brand`、`/brand/briefs`、`/creator` 會出錯。所以每次 PR 有新 migration 時，先執行上面的 `npx supabase db push --remote`，確認成功後再合併。計畫 6 起還要在合併前把 CRON_SECRET 加到 Vercel（見「部署（Vercel）」）。
 
+計畫 6 推資料庫前的檢查（只讀，在正式資料庫的 SQL Editor 執行）：
+
+```sql
+select count(*) as accepted_without_collab from public.brief_applications a
+ where a.status = 'accepted'
+   and not exists (select 1 from public.collaborations c where c.brief_id = a.brief_id and c.creator_id = a.creator_id);
+select brief_id, creator_id, count(*) from public.collaborations
+ where brief_id is not null group by 1, 2 having count(*) > 1;
+```
+
+第一個查詢必須是 0：不是 0 代表有「已錄取但沒有合作案」的報名（舊版的錄取按鈕只改報名狀態），這些品牌需要改用「直接邀請」。第二個查詢必須沒有任何列：有列代表同一則招募、同一位創作者有多個合作案，`20261125000100_collab_create.sql` 建立唯一索引時會失敗，需先手動處理重複的合作案再推。
+
 本機的 `config.toml` 不會自動套用到正式專案，上線前在 Supabase 後台逐項設定：
 
 1. Authentication → Providers → Email：開啟「Confirm email」（`enable_confirmations`）；Email OTP 長度 6、有效期限 900 秒（`otp_expiry = 900`）。注意後台預設是 8 碼、3600 秒，一定要改。

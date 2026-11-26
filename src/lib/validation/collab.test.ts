@@ -58,6 +58,7 @@ describe("貼文連結", () => {
   it("https、網域合法、有路徑", () => {
     expect(isValidPostUrl("https://www.instagram.com/p/abc123/")).toBe(true);
     expect(isValidPostUrl("http://www.instagram.com/p/abc123/")).toBe(false);
+    expect(isValidPostUrl(`https://www.instagram.com/p/${"a".repeat(500)}`)).toBe(false);
     expect(isValidPostUrl("https://instagram.com")).toBe(false);
     expect(isValidPostUrl("https://instagram.com/")).toBe(false);
     expect(isValidPostUrl("https://a..b.com/p/1")).toBe(false);
