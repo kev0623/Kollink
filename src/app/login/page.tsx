@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { AuthForm } from "@/components/auth/AuthForm";
+import { LineLinkForm } from "@/components/auth/LineLinkForm";
+import { isLineLinkKind, LINE_LINK_NOTICE, lineErrorMessage } from "@/lib/auth/line/messages";
 import { AuthShell } from "@/components/auth/AuthShell";
 import { DevLoginBox } from "@/components/auth/DevLoginBox";
 import { safeNextPath } from "@/lib/auth/safe-next";
@@ -34,11 +36,23 @@ export default function LoginPage({ searchParams }: { searchParams: SP }) {
 async function Login({ searchParams }: { searchParams: SP }) {
   const sp = await searchParams;
   const next = safeNextPath(typeof sp.next === "string" ? sp.next : null);
+  const lineEnabled = process.env.NEXT_PUBLIC_LINE_AUTH_ENABLED === "true";
+  // LINE 登入後要用 Email 驗證碼確認（/auth/line/callback 導過來）
+  if (lineEnabled && isLineLinkKind(sp.line)) {
+    return (
+      <>
+        <Notice tone="info" className="mb-4">{LINE_LINK_NOTICE[sp.line]}</Notice>
+        <LineLinkForm onCancelHref="/login" />
+      </>
+    );
+  }
+  const lineError = lineErrorMessage(sp.error);
   return (
     <>
       {sp.error === "callback" && <Notice tone="danger" className="mb-4">登入沒有完成，請再試一次</Notice>}
       {sp.error === "profile" && <Notice tone="danger" className="mb-4">讀取帳號資料失敗，請再試一次</Notice>}
-      <AuthForm role={null} next={next} googleEnabled={process.env.NEXT_PUBLIC_GOOGLE_AUTH_ENABLED === "true"} />
+      {lineError && <Notice tone="danger" className="mb-4">{lineError}</Notice>}
+      <AuthForm role={null} next={next} googleEnabled={process.env.NEXT_PUBLIC_GOOGLE_AUTH_ENABLED === "true"} lineEnabled={lineEnabled} />
     </>
   );
 }

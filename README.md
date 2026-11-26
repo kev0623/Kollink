@@ -47,6 +47,7 @@ npm run dev                        # http://127.0.0.1:3000
 
 - Email 6 位數驗證碼（OTP），有效 15 分鐘。本機的信在 Mailpit 看。
 - Google 登入只在 `NEXT_PUBLIC_GOOGLE_AUTH_ENABLED=true` 時顯示按鈕（本機設定見下節，正式環境見「社群登入設定」）。
+- LINE 登入只在 `NEXT_PUBLIC_LINE_AUTH_ENABLED=true` 且伺服器有 `LINE_CHANNEL_ID`、`LINE_CHANNEL_SECRET` 時可用（見「社群登入設定 → LINE 登入」）。
 - 不支援密碼登入：`auth.users` 上的 trigger 會把 `encrypted_password` 清成 null，`password_verification_attempt` hook 在方案允許時再多擋一層。介面上不可以出現「設定密碼」。
 
 ## 設定 Google 登入（選擇性）
@@ -77,7 +78,7 @@ npm run dev                        # http://127.0.0.1:3000
 
 ## 社群登入設定
 
-登入頁的社群登入按鈕都由環境變數控制，預設關閉；關閉時只有 Email 驗證碼登入。設定好之後新使用者照樣走「選身分 → 建立資料」的流程，管理員用社群登入後仍然要通過兩步驟驗證（TOTP）才能進 `/admin`。
+登入頁的社群登入按鈕（LINE、Google）都由環境變數控制，預設關閉；關閉時只有 Email 驗證碼登入。設定好之後新使用者照樣走「選身分 → 建立資料」的流程，管理員用社群登入後仍然要通過兩步驟驗證（TOTP）才能進 `/admin`。
 
 服務條款 `/terms` 與隱私權政策 `/privacy` 是公開頁，Google 同意畫面與 LINE 的 Email 權限申請都需要這兩個網址。上線前請先完成「上線前檢查」的律師審閱項目。
 
@@ -143,14 +144,67 @@ npm run dev                        # http://127.0.0.1:3000
 
 **之後加上自訂網域（例如 `kollink.tw`）時：**OAuth 同意畫面的首頁、隱私權政策、服務條款連結與已授權網域改成新網域；OAuth 用戶端的 JavaScript 來源加上 `https://新網域`；Supabase 的 Site URL 改成新網域、Redirect URLs 加上 `https://新網域/**`。重新導向 URI（`…supabase.co/auth/v1/callback`）不用改。Google 登入畫面上的「繼續使用 gujmnohzmivnaxdxpdjn.supabase.co」只有在 Supabase 也設定自訂網域（付費附加功能）時才會改變。
 
-### LINE 登入（尚未實作，等營運者決定做法）
+### LINE 登入（網站自己的 LINE 路由）
 
-調查結果：Supabase 的自訂 OIDC 登入（`custom:line`）**無法直接用在 LINE 網頁登入**。LINE 網頁登入的 ID token 用 Channel secret 以 HS256 簽章，Supabase 只接受 LINE 公開金鑰（ES256）驗證，登入會失敗；改用 OAuth2 模式時 Supabase 只讀 LINE 的 userinfo，而 LINE 的 userinfo 不提供 Email，所以拿不到 Email，無法和既有的 Email 帳號對應。要做 LINE 登入需要營運者在下列做法中擇一：
+Supabase 的自訂 OIDC 登入不能用在 LINE 網頁登入（LINE 網頁登入的 ID token 是用 Channel secret 做 HS256 簽章，Supabase 只接受公開金鑰簽章；改用 OAuth2 模式又拿不到 Email），所以 LINE 登入由網站自己處理：
 
-- **A'：Supabase `custom:line`（OAuth2 模式）＋允許沒有 Email 的帳號**：LINE 帳號是獨立帳號，不會和 Email 帳號合併；之後要寄通知需另外請使用者補 Email。
-- **B：我們自己的 LINE 登入路由**：伺服器用 Channel secret 驗證 ID token 取得 Email，再用 Supabase 管理金鑰建立或登入帳號。拿得到 Email、能對應既有帳號，但登入憑證由我們的程式產生，安全責任較重。
+- `GET /auth/line/start`：產生 state、nonce、PKCE，加密存在 10 分鐘的 HttpOnly cookie（只送到 `/auth/line`），導到 LINE。
+- `GET /auth/line/callback`：比對 state（只能用一次）→ 伺服器向 LINE 換 token → 用 Channel secret 驗 ID token（只接受 HS256，並檢查 iss、aud、exp、iat、nonce）→ 決定帳號：
+  1. 這個 LINE 已經綁定帳號 → 直接登入（伺服器用 Supabase 管理金鑰產生一次性的登入 token，立刻在伺服器換成 session，token 不會出現在網址）。
+  2. LINE 沒有提供 Email → 不建立帳號，登入頁顯示「LINE 沒有提供 Email…」。
+  3. 其他情況（Email 已有帳號，或是新的 Email）→ **先寄 Email 驗證碼**，使用者在 `/login` 輸入驗證碼（`POST /auth/line/link`）後才綁定 LINE。LINE 不保證 Email 已驗證，所以不能只憑 LINE 給的 Email 就登入既有帳號，也不能先替那個 Email 建帳號（否則別人用填了你 Email 的 LINE 可以先搶註）。
+- 綁定存在 `public.line_identities`（一個帳號最多綁一個 LINE、一個 LINE 只能綁一個帳號）。這張表 API 角色完全不能讀寫，只能透過 `line_login_lookup`、`line_link_identity` 兩個函式（只授權給 service_role）。
+- 新帳號照樣走「選身分 → 建立資料」；管理員用 LINE 登入後一樣要通過兩步驟驗證（TOTP）。
+- 目前沒有「解除綁定」的畫面；要解除時在 SQL Editor 執行 `delete from public.line_identities where user_id = '填入使用者 id';`。刪除帳號時綁定會一起刪除。
 
-決定之後，LINE Developers Console 要登記的 Callback URL：A' 是 `https://gujmnohzmivnaxdxpdjn.supabase.co/auth/v1/callback`；B 是網站自己的回呼網址（實作時決定，例如 `https://kollink.vercel.app/auth/line/callback`）。
+**部署順序：** 這次有新的 migration（`20261130000100_line_identities.sql`，只新增資料表與函式，舊版網站不受影響）。先執行 `npx supabase db push --remote`，成功後再合併。推之前的只讀檢查（必須是 0，代表還沒有同名的表）：
+
+```sql
+select count(*) from information_schema.tables where table_schema = 'public' and table_name = 'line_identities';
+```
+
+**營運者設定步驟**（每一個值都請直接複製貼上，不要手打）：
+
+1. LINE Developers Console（https://developers.line.biz/console/ ）→ 建立或選擇 Provider（名稱用營運者名稱）→「Create a new channel」→ **LINE Login**：
+   - Region：Taiwan；App types：勾 **Web app**；Channel name 不能包含「LINE」字樣，例如：
+     ```
+     Kollink
+     ```
+   - Email address：營運者的信箱；Privacy policy URL 與 Terms of use URL：
+     ```
+     https://kollink.vercel.app/privacy
+     ```
+     ```
+     https://kollink.vercel.app/terms
+     ```
+2. 頻道的「LINE Login」分頁 → Callback URL（可以填多行；正式站一行、本機測試一行）：
+   ```
+   https://kollink.vercel.app/auth/line/callback
+   http://localhost:3000/auth/line/callback
+   ```
+3. 頻道的「Basic settings」→ OpenID Connect →「Email address permission」→ Apply：勾選同意條款，上傳一張截圖，畫面要看得出「會取得使用者的 Email 以及用途」。可以用登入頁（`https://kollink.vercel.app/login`）底下「繼續即表示你同意《服務條款》與《隱私權政策》」那一段，加上 `/privacy` 第二節「帳號資料」寫到 LINE 的那一行一起截圖。核准後狀態會顯示「Applied」。**沒有 Email 權限時 LINE 不會給 Email，所有新使用者都會看到「LINE 沒有提供 Email」。**
+4. 頻道建立後是「Developing」，只有在頻道「Roles」加入的 Admin／Tester 能登入。測試完成後點最上方的「Developing」改成「Published」（**改了不能改回**）。
+5. 「Basic settings」裡的 **Channel ID** 與 **Channel secret**：只貼到 Vercel，不要貼進程式、文件或對話。
+6. Vercel → 專案 → Settings → Environment Variables，新增下面四個（只勾 **Production**；`LINE_CHANNEL_SECRET` 勾「Sensitive」）：
+   ```
+   NEXT_PUBLIC_LINE_AUTH_ENABLED=true
+   LINE_CHANNEL_ID=貼上 Channel ID
+   LINE_CHANNEL_SECRET=貼上 Channel secret
+   SITE_URL=https://kollink.vercel.app
+   ```
+   `SITE_URL` 用來組 LINE 的回呼網址（不會看請求的 Host 標頭）；只設 `SITE_URL` 不會開啟綠界付款（付款還需要 `ECPAY_*`）。
+7. 重新部署：Deployments → 最新一筆 Production → ⋯ → Redeploy。
+8. 測試（用無痕視窗、頻道 Developing 時用已加入 Tester 的 LINE 帳號）：
+   - [ ] `/signup` 選「創作者」→「使用 LINE 登入」→ LINE 同意畫面要列出 Email → 回到網站顯示「為了確認 LINE 提供的 Email 是你的…」→ 收信輸入驗證碼 → 進入填寫創作者資料。
+   - [ ] 登出後再用 LINE 登入 → 不需要驗證碼，直接進入。
+   - [ ] 用已經以 Email 註冊過的信箱的 LINE 帳號登入 → 顯示「這個 Email 已經有 Kollink 帳號…」→ 輸入驗證碼 → 進到原本的帳號（不會多一個帳號）。
+   - [ ] 在 LINE 同意畫面取消 Email 權限（或用沒有 Email 的 LINE 帳號）→ 顯示「LINE 沒有提供 Email…」，沒有建立帳號。
+   - [ ] 在 LINE 同意畫面按取消 → 顯示「你取消了 LINE 登入…」。
+   - [ ] 管理員帳號綁定 LINE 後用 LINE 登入 → 停在兩步驟驗證畫面。
+
+之後加上自訂網域時：LINE Callback URL 加一行 `https://新網域/auth/line/callback`，Vercel 的 `SITE_URL` 改成新網域，重新部署。
+
+**已知限制／之後再做：**`/auth/line/start` 沒有每個 IP 的頻率限制（它只設定暫存 cookie，不會寄信或建帳號；寄驗證碼受 Supabase 的寄信頻率限制）；需要時用 Vercel Firewall 對 `/auth/line/` 加規則。沒有解除綁定的畫面。
 
 ## 管理後台（/admin）
 
@@ -578,7 +632,7 @@ CRON_SECRET
 
 `SUPABASE_SECRET_KEY`、`ECPAY_*` 絕對不可加 `NEXT_PUBLIC_` 前綴。
 
-綠界變數（`ECPAY_ENV`、`ECPAY_MERCHANT_ID`、`ECPAY_HASH_KEY`、`ECPAY_HASH_IV`）與 `SITE_URL` **目前不要設**（正式站在拿到綠界正式金鑰前不開付款，Preview 也不設；測試金鑰只在本機使用）。上線時只加到 **Production**，值見「合作案的付款與撥款」，改了要重新部署。程式在 `VERCEL_ENV=production` 上會拒絕測試環境與公開測試商店，這需要 Vercel 的「Enable access to System Environment Variables」保持開啟。
+綠界變數（`ECPAY_ENV`、`ECPAY_MERCHANT_ID`、`ECPAY_HASH_KEY`、`ECPAY_HASH_IV`）**目前不要設**（`SITE_URL` 只有在開 LINE 登入時才設，見「社群登入設定」）（正式站在拿到綠界正式金鑰前不開付款，Preview 也不設；測試金鑰只在本機使用）。上線時只加到 **Production**，值見「合作案的付款與撥款」，改了要重新部署。程式在 `VERCEL_ENV=production` 上會拒絕測試環境與公開測試商店，這需要 Vercel 的「Enable access to System Environment Variables」保持開啟。
 
 `CRON_SECRET`：審核逾期自動通過的 Vercel Cron（`vercel.json`：每天 UTC 01:00 = 台灣 09:00 呼叫 `/api/cron/auto-approve`）。值用一串夠長的亂數（例如 `openssl rand -hex 32` 的結果），加到 **Production** 環境。Vercel 會自動在 cron 請求帶 `Authorization: Bearer <CRON_SECRET>`；沒設定時 route 一律回 500，不會自動通過任何合作案。Hobby 方案的 Cron 一天只跑一次、而且可能在該小時內任何時間觸發（UTC 01:00–01:59，台灣 09:00–09:59），所以實際是「審核期限到了之後最晚隔天自動通過」。本機在 `.env.local` 隨便設一個值即可，手動測試：
 

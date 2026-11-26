@@ -27,7 +27,7 @@ export default function TermsPage() {
     >
       <LegalSection id="terms-account" title="一、帳號">
         <ul>
-          <li>你可以用 Email 驗證碼登入；我們開放時，也可以用 Google 等第三方帳號登入。本平台不使用密碼。</li>
+          <li>你可以用 Email 驗證碼登入；我們開放時，也可以用 LINE、Google 等第三方帳號登入。第一次用 LINE 登入時，需要先輸入寄到你 Email 的驗證碼，確認這個 Email 是你的，之後才會把 LINE 和你的帳號綁定。本平台不使用密碼。</li>
           <li>註冊時請選擇身分：<strong>品牌</strong>（發布招募、邀請創作者、付款）或<strong>創作者</strong>（建立公開頁、報名招募、交稿、收款）。</li>
           <li>請提供真實、正確的資料，並妥善保管你的 Email 信箱與登入裝置。透過你的帳號進行的操作，視為你本人的操作。</li>
           <li>一個人或一個品牌請只使用一個帳號。帳號不可轉讓、出借或販售。</li>

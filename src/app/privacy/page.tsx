@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 };
 
 // 內容依目前實際運作撰寫（README、docs/superpowers/specs/、supabase/migrations/）。不知道的事實一律用「（…）」佔位，不可自行編造。
-// 新增蒐集的資料或新的第三方服務時（例如開放綠界付款、LINE 登入），這裡要一起更新。
+// 新增蒐集的資料或新的第三方服務時（例如開放綠界付款），這裡要一起更新。
 const OPERATOR = "（營運者名稱）";
 const OPERATOR_ADDRESS = "（營運者地址）";
 
@@ -40,7 +40,7 @@ export default function PrivacyPage() {
 
       <LegalSection id="privacy-data" title="二、我們蒐集的資料">
         <ul>
-          <li><strong>帳號資料：</strong>Email、身分（品牌或創作者）。使用 Google 登入時，另外會收到 Google 提供的 Email、名稱與大頭貼網址。</li>
+          <li><strong>帳號資料：</strong>Email、身分（品牌或創作者）。使用 Google 登入時，另外會收到 Google 提供的 Email、名稱與大頭貼網址。使用 LINE 登入時，我們會收到 LINE 使用者 ID、顯示名稱、大頭貼網址與 Email，只儲存 LINE 使用者 ID（用來辨識是同一個 LINE 帳號）與 Email，不儲存 LINE 的顯示名稱與大頭貼。</li>
           <li><strong>品牌資料：</strong>品牌名稱、產業、Logo。</li>
           <li><strong>創作者資料：</strong>網址代稱、Instagram 帳號、追蹤數、互動率、地區、類別、自我介紹、頭像與作品圖片。審核通過後，這些資料會顯示在你的公開頁。</li>
           <li><strong>創作者收款帳戶：</strong>銀行代碼、分行代碼、帳號與戶名。<strong>只有你本人與平台管理員看得到</strong>，品牌看不到，只用於撥款。</li>
@@ -67,6 +67,7 @@ export default function PrivacyPage() {
           <li><strong>Vercel：</strong>網站代管（伺服器程式在日本東京執行）。</li>
           <li><strong>Resend：</strong>寄送登入驗證碼等 Email。</li>
           <li><strong>Google：</strong>只有在你選擇用 Google 登入時，由 Google 驗證你的身分。</li>
+          <li><strong>LINE（LY Corporation）：</strong>只有在你選擇用 LINE 登入時，由 LINE 驗證你的身分並提供 Email。</li>
           <li><strong>綠界科技（ECPay）：</strong>開放線上付款後，用於處理品牌的信用卡與 ATM 付款；卡號由綠界處理，我們不會取得。</li>
         </ul>
         <p>我們不會出售你的個人資料，也不會提供給第三方做行銷。</p>
@@ -74,7 +75,7 @@ export default function PrivacyPage() {
 
       <LegalSection id="privacy-cookies" title="五、Cookie 與瀏覽器儲存">
         <ul>
-          <li>我們只使用維持登入狀態所必需的 Cookie，不使用廣告或追蹤 Cookie。</li>
+          <li>我們只使用維持登入狀態所必需的 Cookie，不使用廣告或追蹤 Cookie。使用 LINE 登入時，另外有兩個加密的暫存 Cookie 保存登入流程的狀態，10 分鐘內失效。</li>
           <li>深色／淺色主題與列表顯示方式等偏好，存在你瀏覽器的 localStorage，不會傳到我們的伺服器。</li>
         </ul>
       </LegalSection>

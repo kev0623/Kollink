@@ -39,6 +39,13 @@ describe("globals.css 的主題 token", () => {
     expect(dark.get("--color-qr-bg")).toBe("#FFFFFF");
     expect(light.get("--color-qr-bg")).toBe("#FFFFFF");
   });
+  it("LINE 品牌色兩個主題相同（LINE 登入按鈕規範：#06C755、白字）", () => {
+    for (const t of [dark, light]) {
+      expect(t.get("--color-line-brand")).toBe("#06C755");
+      expect(t.get("--color-on-line-brand")).toBe("#FFFFFF");
+      expect(t.get("--color-line-brand-hover")).toBe("#05B34C");
+    }
+  });
   it("淺色 success 加深（QA m9）", () => {
     expect(light.get("--color-success")).toBe("#17705A");
   });
