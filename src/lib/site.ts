@@ -19,6 +19,10 @@ export function supportMailto(subject?: string): string {
 }
 
 /** 客服信箱是否還是佔位值（/help 與 README 用；正式上線前必須為 false）。 */
+export function isPlaceholderEmail(email: string): boolean {
+  return /@example\.(com|org|net)$/i.test(email.trim());
+}
+
 export function isSupportPlaceholder(): boolean {
-  return SUPPORT_EMAIL.endsWith("@example.com");
+  return isPlaceholderEmail(SUPPORT_EMAIL);
 }

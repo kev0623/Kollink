@@ -19,7 +19,7 @@ type Props = {
   confirmLabel: string;
   /** 破壞性（描邊紅＋圖示）；不是破壞性但不可復原的（審核通過、接受邀約）用 primary 樣式 */
   danger?: boolean;
-  /** 圖示；danger 沒給時用 x */
+  /** 圖示（只有 danger 才會顯示；沒給時用 x）。primary 確認按鈕不放圖示 */
   icon?: ConfirmIcon;
   /** 第一顆按鈕在所有寬度都撐滿（預設：手機撐滿、桌面自動寬度） */
   block?: boolean;
@@ -36,17 +36,21 @@ export function ConfirmAction({ label, message, confirmLabel, danger, icon, bloc
   const regionId = useId();
   const triggerRef = useRef<HTMLButtonElement>(null);
   const messageRef = useRef<HTMLParagraphElement>(null);
-  const Icon = ICONS[icon ?? (danger ? "x" : "check")];
+  const Icon = ICONS[icon ?? "x"];
 
   useEffect(() => {
     if (open) messageRef.current?.focus();
   }, [open]);
 
+  function restoreFocus() {
+    // 下一幀按鈕才重新出現
+    requestAnimationFrame(() => triggerRef.current?.focus());
+  }
+
   function close() {
     setOpen(false);
     setError(null);
-    // 下一幀按鈕才重新出現
-    requestAnimationFrame(() => triggerRef.current?.focus());
+    restoreFocus();
   }
 
   function confirm() {
@@ -59,11 +63,13 @@ export function ConfirmAction({ label, message, confirmLabel, danger, icon, bloc
             setOpen(false);
             setNotice("狀態已更新，已為你重新整理");
             router.refresh();
+            restoreFocus();
           } else {
             setError(res.error ?? "發生錯誤，請稍後再試");
           }
         } else {
           setOpen(false);
+          restoreFocus();
         }
       } catch {
         setError("發生錯誤，請稍後再試");
@@ -76,7 +82,7 @@ export function ConfirmAction({ label, message, confirmLabel, danger, icon, bloc
     return (
       <div className={width}>
         <button
-          ref={triggerRef} type="button" aria-expanded={false} aria-controls={regionId}
+          ref={triggerRef} type="button" aria-expanded={false}
           onClick={() => { setNotice(null); setOpen(true); }}
           className={`${danger ? btn.danger : btn.primary} ${width}`}
         >
@@ -96,7 +102,7 @@ export function ConfirmAction({ label, message, confirmLabel, danger, icon, bloc
       <p ref={messageRef} tabIndex={-1} className="text-sm text-ink outline-none">{message}</p>
       <div className="mt-3 flex flex-wrap gap-2">
         <button type="button" onClick={confirm} disabled={pending} className={danger ? btn.dangerConfirm : btn.primary}>
-          <Icon size={16} strokeWidth={1.5} aria-hidden="true" />
+          {danger && <Icon size={16} strokeWidth={1.5} aria-hidden="true" />}
           {pending ? "處理中…" : confirmLabel}
         </button>
         <button type="button" onClick={close} disabled={pending} className={btn.secondary}>取消</button>

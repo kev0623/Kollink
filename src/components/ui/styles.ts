@@ -14,9 +14,9 @@ export const btn = {
   /** 破壞性動作的第一顆按鈕：描邊＋圖示＋動詞（一定接 ConfirmAction） */
   danger: `${btnBase} h-11 px-5 border border-danger bg-transparent text-danger hover:bg-danger-soft`,
   /** 確認區塊裡的「確定…」 */
-  dangerConfirm: `${btnBase} h-11 px-5 border border-danger bg-danger-soft text-danger`,
+  dangerConfirm: `${btnBase} h-11 px-5 border border-danger bg-danger-soft text-danger hover:bg-danger-soft/70`,
   /** 44×44 的圖示按鈕（記得加 aria-label 或 sr-only 文字） */
-  icon: "inline-flex h-11 w-11 items-center justify-center rounded-btn text-ink hover:bg-subtle disabled:opacity-50",
+  icon: "inline-flex h-11 w-11 items-center justify-center rounded-btn text-ink hover:bg-subtle disabled:cursor-not-allowed disabled:opacity-50",
 } as const;
 
 export const input =

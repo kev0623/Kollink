@@ -8,8 +8,7 @@ export function ThreadMark({ variant, className = "" }: { variant: "loose" | "br
           <path d="M92 26 C 108 40, 130 40, 152 14" fill="none" stroke="var(--color-thread)" strokeWidth="2.5" strokeLinecap="round" />
         </>
       ) : (
-        <path d="M8 34 C 40 2, 72 46, 104 22 S 140 10, 152 18" fill="none" stroke="var(--color-thread)" strokeWidth="2.5" strokeLinecap="round"
-          strokeDasharray={variant === "loose" ? "0" : undefined} />
+        <path d="M8 34 C 40 2, 72 46, 104 22 S 140 10, 152 18" fill="none" stroke="var(--color-thread)" strokeWidth="2.5" strokeLinecap="round" />
       )}
       <circle cx="8" cy="34" r="5" fill="var(--color-thread)" />
       {variant === "tied" && <circle cx="152" cy="18" r="5" fill="var(--color-thread)" />}
