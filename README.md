@@ -46,7 +46,7 @@ npm run dev                        # http://127.0.0.1:3000
 ## 登入方式
 
 - Email 6 位數驗證碼（OTP），有效 15 分鐘。本機的信在 Mailpit 看。
-- Google 登入只在 `NEXT_PUBLIC_GOOGLE_AUTH_ENABLED=true` 時顯示按鈕（設定見下節）。
+- Google 登入只在 `NEXT_PUBLIC_GOOGLE_AUTH_ENABLED=true` 時顯示按鈕（本機設定見下節，正式環境見「社群登入設定」）。
 - 不支援密碼登入：`auth.users` 上的 trigger 會把 `encrypted_password` 清成 null，`password_verification_attempt` hook 在方案允許時再多擋一層。介面上不可以出現「設定密碼」。
 
 ## 設定 Google 登入（選擇性）
@@ -74,6 +74,83 @@ npm run dev                        # http://127.0.0.1:3000
    然後重新執行 `npm run dev`。
 
 正式環境的 Google 設定見下面的檢查清單。
+
+## 社群登入設定
+
+登入頁的社群登入按鈕都由環境變數控制，預設關閉；關閉時只有 Email 驗證碼登入。設定好之後新使用者照樣走「選身分 → 建立資料」的流程，管理員用社群登入後仍然要通過兩步驟驗證（TOTP）才能進 `/admin`。
+
+服務條款 `/terms` 與隱私權政策 `/privacy` 是公開頁，Google 同意畫面與 LINE 的 Email 權限申請都需要這兩個網址。上線前請先完成「上線前檢查」的律師審閱項目。
+
+### Google 登入（正式環境）
+
+以下網址以目前的正式網址 `https://kollink.vercel.app` 為準。每一個值都請直接複製貼上，不要手打。
+
+1. Google Cloud Console（https://console.cloud.google.com/ ，用營運者自己的專案）→「API 和服務」→「OAuth 同意畫面」（新版介面叫「Google Auth Platform」→「品牌」）：
+   - 應用程式名稱：
+     ```
+     Kollink
+     ```
+   - 使用者支援電子郵件：選營運者的信箱（建議與 `src/lib/site.ts` 的 `SUPPORT_EMAIL` 相同）。
+   - 應用程式首頁：
+     ```
+     https://kollink.vercel.app
+     ```
+   - 應用程式隱私權政策連結：
+     ```
+     https://kollink.vercel.app/privacy
+     ```
+   - 應用程式服務條款連結：
+     ```
+     https://kollink.vercel.app/terms
+     ```
+   - 已授權網域：
+     ```
+     kollink.vercel.app
+     ```
+   - 「資料存取」範圍只加這三個（都是非敏感範圍，不需要 Google 審查）：
+     ```
+     openid
+     .../auth/userinfo.email
+     .../auth/userinfo.profile
+     ```
+   - 「目標對象」：User Type 選「外部」，發布狀態按「發布應用程式」改成「正式版」（停在「測試」時只有測試使用者能登入）。
+2. 「憑證」（新版叫「用戶端」）→「建立憑證」→「OAuth 用戶端 ID」→ 應用程式類型「網頁應用程式」，名稱例如 `Kollink production`：
+   - 已授權的 JavaScript 來源：
+     ```
+     https://kollink.vercel.app
+     ```
+   - 已授權的重新導向 URI：
+     ```
+     https://gujmnohzmivnaxdxpdjn.supabase.co/auth/v1/callback
+     ```
+   建立後畫面會顯示「用戶端 ID」與「用戶端密鑰」。**密鑰只貼到 Supabase 後台，不要貼進程式、文件或對話。**
+3. Supabase Dashboard → 專案 `Kollink` → Authentication → Sign In / Providers → Google：開啟，貼上用戶端 ID 與用戶端密鑰，儲存。
+4. Supabase Dashboard → Authentication → URL Configuration：
+   - Site URL：
+     ```
+     https://kollink.vercel.app
+     ```
+   - Redirect URLs 要有下面這一行（已經有就不用再加）：
+     ```
+     https://kollink.vercel.app/**
+     ```
+5. Vercel → 專案 → Settings → Environment Variables，新增（只勾 Production）：
+   ```
+   NEXT_PUBLIC_GOOGLE_AUTH_ENABLED=true
+   ```
+   `NEXT_PUBLIC_` 開頭的變數是建置時寫進程式的，**一定要重新部署**才會生效：Deployments → 最新一筆 Production → ⋯ → Redeploy。
+6. 測試：用無痕視窗打開 `https://kollink.vercel.app/login` → 按「用 Google 繼續」→ 選帳號 → 應該回到網站。新帳號會進「選身分」；已用同一個 Gmail 以 Email 驗證碼註冊過的人，會登入原本的帳號（Google 的 Email 是已驗證的，Supabase 會自動連結）。再用管理員帳號試一次，應該停在兩步驟驗證畫面。
+
+**之後加上自訂網域（例如 `kollink.tw`）時：**OAuth 同意畫面的首頁、隱私權政策、服務條款連結與已授權網域改成新網域；OAuth 用戶端的 JavaScript 來源加上 `https://新網域`；Supabase 的 Site URL 改成新網域、Redirect URLs 加上 `https://新網域/**`。重新導向 URI（`…supabase.co/auth/v1/callback`）不用改。Google 登入畫面上的「繼續使用 gujmnohzmivnaxdxpdjn.supabase.co」只有在 Supabase 也設定自訂網域（付費附加功能）時才會改變。
+
+### LINE 登入（尚未實作，等營運者決定做法）
+
+調查結果：Supabase 的自訂 OIDC 登入（`custom:line`）**無法直接用在 LINE 網頁登入**。LINE 網頁登入的 ID token 用 Channel secret 以 HS256 簽章，Supabase 只接受 LINE 公開金鑰（ES256）驗證，登入會失敗；改用 OAuth2 模式時 Supabase 只讀 LINE 的 userinfo，而 LINE 的 userinfo 不提供 Email，所以拿不到 Email，無法和既有的 Email 帳號對應。要做 LINE 登入需要營運者在下列做法中擇一：
+
+- **A'：Supabase `custom:line`（OAuth2 模式）＋允許沒有 Email 的帳號**：LINE 帳號是獨立帳號，不會和 Email 帳號合併；之後要寄通知需另外請使用者補 Email。
+- **B：我們自己的 LINE 登入路由**：伺服器用 Channel secret 驗證 ID token 取得 Email，再用 Supabase 管理金鑰建立或登入帳號。拿得到 Email、能對應既有帳號，但登入憑證由我們的程式產生，安全責任較重。
+
+決定之後，LINE Developers Console 要登記的 Callback URL：A' 是 `https://gujmnohzmivnaxdxpdjn.supabase.co/auth/v1/callback`；B 是網站自己的回呼網址（實作時決定，例如 `https://kollink.vercel.app/auth/line/callback`）。
 
 ## 管理後台（/admin）
 
@@ -387,12 +464,13 @@ select count(*) as refund_required from public.payments where refund_required;  
 6. Authentication → SMTP Settings：設定自訂 SMTP（例如 Resend）。內建寄信上限約每小時 2 封，不能用於正式環境。
 7. Authentication → Attack Protection：建議開啟 CAPTCHA（Turnstile 或 hCaptcha），並在登入頁加上對應元件（需要前端整合，見下方「資安待辦」，先不要只開後台設定，否則登入會失敗）。
 7a. Authentication → Multi-Factor：開啟 **TOTP**（Enroll 與 Verify 都要開）。管理員的兩步驟驗證靠這個設定；沒開的話管理員無法綁定驗證器，進不了 `/admin`。
-8. Google OAuth：Providers → Google 填入用戶端 ID／密鑰；Google Cloud Console 的重新導向 URI 加上 `https://<專案>.supabase.co/auth/v1/callback`。
+8. Google OAuth：照「社群登入設定 → Google 登入（正式環境）」逐步設定。
 9. 排程清理沒被引用的 Storage 物件：`brand-logos`（沒被 `brand_profiles.logo_path` 引用）、`creator-media`（沒被 `creator_profiles.avatar_path`、`creator_portfolio_items.image_path` 引用）`brief-covers`（沒被 `briefs.cover_path` 引用）與 `deliverables`（沒被任何 `collaboration_submissions.file_paths` 引用的，例如上傳後沒有交稿），都只刪超過 24 小時的，見 `docs/superpowers/plans/2026-11-22-foundation-followups.md`。
 
 ## 上線前檢查
 
 - [ ] 設定客服聯絡方式：`src/lib/site.ts` 的 `SUPPORT_EMAIL`（與 `SUPPORT_LINE_URL`）改成真實信箱與 LINE 官方帳號網址。目前是 `support@example.com` 佔位，在改掉之前，客服連結會顯示「聯絡方式準備中」（/help、停權橫幅、金額上限說明、線下付款提示、無法退出合作的說明）。
+- [ ] 服務條款與隱私權政策：請律師審閱 `/terms`、`/privacy`（`src/app/terms/page.tsx`、`src/app/privacy/page.tsx`），把「（營運者名稱）」「（營運者地址）」「（管轄法院）」換成實際資料，再把 `src/lib/site.ts` 的 `LEGAL_DRAFT` 改成 `false`（兩頁頂端的「這份文件是草稿」提示就會消失）。
 - [ ] 確認首頁大標：`src/lib/site.ts` 的 `HERO_HEADLINE`（目前「把對的品牌，牽到對的創作者。」；備選：「一條紅線，從品牌牽到創作者。」「好的合作，從牽對線開始。」）。
 - [ ] 用真的 iPhone（Safari）開首頁、登入頁、創作者公開頁，確認 3D 紅線順暢、文字可讀、捲動不卡；省電模式與「減少動態效果」開啟時應該是靜態線。
 - [ ] 管理員用真的驗證器 App（Google Authenticator、1Password 等）掃描 `/admin/mfa` 的 QR Code 完成綁定（QR 在白底磚上，深色模式也能掃）；同時確認 Dashboard 已開啟 TOTP（見「正式環境設定」第 7a 項）。
