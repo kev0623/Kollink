@@ -35,6 +35,10 @@
 | 交稿 | 私密 bucket `deliverables`（50 MB、圖片／影片／PDF），路徑 `<合作案>/<創作者>/<uuid>.<副檔名>`；只有創作者在 awaiting_submission 能上傳到自己的資料夾；交出去的檔案不能刪、不能換。交稿紀錄只能經由 `submit_deliverables`（同時推進到 in_review；創作者的 `submit` 轉換也只能走這個函式）。原始檔名不保存。 |
 | 付款與撥款（計畫 8、9 前） | 不收錢。管理員用 README 的 SQL 標記：已付款一律「service_role 建付款單 → `record_payment_success`」；撥款以 service_role 呼叫 `transition_collaboration(..., 'payout')`。本機另有 `/api/dev/mark-paid`（開關同測試快速登入）。 |
 | 審核逾期自動通過 | Vercel Cron（`vercel.json`，每天 UTC 01:00）→ `/api/cron/auto-approve`（`CRON_SECRET`、常數時間比對）→ service_role 呼叫只授權給 service_role 的 `auto_approve_due()`；一件失敗不影響其他件。用 `vercel.json` 而不是 `vercel.ts`（後者要新增 `@vercel/config` 套件）。 |
+| 站內訊息只走函式 | `messages` 收回所有 API 角色的寫入與 anon 讀取（只剩 authenticated／service_role 的 SELECT）；送出只能經由 `send_message`（參與者、內文 1–2000 字、對話未暫停、每人每分鐘 20 則）。`flagged_contact` 一律由 BEFORE INSERT trigger（`has_contact_info`）計算，規則與 `src/lib/messages/contact.ts` 相同。 |
+| 誰能開啟對話 | 只有品牌，經由 `start_conversation`（已審核創作者；已有對話直接回傳；24 小時最多 30 個新對話）。創作者（包括報名過的）不能主動開啟。品牌開了但還沒傳訊息、也沒有合作案的空對話，創作者看不到。 |
+| 對話暫停 | 創作者不是 approved 時，雙方都不能再送訊息，歷史訊息照常顯示。 |
+| 已讀與即時 | `conversation_reads.last_read_at` = 最後一則訊息的 `created_at`，由 client 在開啟對話與收到訊息時呼叫 `mark_conversation_read`。即時更新用 Realtime Postgres Changes（`messages` 在 `supabase_realtime` publication；RLS 以訂閱者身分過濾），訂閱前先 `realtime.setAuth()`。 |
 
 ## 各計畫需要處理的事項
 
@@ -175,10 +179,35 @@
     - 部署空窗期：舊版「錄取」按鈕在資料庫已更新、程式還沒部署時會短暫失敗。
 
 ### 7. 站內訊息
-- `flagged_contact` 用 BEFORE INSERT trigger 計算，不要讓訊息改走 service_role（那樣 `sender_id` 的預設值 `auth.uid()` 會是 null）。
-- 把 `messages` 加進 `supabase_realtime` publication。
-- 待決定：誰可以主動開啟對話（目前任何品牌或創作者都可以，包括尚未審核的創作者）。
-- 補測試：偽造 sender、第三方建立對話、update / delete 被拒絕、管理員可見性。
+- `flagged_contact` 用 BEFORE INSERT trigger 計算，不讓訊息改走 service_role。→ 已完成（計畫 7：`messages_flag_contact`）
+- 把 `messages` 加進 `supabase_realtime` publication。→ 已完成（計畫 7）
+- ~~待決定：誰可以主動開啟對話~~ → 已決定（計畫 7）：只有品牌，對象是已審核的創作者。
+- 補測試：偽造 sender、第三方建立對話、update / delete 被拒絕、管理員可見性。→ 已完成（計畫 7：`18_messaging_write.test.sql`）
+- 計畫 7 新增的後續事項：
+  - 違規訊息列表、停權操作在計畫 9 的後台；目前用 README 的 SQL 查。
+  - 聯絡方式偵測抓不到中文數字電話、「at」寫法的 Email、拆成多則的號碼；IG 帳號（`@xxx`）刻意不算。誤判（例如「訂單編號 0912345678」）只會多一個標記。
+  - 沒有離線通知（Email／推播）：對方不在線上時只能靠下次登入看到徽章。
+  - 沒有封鎖、檢舉、刪除或編輯訊息、附件、已讀回條。
+  - 列表最多 200 個對話、沒有分頁與搜尋。
+  - 已讀時間用最後一則訊息的 `created_at`：極少數情況下，較早的 `created_at` 卻較晚 commit 的訊息會被當成已讀（`mark_read` 用 `max(created_at)`，存在競態）。
+  - 頻率限制已用 advisory lock 序列化（`20261126000300`），但沒有並行測試。
+  - 品牌按「傳訊息」就會建立對話（即使最後沒有送出），24 小時 30 個的上限也把錄取、邀請建立的對話算進去。
+  - 創作者可以 SELECT 品牌開啟但還沒傳訊息的空對話（資料表層級的 RLS；列表函式與頁面會過濾，直接查表看得到）。
+  - 導覽列在桌面時有兩個徽章元件（側邊與隱藏的底部導覽列），各自訂閱一次 Realtime；徽章的螢幕閱讀器文字與 hydration 後才彈出（pop-in）的表現待調整。
+  - Realtime 斷線只顯示提示；重新連上（live）時會重新整理，但沒有自動輪詢。
+  - Realtime 的 DELETE 事件只帶 id（目前沒有刪除訊息功能，之後做刪除時要處理）。
+  - `compareMessages` 只比到毫秒，資料庫是微秒；同一毫秒內的訊息排序靠 id。
+  - 輸入框的字數計數用原始內容，送出前才清理（`cleanMessageBody`），兩者可能差幾個字。
+  - `İ`（帶點大寫 I）的小寫化在 JS 與 SQL 的行為不完全一致（聯絡方式偵測）。
+  - `list_messages` 的索引沒有 id 作為 tiebreak。
+  - `send_message` 大字串的 CPU：已改為先擋 `octet_length > 32000` 再清理（`20261126000400`）。
+  - `list_messages` 只傳 `before_at` 沒傳 `before_id` 時邊界訊息可能重複（action 一律兩個都傳）。
+  - 沒有 action 層級的 bidi 字元測試（只有 SQL 與 `hasBadChar` 單元測試）。
+  - 輸入框 4800 字的原始長度截斷發生在 trim 之前。
+  - 載入較早的訊息後不會保留捲動位置（scroll anchor）。
+  - `scroll-mb-56` 是固定值，輸入區很高時（多行）新訊息仍可能被蓋住。
+  - 對話頁的 404 在 Suspense 內渲染，HTTP 狀態碼仍是 200（soft 404）。
+  - 對話頁的捲動在手機是整頁捲動，輸入區用 sticky 固定在底部導覽列上方；iOS 鍵盤彈出時的表現只在 E2E 的 390 寬模擬過。
 
 ### 8. 付款建單與撥款（**真的收錢之前必須完成**）
 - `create_payment_order(collab_id)`：definer 函式，檢查呼叫者是品牌、狀態是 `awaiting_payment`、金額等於合作案報價，並由函式產生 `merchant_trade_no`。
@@ -192,7 +221,7 @@
 
 ### 9. 管理後台
 - 管理員目前只能讀取。需要 `set_creator_status()`（definer 函式，檢查 `is_admin()`），以及取消或爭議處理的狀態轉換。
-- `is_admin()`、`my_role()`、`is_conversation_participant()` 的 EXECUTE 權限從 PUBLIC 收回。brand-logos 的 insert/update policy 以 authenticated 身分呼叫 my_role()，收回後要再 grant 給 authenticated。
+- `is_admin()`、`my_role()`、`is_conversation_participant()` 的 EXECUTE 權限從 PUBLIC 收回。brand-logos 的 insert/update policy 以 authenticated 身分呼叫 my_role()，收回後要再 grant 給 authenticated。（計畫 7 已收回 is_conversation_participant 的 PUBLIC／anon；is_admin、my_role 仍待處理）
 
 ### 10. 審核逾期自動通過
 - `transition_collaboration` 的 system 身分要求「透過 PostgREST 以 service_role 呼叫」；**pg_cron 以 postgres 身分執行會被判定為「不是參與者」**。可以改用 Next route 搭配 Cron 和 secret，再以 service_role 呼叫 RPC；或另外寫一個只授權給 service_role 的 `auto_approve_due()` definer 函式。

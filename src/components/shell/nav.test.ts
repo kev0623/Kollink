@@ -29,3 +29,12 @@ describe("合作案（計畫 6）", () => {
     expect(isActive("/creator/collabs", "/creator/collabs/00000000-0000-0000-0000-000000000001")).toBe(true);
   });
 });
+
+describe("訊息（計畫 7）", () => {
+  it("品牌與創作者的「訊息」已開放並顯示未讀徽章，對話頁也會亮起", () => {
+    expect(BRAND_NAV.find((i) => i.label === "訊息")).toMatchObject({ href: "/brand/messages", badge: "messages" });
+    expect(CREATOR_NAV.find((i) => i.label === "訊息")).toMatchObject({ href: "/creator/messages", badge: "messages" });
+    expect(isActive("/brand/messages", "/brand/messages/00000000-0000-0000-0000-000000000001")).toBe(true);
+    expect(BRAND_NAV.filter((i) => i.badge).length).toBe(1);
+  });
+});

@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 vi.mock("@/app/brand/actions", () => ({ setFavoriteAction: vi.fn() }));
 vi.mock("@/app/brand/collabs/actions", () => ({ inviteCreatorAction: vi.fn() }));
+vi.mock("@/app/brand/messages/actions", () => ({ startConversationAction: vi.fn() }));
 import { ProfileView } from "./ProfileView";
 import type { PublicCreator, ViewerKind } from "@/lib/creators/view";
 
@@ -33,5 +34,13 @@ describe("ProfileView 收藏 ♡", () => {
   it("訪客與創作者看不到 ♡", () => {
     expect(html("guest", false)).not.toContain("收藏 Mei");
     expect(html("creator", false)).not.toContain("收藏 Mei");
+  });
+});
+
+describe("ProfileView 傳訊息（計畫 7）", () => {
+  it("只有品牌看到「傳訊息」", () => {
+    expect(html("brand", false)).toContain("傳訊息");
+    expect(html("guest")).not.toContain("傳訊息");
+    expect(html("creator")).not.toContain("傳訊息");
   });
 });

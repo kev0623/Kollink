@@ -88,7 +88,7 @@ describe("詳情", () => {
       brand_id: null, brand_name: null, brand_logo_path: null, creator_id: null, creator_name: null,
       creator_handle: null, creator_avatar_path: null,
     });
-    expect(c).toMatchObject({ title: "案", deliverables: "", amount: 4500, status: "in_review", side: "admin" });
+    expect(c).toMatchObject({ title: "案", deliverables: "", amount: 4500, status: "in_review", side: "admin", conversationId: null });
   });
   it("卡片：輪到對方時一定寫你不用做任何事", () => {
     for (const s of ALL) {

@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { NavIcon } from "./NavIcon";
+import { UnreadBadge } from "./UnreadBadge";
 import { isActive, type NavItem } from "./nav";
 
 export function BottomTabBar({ items }: { items: NavItem[] }) {
@@ -29,7 +30,10 @@ export function BottomTabBar({ items }: { items: NavItem[] }) {
             aria-current={active ? "page" : undefined}
             className={`${base} ${active ? "bg-ink font-medium text-on-ink" : "text-ink"}`}
           >
-            <NavIcon name={it.icon} size={20} />
+            <span className="relative inline-flex">
+              <NavIcon name={it.icon} size={20} />
+              {it.badge === "messages" && <UnreadBadge />}
+            </span>
             <span>{it.label}</span>
           </Link>
         );

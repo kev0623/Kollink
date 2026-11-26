@@ -190,6 +190,8 @@ export type Collab = {
   creatorName: string;
   creatorHandle: string;
   creatorAvatarPath: string | null;
+  /** 這個合作案所在的對話（計畫 7「前往對話」）。 */
+  conversationId: string | null;
 };
 
 export type CollabRow = {
@@ -212,6 +214,8 @@ export type CollabRow = {
   creator_name: string | null;
   creator_handle: string | null;
   creator_avatar_path: string | null;
+  /** 計畫 7 起 get_collaboration 才有這一欄；選填，讓舊的測試 literal 不必改。 */
+  conversation_id?: string | null;
 };
 
 export function toCollab(r: CollabRow): Collab {
@@ -235,6 +239,7 @@ export function toCollab(r: CollabRow): Collab {
     creatorName: r.creator_name ?? "",
     creatorHandle: r.creator_handle ?? "",
     creatorAvatarPath: r.creator_avatar_path ?? null,
+    conversationId: r.conversation_id ?? null,
   };
 }
 

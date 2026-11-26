@@ -163,6 +163,32 @@ isOneToOne: false
       referencedColumns: ["user_id"]
     }
                   ]
+                },"conversation_reads": {
+                  Row: {
+                    "conversation_id": string,"last_read_at": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "conversation_id": string,"last_read_at": string,"user_id": string
+                  }
+                  Update: {
+                    "conversation_id"?: string,"last_read_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "conversation_reads_conversation_id_fkey"
+      columns: ["conversation_id"]
+isOneToOne: false
+      referencedRelation: "conversations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "conversation_reads_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"conversations": {
                   Row: {
                     "brand_id": string,"created_at": string,"creator_id": string,"id": string
@@ -441,7 +467,12 @@ isOneToOne: false
                            },
 "get_collaboration":
 { Args: { "p_id": string }; Returns: {
-              "amount_twd": number,"brand_id": string,"brand_logo_path": string,"brand_name": string,"brief_id": string,"brief_title": string,"created_at": string,"creator_avatar_path": string,"creator_handle": string,"creator_id": string,"creator_name": string,"deliverables": string,"id": string,"my_side": string,"published_url": string,"review_due_at": string,"status": string,"title": string,"updated_at": string
+              "amount_twd": number,"brand_id": string,"brand_logo_path": string,"brand_name": string,"brief_id": string,"brief_title": string,"conversation_id": string,"created_at": string,"creator_avatar_path": string,"creator_handle": string,"creator_id": string,"creator_name": string,"deliverables": string,"id": string,"my_side": string,"published_url": string,"review_due_at": string,"status": string,"title": string,"updated_at": string
+            }[]
+                           },
+"get_conversation":
+{ Args: { "p_id": string }; Returns: {
+              "brand_id": string,"brand_logo_path": string,"brand_name": string,"closed": boolean,"creator_avatar_path": string,"creator_handle": string,"creator_id": string,"creator_name": string,"id": string,"my_side": string
             }[]
                            },
 "get_opportunity":
@@ -455,6 +486,9 @@ isOneToOne: false
             }[]
                            },
 "has_bidi":
+{ Args: { "p": string }; Returns: boolean
+                           },
+"has_contact_info":
 { Args: { "p": string }; Returns: boolean
                            },
 "hook_reject_password":
@@ -479,15 +513,28 @@ isOneToOne: false
               "action": string,"actor_kind": string,"actor_name": string,"created_at": string,"from_status": string,"id": number,"note": string,"to_status": string
             }[]
                            },
+"list_messages":
+{ Args: { "p_before_at"?: string,"p_before_id"?: string,"p_conversation_id": string,"p_limit"?: number }; Returns: {
+              "body": string,"created_at": string,"flagged_contact": boolean,"id": string,"sender_id": string
+            }[]
+                           },
 "list_my_collaborations":
 { Args: { "p_tab"?: string }; Returns: {
               "amount_twd": number,"brief_id": string,"counterpart_handle": string,"counterpart_image_path": string,"counterpart_name": string,"id": string,"my_side": string,"my_turn": boolean,"status": string,"title": string,"updated_at": string
+            }[]
+                           },
+"list_my_conversations":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "closed": boolean,"counterpart_handle": string,"counterpart_image_path": string,"counterpart_name": string,"id": string,"last_at": string,"last_body": string,"last_sender_is_me": boolean,"my_side": string,"unread_count": number
             }[]
                            },
 "list_opportunities":
 { Args: { "p_category"?: string,"p_filter"?: string,"p_limit"?: number,"p_offset"?: number }; Returns: {
               "applicant_count": number,"brand_id": string,"brand_logo_path": string,"brand_name": string,"budget_max_twd": number,"budget_min_twd": number,"categories": (string)[],"category_ok": boolean,"collab_ok": boolean,"collab_types": (string)[],"cover_path": string,"deadline": string,"followers_ok": boolean,"has_applied": boolean,"id": string,"includes_product": boolean,"is_match": boolean,"min_followers": number,"my_status": string,"region": string,"region_ok": boolean,"title": string,"total_count": number
             }[]
+                           },
+"mark_conversation_read":
+{ Args: { "p_conversation_id": string }; Returns: undefined
                            },
 "match_brief":
 { Args: { "p_brief": Omit<Database["public"]['Tables']["briefs"]['Row'], Database["public"]['Tables']["briefs"]['ComputedFields']>,"p_creator": Omit<Database["public"]['Tables']["creator_profiles"]['Row'], Database["public"]['Tables']["creator_profiles"]['ComputedFields']> }; Returns: Database["public"]['CompositeTypes']["brief_match"]
@@ -516,11 +563,19 @@ isOneToOne: false
               "avatar_path": string,"categories": (string)[],"collab_types": (string)[],"created_at": string,"display_name": string,"engagement_rate": number,"follower_count": number,"handle": string,"is_favorite": boolean,"min_price": number,"portfolio_paths": (string)[],"post_price": number,"region": string,"style_tags": (string)[],"total_count": number,"user_id": string
             }[]
                            },
+"send_message":
+{ Args: { "p_body": string,"p_conversation_id": string }; Returns: {
+              "body": string,"conversation_id": string,"created_at": string,"flagged_contact": boolean,"id": string,"sender_id": string
+            }[]
+                           },
 "set_creator_portfolio":
 { Args: { "p_items": Json }; Returns: undefined
                            },
 "set_creator_rates":
 { Args: { "p_rates": Json }; Returns: undefined
+                           },
+"start_conversation":
+{ Args: { "p_creator_id": string }; Returns: string
                            },
 "submit_deliverables":
 { Args: { "p_collab_id": string,"p_file_paths"?: (string)[],"p_links"?: (string)[],"p_note"?: string }; Returns: number
@@ -533,6 +588,9 @@ isOneToOne: false
                            },
 "transition_collaboration":
 { Args: { "p_action": string,"p_collab_id": string,"p_note"?: string,"p_published_url"?: string }; Returns: Database["public"]['Enums']["collab_status"]
+                           },
+"unread_conversation_count":
+{ Args: Record<PropertyKey, never>; Returns: number
                            },
 "update_brand_account":
 { Args: { "p_brand_name": string,"p_industry": string,"p_logo_path": string }; Returns: undefined
