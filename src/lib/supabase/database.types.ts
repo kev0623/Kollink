@@ -347,16 +347,42 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
-                },"payments": {
+                },"payment_anomalies": {
                   Row: {
-                    "amount_twd": number,"collaboration_id": string,"created_at": string,"id": string,"merchant_trade_no": string,"paid_at": string | null,"provider": string,"provider_trade_no": string | null,"raw_notify": Json | null,"refund_required": boolean,"status": string
+                    "collaboration_id": string | null,"created_at": string,"expected_amount_twd": number | null,"id": number,"kind": string,"merchant_trade_no": string,"payment_id": string | null,"provider_trade_no": string,"raw": NonNullable<Json>,"received_amount_twd": number | null,"resolved_at": string | null,"resolved_note": string | null,"source": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "amount_twd": number,"collaboration_id": string,"created_at"?: string,"id"?: string,"merchant_trade_no": string,"paid_at"?: string | null,"provider": string,"provider_trade_no"?: string | null,"raw_notify"?: Json | null,"refund_required"?: boolean,"status"?: string
+                    "collaboration_id"?: string | null,"created_at"?: string,"expected_amount_twd"?: number | null,"id"?: never,"kind": string,"merchant_trade_no": string,"payment_id"?: string | null,"provider_trade_no"?: string,"raw"?: NonNullable<Json>,"received_amount_twd"?: number | null,"resolved_at"?: string | null,"resolved_note"?: string | null,"source": string
                   }
                   Update: {
-                    "amount_twd"?: number,"collaboration_id"?: string,"created_at"?: string,"id"?: string,"merchant_trade_no"?: string,"paid_at"?: string | null,"provider"?: string,"provider_trade_no"?: string | null,"raw_notify"?: Json | null,"refund_required"?: boolean,"status"?: string
+                    "collaboration_id"?: string | null,"created_at"?: string,"expected_amount_twd"?: number | null,"id"?: never,"kind"?: string,"merchant_trade_no"?: string,"payment_id"?: string | null,"provider_trade_no"?: string,"raw"?: NonNullable<Json>,"received_amount_twd"?: number | null,"resolved_at"?: string | null,"resolved_note"?: string | null,"source"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "payment_anomalies_collaboration_id_fkey"
+      columns: ["collaboration_id"]
+isOneToOne: false
+      referencedRelation: "collaborations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "payment_anomalies_payment_id_fkey"
+      columns: ["payment_id"]
+isOneToOne: false
+      referencedRelation: "payments"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"payments": {
+                  Row: {
+                    "amount_twd": number,"atm_bank_code": string | null,"atm_expire_date": string | null,"atm_v_account": string | null,"collaboration_id": string,"created_at": string,"created_by": string | null,"id": string,"merchant_trade_no": string,"paid_at": string | null,"payment_info_at": string | null,"payment_method": string | null,"provider": string,"provider_env": string | null,"provider_trade_no": string | null,"raw_notify": Json | null,"refund_note": string | null,"refund_required": boolean,"refunded_at": string | null,"status": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "amount_twd": number,"atm_bank_code"?: string | null,"atm_expire_date"?: string | null,"atm_v_account"?: string | null,"collaboration_id": string,"created_at"?: string,"created_by"?: string | null,"id"?: string,"merchant_trade_no": string,"paid_at"?: string | null,"payment_info_at"?: string | null,"payment_method"?: string | null,"provider": string,"provider_env"?: string | null,"provider_trade_no"?: string | null,"raw_notify"?: Json | null,"refund_note"?: string | null,"refund_required"?: boolean,"refunded_at"?: string | null,"status"?: string
+                  }
+                  Update: {
+                    "amount_twd"?: number,"atm_bank_code"?: string | null,"atm_expire_date"?: string | null,"atm_v_account"?: string | null,"collaboration_id"?: string,"created_at"?: string,"created_by"?: string | null,"id"?: string,"merchant_trade_no"?: string,"paid_at"?: string | null,"payment_info_at"?: string | null,"payment_method"?: string | null,"provider"?: string,"provider_env"?: string | null,"provider_trade_no"?: string | null,"raw_notify"?: Json | null,"refund_note"?: string | null,"refund_required"?: boolean,"refunded_at"?: string | null,"status"?: string
                   }
                   Relationships: [
                     {
@@ -449,6 +475,11 @@ isOneToOne: false
                            },
 "create_creator_account":
 { Args: { "p_categories": (string)[],"p_display_name": string,"p_follower_count": number,"p_handle": string,"p_ig_username": string,"p_region": string }; Returns: string
+                           },
+"create_payment_order":
+{ Args: { "p_collab_id": string,"p_method": string }; Returns: {
+              "amount_twd": number,"created_at": string,"merchant_trade_no": string
+            }[]
                            },
 "decide_application":
 { Args: { "p_accept": boolean,"p_id": string }; Returns: undefined
@@ -547,13 +578,28 @@ isOneToOne: false
 "my_role":
 { Args: Record<PropertyKey, never>; Returns: Database["public"]['Enums']["user_role"]
                            },
+"payment_raw_whitelist":
+{ Args: { "p": Json }; Returns: Json
+                           },
 "popular_style_tags":
 { Args: Record<PropertyKey, never>; Returns: {
               "tag": string,"uses": number
             }[]
                            },
+"record_payment_anomaly":
+{ Args: { "p_collab_id": string,"p_expected": number,"p_kind": string,"p_merchant_trade_no": string,"p_payment_id": string,"p_provider_trade_no": string,"p_raw": Json,"p_received": number,"p_source": string }; Returns: undefined
+                           },
+"record_payment_info":
+{ Args: { "p_amount_twd": number,"p_bank_code": string,"p_expire_date": string,"p_merchant_trade_no": string,"p_provider_trade_no": string,"p_raw": Json,"p_v_account": string }; Returns: string
+                           },
 "record_payment_success":
-{ Args: { "p_amount_twd": number,"p_merchant_trade_no": string,"p_provider_trade_no": string,"p_raw": Json }; Returns: string
+{ Args: { "p_amount_twd": number,"p_env"?: string,"p_merchant_trade_no": string,"p_provider_trade_no": string,"p_raw": Json }; Returns: string
+                           },
+"resolve_payment_anomaly":
+{ Args: { "p_id": number,"p_note": string }; Returns: undefined
+                           },
+"resolve_payment_refund":
+{ Args: { "p_note": string,"p_payment_id": string }; Returns: undefined
                            },
 "save_brief":
 { Args: { "p_budget_max_twd"?: number,"p_budget_min_twd"?: number,"p_categories"?: (string)[],"p_collab_types"?: (string)[],"p_cover_path"?: string,"p_deadline"?: string,"p_description"?: string,"p_id"?: string,"p_includes_product"?: boolean,"p_min_followers"?: number,"p_publish"?: boolean,"p_region"?: string,"p_title"?: string }; Returns: string

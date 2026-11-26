@@ -54,21 +54,21 @@ select is((select count(*)::int from public.payments where merchant_trade_no = '
 -- 系統
 set local role service_role;
 select set_config('request.jwt.claims', '{"role":"service_role"}', true);
-select throws_ok(
-  $$select public.record_payment_success('PL0001', 4000, 'T1', '{}'::jsonb)$$,
-  '22023', null, '金額不符時拒絕');
-select throws_ok(
-  $$select public.record_payment_success('NOPE', 4500, 'T1', '{}'::jsonb)$$,
-  'P0002', null, '找不到交易時拒絕');
+select is(
+  public.record_payment_success('PL0001', 4000, 'T1', '{}'::jsonb),
+  'anomaly', '金額不符：記錄異常，不報錯');
+select is(
+  public.record_payment_success('NOPE', 4500, 'T1', '{}'::jsonb),
+  'anomaly', '找不到交易：記錄異常，不報錯');
 select throws_ok(
   $$select public.record_payment_success('PL0001', null, 'T1', '{}'::jsonb)$$,
   '22023', null, '金額為空值時拒絕');
 select throws_ok(
   $$select public.record_payment_success('PL0001', 4500, null, '{}'::jsonb)$$,
   '22023', null, '金流交易編號為空值時拒絕');
-select throws_ok(
-  $$select public.record_payment_success('PL0003', 1, 'T3', '{}'::jsonb)$$,
-  '22023', null, '付款金額與合作案價格不符時拒絕');
+select is(
+  public.record_payment_success('PL0003', 1, 'T3', '{}'::jsonb),
+  'anomaly', '付款金額與合作案價格不符：記錄異常，不報錯');
 select is(
   (select status::text from public.collaborations
      where id = '00000000-0000-0000-0000-00000000cc03'),
