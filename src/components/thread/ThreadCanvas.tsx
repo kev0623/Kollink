@@ -186,7 +186,7 @@ export function ThreadCanvas({ variant }: Props) {
 
   return (
     <div aria-hidden="true" className="pointer-events-none absolute inset-0">
-      <div className={`absolute inset-0 transition-opacity duration-500 ${ready ? "opacity-0" : "opacity-100"}`}>
+      <div className={`absolute inset-0 ${ready ? "opacity-0" : "opacity-100 transition-opacity duration-500"}`}>
         <ThreadFallback variant={variant} />
       </div>
       <div ref={hostRef} className={`absolute inset-0 transition-opacity duration-300 ${ready ? "opacity-100" : "opacity-0"}`} />
