@@ -282,7 +282,7 @@ export function actionCardCopy(s: CollabStatus, side: CollabSide): ActionCardCop
     case "declined":
       return { mine: false, title: "已婉拒", body: "創作者婉拒了這次邀約。" };
     case "cancelled":
-      return { mine: false, title: "已取消", body: "品牌已取消這個合作案。" };
+      return { mine: false, title: "已取消", body: "這個合作案已取消，原因見下方的紀錄。" };
   }
 }
 
@@ -405,6 +405,11 @@ export function eventText(e: CollabEvent): string {
       return "平台已退回一筆額外的付款";
     case "payment_anomaly":
       return "平台正在確認一筆付款";
+    // 計畫 9：平台取消（爭議處理）；原因雙方都看得到
+    case "admin_cancel":
+      return `平台取消合作：${e.note ?? ""}`;
+    case "refund_scheduled":
+      return "平台會退回已託管的款項";
     default:
       return who ? `${who}：狀態已更新` : "狀態已更新";
   }

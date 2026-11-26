@@ -1,8 +1,14 @@
 "use client";
-import { Compass, FileText, Handshake, MessageCircle, Receipt, Settings, Sparkles, UserRound, Wallet } from "lucide-react";
+import {
+  Banknote, Compass, FileText, Handshake, LayoutDashboard, MessageCircle, Receipt, Settings, ShieldAlert, Sparkles,
+  UserCheck, UserRound, Wallet,
+} from "lucide-react";
 import type { NavIconName } from "./nav";
 
-const ICONS = { Compass, FileText, Handshake, MessageCircle, Receipt, Settings, Sparkles, UserRound, Wallet };
+const ICONS = {
+  Banknote, Compass, FileText, Handshake, LayoutDashboard, MessageCircle, Receipt, Settings, ShieldAlert, Sparkles,
+  UserCheck, UserRound, Wallet,
+};
 
 export function NavIcon({ name, size }: { name: NavIconName; size: number }) {
   const Icon = ICONS[name];

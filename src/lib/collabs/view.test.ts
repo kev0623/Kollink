@@ -154,3 +154,16 @@ describe("交稿與事件", () => {
     expect(revisionNotesByRound(subs, events)).toEqual({ 1: ["第一輪的意見"], 2: ["第二輪的意見"] });
   });
 });
+
+describe("平台取消（計畫 9）", () => {
+  const ev = (o: Partial<CollabEvent>): CollabEvent => ({
+    id: 1, action: "x", actorKind: "admin", actorName: "平台", toStatus: null, note: null, createdAt: "2026-11-27T00:00:00Z", ...o,
+  });
+  it("事件文字：原因雙方都看得到；退款排程", () => {
+    expect(eventText(ev({ action: "admin_cancel", note: "雙方同意取消" }))).toBe("平台取消合作：雙方同意取消");
+    expect(eventText(ev({ action: "refund_scheduled" }))).toBe("平台會退回已託管的款項");
+  });
+  it("已取消的卡片不再寫「品牌已取消」（也可能是平台取消）", () => {
+    expect(actionCardCopy("cancelled", "creator").body).toBe("這個合作案已取消，原因見下方的紀錄。");
+  });
+});
