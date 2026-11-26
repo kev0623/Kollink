@@ -87,7 +87,23 @@ returning user_id;
 
 管理員若同時是某個合作案的品牌或創作者，那個合作案只能以參與者身分操作，後台不會顯示管理員動作（請另一位管理員處理）。管理員也不能處理自己（核准、停權自己的創作者資料、標記自己的訊息已檢視會回 `admin is subject`）。
 
-本機開發：登入頁的「測試管理員」（`dev-admin@kollink.test`，見上方「測試快速登入」）。
+### 管理員兩步驟驗證（TOTP）
+
+資安修正起，管理員除了 Email 驗證碼，還要通過第二步驟（驗證器 App 的 6 位數驗證碼，Supabase 的 aal2）才能操作後台：資料庫的 `is_admin()`／`admin_actor()` 檢查 JWT 的 `aal` 是 `aal2`，直接呼叫 API 也一樣。
+
+- 第一次：登入後會被導到 `/admin/mfa`，用 Google Authenticator、1Password 等掃描 QR Code（或手動輸入密鑰），輸入 6 位數完成綁定，再進後台。
+- 之後每次登入：Email 驗證碼通過後，在 `/admin/mfa` 輸入驗證器上的 6 位數。
+- 還沒通過第二步驟的管理員帳號，在資料庫裡等於一般帳號（有 profile 的照自己的角色操作）。
+- 備用 SQL 用 `service_role`（system 身分），不受第二步驟影響；SQL Editor 就是這個身分。
+- **遺失驗證器**：在 Supabase Studio 的 SQL Editor 刪掉該使用者的 MFA 因子（直接複製，只改 Email）。刪完後對方再次登入會重新綁定：
+  ```sql
+  delete from auth.mfa_factors
+   where user_id = (select id from auth.users where email = lower('填入管理員的 Email'))
+  returning id, factor_type, status;
+  ```
+- 正式環境要先在 Dashboard 開啟 TOTP（見「正式環境設定」第 7a 項）。本機的 `supabase/config.toml` 已開啟（`[auth.mfa.totp]`）；本機不要 `supabase config push`。
+
+本機開發：登入頁的「測試管理員」（`dev-admin@kollink.test`，見上方「測試快速登入」）。測試管理員也要過 TOTP：dev-login 不會偽造第二步驟，第一次進 `/admin/mfa` 綁定，E2E 腳本自己用密鑰算 6 位數驗證碼（RFC 6238）。
 
 ### 審核創作者
 
@@ -339,7 +355,7 @@ select count(*) as refund_required from public.payments where refund_required;  
 
 本機的 `config.toml` 不會自動套用到正式專案，上線前在 Supabase 後台逐項設定：
 
-1. Authentication → Providers → Email：開啟「Confirm email」（`enable_confirmations`）；Email OTP 長度 6、有效期限 900 秒（`otp_expiry = 900`）。注意後台預設是 8 碼、3600 秒，一定要改。
+1. Authentication → Providers → Email：開啟「Confirm email」（`enable_confirmations`）；Email OTP 長度 **8**、有效期限 **600 秒**（資安修正：碼越長、越短命，暴力猜測越難）。後台預設是 8 碼、3600 秒，有效期限一定要改。登入頁接受 6 到 8 位數，所以本機（6 碼）與正式環境（8 碼）都能用。
 2. Authentication → Sign In / Providers：關閉匿名登入（anonymous sign-ins）。
 3. 密碼登入封鎖：真正的保證是 migration 裡的 `null_encrypted_password` trigger（推送 migration 即生效，不受方案限制）。另外在 Authentication → Hooks 新增 Postgres hook「Password verification attempt」指向 `public.hook_reject_password`，作為第二層防護（方案允許才有）。
 4. Authentication → URL Configuration：Site URL 填正式網址；Redirect URLs 加入下面這行（`<site>` 換成正式網址）：
@@ -348,9 +364,40 @@ select count(*) as refund_required from public.payments where refund_required;  
    ```
 5. Authentication → Emails：要先完成第 6 項的自訂 SMTP 才能改範本（預設範本寄的是登入連結，不是 6 碼驗證碼，登入頁會無法使用）。「Magic Link」與「Confirm signup」兩個範本都換成 `supabase/templates/otp.html`（主旨分別為 `Kollink 登入驗證碼`、`Kollink 註冊驗證碼`）。
 6. Authentication → SMTP Settings：設定自訂 SMTP（例如 Resend）。內建寄信上限約每小時 2 封，不能用於正式環境。
-7. Authentication → Attack Protection：建議開啟 CAPTCHA（Turnstile 或 hCaptcha），並在登入頁加上對應元件。
+7. Authentication → Attack Protection：建議開啟 CAPTCHA（Turnstile 或 hCaptcha），並在登入頁加上對應元件（需要前端整合，見下方「資安待辦」，先不要只開後台設定，否則登入會失敗）。
+7a. Authentication → Multi-Factor：開啟 **TOTP**（Enroll 與 Verify 都要開）。管理員的兩步驟驗證靠這個設定；沒開的話管理員無法綁定驗證器，進不了 `/admin`。
 8. Google OAuth：Providers → Google 填入用戶端 ID／密鑰；Google Cloud Console 的重新導向 URI 加上 `https://<專案>.supabase.co/auth/v1/callback`。
 9. 排程清理沒被引用的 Storage 物件：`brand-logos`（沒被 `brand_profiles.logo_path` 引用）、`creator-media`（沒被 `creator_profiles.avatar_path`、`creator_portfolio_items.image_path` 引用）`brief-covers`（沒被 `briefs.cover_path` 引用）與 `deliverables`（沒被任何 `collaboration_submissions.file_paths` 引用的，例如上傳後沒有交稿），都只刪超過 24 小時的，見 `docs/superpowers/plans/2026-11-22-foundation-followups.md`。
+
+## 資安修正（全系統體檢）上線
+
+這個版本含兩個 migration（`20261129000100_security_hardening.sql`、`20261129000200_admin_mfa.sql`）與網站程式，**必須一起上線**：
+
+- migration 之後，舊版網站的合作案詳情會因為讀不到 ATM 欄位而出錯（現在改用 `get_my_payment_details`）。
+- migration 之後，沒有通過 TOTP 的管理員在資料庫裡不是管理員；舊版網站沒有 `/admin/mfa`，管理員會進不了後台。
+
+**部署順序（依序，中間不要停太久）：**
+
+1. Supabase Dashboard → Authentication → Multi-Factor：開啟 TOTP。
+2. 同一個地方順便設定 Email OTP：長度 8、有效期限 600 秒（Authentication → Providers → Email）。
+3. `npx supabase db push --remote --dry-run` 確認只會套用 `20261129000100`、`20261129000200`，再 `npx supabase db push --remote`。
+4. **馬上**合併 PR（Vercel 自動部署）。步驟 3 到部署完成之間，合作案詳情頁與後台會暫時出錯，所以不要拖。
+5. 部署後：用管理員帳號登入，確認被導到 `/admin/mfa`、綁定驗證器後進得了 `/admin`；用品牌帳號開一個待付款的合作案，確認付款資訊正常。
+6. 用超過上限的上傳實際驗證一次 Storage 數量限制（計數 helper 以 postgres 身分讀 `storage.objects`；讀不到時會變成計數為 0、上限失效，但不會擋掉正常上傳）。
+
+**救援：** 遺失驗證器見「管理員兩步驟驗證」。管理員全部進不了後台時，用 SQL Editor 的 service_role 備用 SQL（上面各節）仍然可以處理（system 身分，不看 aal）。
+
+**其他設定：** 新增資料庫函式時，postgres 建立的函式預設不再給 PUBLIC 執行：要自己 `grant execute` 給需要的角色（這個版本起的預設權限，見 migration）。
+
+### 資安待辦（之後再做）
+
+- Supabase CAPTCHA（Turnstile 或 hCaptcha）：後台開啟的同時，`AuthForm` 的 `signInWithOtp`／`verifyOtp` 要傳 `captchaToken`。
+- 流量限制：`apply_to_brief`、`save_brief`、收藏（`setFavoriteAction`）還沒有每人每分鐘／每日上限（邀請已限制 24 小時 30 次）；可用資料庫計數（同 `send_message`）或 Vercel Firewall。
+- 帳號列舉：註冊時 `handle taken` 會告訴對方網址已被使用（註冊必要，接受）；收藏不存在的創作者已改成一律 42501。
+- Session cookie 不是 HttpOnly：`@supabase/ssr` 的瀏覽器 client 需要讀它（Realtime、Storage）。補償措施是 CSP 的 `connect-src` 只放行 Supabase；XSS 仍然可以偷走 session，所以不要新增 `dangerouslySetInnerHTML`。
+- 交稿檔案（deliverables）的 MIME sniffing：只檢查宣告的 Content-Type，內容沒有驗證（PDF 可能內嵌腳本）；檔案從 Supabase 網域用 1 小時 signed URL 開啟，不在網站的來源下執行。可以縮短 signed URL 時間或加上 `download`。
+- CSP 的 `script-src` 有 `'unsafe-inline'`（cacheComponents／PPR 不能每請求產生 nonce）；之後可評估只對動態的 `/admin`、`/brand/collabs` 改用 nonce，或 `experimental.sri`。
+- 綠界 `form-action`：只放行 `payment(-stage).ecpay.com.tw`。上線前用測試環境確認信用卡（3D 驗證可能導向銀行網域）與 ATM 流程；若被擋，把 `form-action` 放寬為 `https:`，其他指令不變。
 
 ## 部署（Vercel）
 
