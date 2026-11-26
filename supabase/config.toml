@@ -324,8 +324,9 @@ max_enrolled_factors = 10
 
 # Control MFA via App Authenticator (TOTP)
 [auth.mfa.totp]
-enroll_enabled = false
-verify_enabled = false
+# 管理員兩步驟驗證（資安修正）：只改本機設定檔；正式環境到 Dashboard 開啟，不要 supabase config push。
+enroll_enabled = true
+verify_enabled = true
 
 # Configure MFA via Phone Messaging
 [auth.mfa.phone]

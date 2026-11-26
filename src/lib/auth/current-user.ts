@@ -85,7 +85,17 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
   return base;
 });
 
-/** 目前使用者是不是管理員（admins 表；is_admin() 只授權給 authenticated）。沒有登入是 false。會讀 cookie。 */
+/** 目前使用者是不是管理員帳號（admins 表；不看第二步驟）。沒有登入是 false。會讀 cookie。 */
+export const getIsAdminAccount = cache(async (): Promise<boolean> => {
+  const me = await getCurrentUser();
+  if (!me) return false;
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("is_admin_account");
+  if (error) throw error;
+  return data === true;
+});
+
+/** 管理員帳號而且這個 session 已通過第二步驟（aal2）：資料庫的 is_admin() 就是這個條件。 */
 export const getIsAdmin = cache(async (): Promise<boolean> => {
   const me = await getCurrentUser();
   if (!me) return false;
@@ -97,14 +107,16 @@ export const getIsAdmin = cache(async (): Promise<boolean> => {
 
 /**
  * 管理後台的守門（計畫 9）：每個 /admin 頁面與 Server Action 都要呼叫（同 requireRole 的理由）。
- * 未登入導到登入頁；不是管理員導回自己的首頁（沒有 profile 的導到 /onboarding）。
+ * 未登入導到登入頁；不是管理員導回自己的首頁（沒有 profile 的導到 /onboarding）；
+ * 是管理員帳號但還沒通過第二步驟（TOTP，aal2）導到 /admin/mfa。
  * 管理員不一定有 profile：通常是專用帳號，只在 admins 表裡。
  */
 export async function requireAdmin(): Promise<CurrentUser> {
   const me = await getCurrentUser();
   if (!me) redirect("/login?next=/admin");
-  if (!(await getIsAdmin())) redirect(me.profile ? homeFor(me.profile.role) : "/onboarding");
-  return me;
+  if (await getIsAdmin()) return me;
+  if (await getIsAdminAccount()) redirect("/admin/mfa");
+  redirect(me.profile ? homeFor(me.profile.role) : "/onboarding");
 }
 
 /**

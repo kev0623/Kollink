@@ -31,3 +31,13 @@ export function resolvePostLoginPath(a: {
   if (next && (next === home || next.startsWith(`${home}/`) || next.startsWith(`${home}?`))) return next;
   return home;
 }
+
+/** 管理員帳號還沒通過第二步驟（TOTP）時，要去後台的路徑先繞到 /admin/mfa，驗證完再回原本的頁面。 */
+export function withMfaStep(path: string, needsMfa: boolean): string {
+  if (!needsMfa) return path;
+  if (path === "/admin/mfa" || path.startsWith("/admin/mfa?")) return path;
+  if (path === "/admin" || path.startsWith("/admin/") || path.startsWith("/admin?")) {
+    return path === "/admin" ? "/admin/mfa" : `/admin/mfa?next=${encodeURIComponent(path)}`;
+  }
+  return path;
+}
