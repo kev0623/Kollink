@@ -2,10 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ThreadMark } from "@/components/ui/ThreadMark";
 import { SupportLink } from "@/components/ui/SupportLink";
-import { btn, h1 } from "@/components/ui/styles";
+import { btn, h1, textLink } from "@/components/ui/styles";
 import { PAYMENT_MAX_TWD } from "@/lib/payments/limits";
 import { formatTwd } from "@/lib/format";
-import { SITE_NAME } from "@/lib/site";
+import { PRIVACY_PAGE, SITE_NAME, TERMS_PAGE } from "@/lib/site";
 
 export const metadata: Metadata = { title: "需要協助" };
 
@@ -34,6 +34,11 @@ export default function HelpPage() {
           </div>
         ))}
       </dl>
+      <h2 className="mt-12 text-lg font-bold text-ink">條款與隱私</h2>
+      <p className="mt-2 flex flex-wrap items-center gap-x-6 text-sm">
+        <Link href={TERMS_PAGE} className={textLink}>服務條款</Link>
+        <Link href={PRIVACY_PAGE} className={textLink}>隱私權政策</Link>
+      </p>
       <Link href="/" className={`${btn.secondary} mt-10`}>回首頁</Link>
     </main>
   );

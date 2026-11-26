@@ -13,6 +13,15 @@ export const SUPPORT_LINE_URL: string | null = null;
 
 export const SUPPORT_PAGE = "/help";
 
+// ─────────────────────────────────────────────────────────────
+// 服務條款與隱私權政策（/terms、/privacy）。
+// TODO(owner)：上線前請律師審閱、填入營運者名稱與地址，再把 LEGAL_DRAFT 改成 false（README「上線前檢查」）。
+// true 時兩頁頂端顯示「這份文件是草稿，正式上線前會再更新。」
+export const LEGAL_DRAFT = true;
+export const TERMS_PAGE = "/terms";
+export const PRIVACY_PAGE = "/privacy";
+// ─────────────────────────────────────────────────────────────
+
 /** 寄信連結；subject 會帶進信件主旨（例如「帳號暫停」）。 */
 export function supportMailto(subject?: string): string {
   return subject ? `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(`[${SITE_NAME}] ${subject}`)}` : `mailto:${SUPPORT_EMAIL}`;

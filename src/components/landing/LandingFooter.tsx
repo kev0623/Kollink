@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ThemeSelect } from "@/components/theme/ThemeSelect";
-import { SITE_NAME, SITE_TAGLINE, SUPPORT_PAGE } from "@/lib/site";
+import { PRIVACY_PAGE, SITE_NAME, SITE_TAGLINE, SUPPORT_PAGE, TERMS_PAGE } from "@/lib/site";
 import { EntryButtons } from "./Hero";
 
 export function LandingFooter() {
@@ -20,6 +20,8 @@ export function LandingFooter() {
             <Link href={SUPPORT_PAGE} className={link}>需要協助？</Link>
             <Link href="/login" className={link}>登入</Link>
             <Link href="/signup" className={link}>註冊</Link>
+            <Link href={TERMS_PAGE} className={link}>服務條款</Link>
+            <Link href={PRIVACY_PAGE} className={link}>隱私權政策</Link>
             <ThemeSelect />
           </nav>
         </div>
