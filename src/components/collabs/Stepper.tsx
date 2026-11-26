@@ -31,13 +31,13 @@ export function Stepper({ status }: { status: CollabStatus }) {
                   aria-hidden="true"
                   className={`shrink-0 rounded-full ${
                     s === "done" ? "h-3 w-3 bg-thread"
-                      : s === "current" ? "h-4 w-4 bg-primary ring-[6px] ring-primary-soft motion-safe:animate-[knot_700ms_ease-out_1]"
+                      : s === "current" ? "h-4 w-4 bg-primary ring-[6px] ring-primary-soft motion-safe:animate-[knot_200ms_ease-out_1]"
                         : "h-3 w-3 border-2 border-line-strong bg-surface"
                   }`}
                 />
                 <span aria-hidden="true" className={seg(rightDone, i === total - 1)} />
               </div>
-              <span className={`mt-2 hidden px-0.5 text-xs md:block ${s === "todo" ? "text-muted" : s === "current" ? "font-bold text-ink" : "text-ink"}`}>
+              <span aria-hidden="true" className={`mt-2 hidden px-0.5 text-xs md:block ${s === "todo" ? "text-muted" : s === "current" ? "font-bold text-ink" : "text-ink"}`}>
                 {label}
               </span>
               <span className="sr-only">{label}{s === "done" ? "（已完成）" : s === "current" ? "（目前）" : ""}</span>

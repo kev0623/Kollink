@@ -21,11 +21,20 @@ export function PaymentStatusPoller() {
     return () => window.clearTimeout(t);
   }, [attempt, delay, router]);
 
+  // 分頁隱藏時輪詢會跳過；回到這個分頁時補一次重新整理（超過 3 分鐘視窗後回來也能更新）
+  useEffect(() => {
+    function onVisible() {
+      if (document.visibilityState === "visible") router.refresh();
+    }
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [router]);
+
   return (
     <div role="status" className="flex flex-wrap items-center justify-between gap-3 rounded-input border border-line bg-subtle p-4 text-sm text-ink">
       <span className="flex min-w-0 items-center gap-2">
         <RefreshCw size={16} strokeWidth={1.5} aria-hidden="true" className={`shrink-0 ${delay !== null ? "motion-safe:animate-spin" : ""}`} />
-        <span>{delay !== null ? "正在確認付款…確認後頁面會自動更新。" : "還沒收到付款確認。綠界有時需要幾分鐘，可以稍後再重新整理。"}</span>
+        <span>{delay !== null ? "剛在綠界完成付款？正在確認中，確認後頁面會自動更新；請不要重複付款。" : "還沒收到付款確認。綠界有時需要幾分鐘，可以稍後再重新整理。"}</span>
       </span>
       <button type="button" onClick={() => { setAttempt(0); router.refresh(); }} className={btn.secondary}>重新整理</button>
     </div>

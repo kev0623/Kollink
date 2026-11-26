@@ -5,9 +5,9 @@ import type { SubmissionFile } from "@/lib/collabs/load";
 export function FileTile({ f }: { f: SubmissionFile }) {
   const inner = f.kind === "image" && f.url ? (
     // eslint-disable-next-line @next/next/no-img-element
-    <img src={f.url} alt={f.label} className="h-24 w-24 rounded-btn border border-line object-cover" />
+    <img src={f.url} alt={f.label} className="h-24 w-24 rounded-input border border-line object-cover" />
   ) : (
-    <span className="flex h-24 w-24 flex-col items-center justify-center gap-1 rounded-btn border border-line bg-subtle text-xs text-ink">
+    <span className="flex h-24 w-24 flex-col items-center justify-center gap-1 rounded-input border border-line bg-subtle text-xs text-ink">
       {f.kind === "video"
         ? <Film size={24} strokeWidth={1.5} aria-hidden="true" />
         : <FileText size={24} strokeWidth={1.5} aria-hidden="true" />}
@@ -16,7 +16,7 @@ export function FileTile({ f }: { f: SubmissionFile }) {
   );
   if (!f.url) return <span title="連結產生失敗，請重新整理">{inner}</span>;
   return (
-    <a href={f.url} target="_blank" rel="noopener noreferrer" aria-label={`${f.label}（在新分頁開啟）`} className="block rounded-btn focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus">
+    <a href={f.url} target="_blank" rel="noopener noreferrer" aria-label={`${f.label}（在新分頁開啟）`} className="block rounded-input focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus">
       {inner}
     </a>
   );

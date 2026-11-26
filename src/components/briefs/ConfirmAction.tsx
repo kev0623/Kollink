@@ -23,13 +23,15 @@ type Props = {
   icon?: ConfirmIcon;
   /** 第一顆按鈕在所有寬度都撐滿（預設：手機撐滿、桌面自動寬度） */
   block?: boolean;
+  /** 一出現就展開確認區塊（使用者已經按過「下一步」時用） */
+  defaultOpen?: boolean;
   onConfirm: () => Promise<Result>;
 };
 
 /** 頁面內的確認區塊（不用 confirm()）：按鈕 → 展開說明與「確定／取消」。展開時焦點移到說明；Esc 收回並還原焦點。 */
-export function ConfirmAction({ label, message, confirmLabel, danger, icon, block, onConfirm }: Props) {
+export function ConfirmAction({ label, message, confirmLabel, danger, icon, block, defaultOpen, onConfirm }: Props) {
   const router = useRouter();
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(defaultOpen === true);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();

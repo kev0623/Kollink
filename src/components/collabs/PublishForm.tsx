@@ -40,6 +40,7 @@ export function PublishForm({ collabId }: { collabId: string }) {
       </form>
       {checked && (
         <ConfirmAction
+          key={checked} defaultOpen
           label="送出貼文連結" icon="send" block confirmLabel="確定送出"
           message={`送出後會進入撥款，連結不能再改：${checked}`}
           onConfirm={() => publishCollabAction(collabId, checked)}

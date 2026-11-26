@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { COLLAB_TABS, listBadge, type CollabListItem, type CollabSide, type CollabTab } from "@/lib/collabs/view";
+import { COLLAB_STATUS_LABEL, COLLAB_TABS, listBadge, type CollabListItem, type CollabSide, type CollabTab } from "@/lib/collabs/view";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { chip, rows } from "@/components/ui/styles";
 import { formatDateTw } from "@/lib/briefs/dates";
@@ -46,7 +46,9 @@ export function CollabList({ side, tab, items }: { side: CollabSide; tab: Collab
   return (
     <ul className={`${rows} mt-4`}>
       {items.map((c) => {
-        const badge = tab === "active" ? listBadge(c.status, side) : null;
+        const rawBadge = tab === "active" ? listBadge(c.status, side) : null;
+        // 「撥款處理中」已經是狀態標記，不再重複顯示成輪到誰的標記
+        const badge = rawBadge && rawBadge.label !== COLLAB_STATUS_LABEL[c.status] ? rawBadge : null;
         return (
           <li key={c.id}>
             <Link

@@ -2,6 +2,7 @@ import { actionCardCopy, reviewCountdown, type Collab, type CollabSide } from "@
 import type { SubmissionView } from "@/lib/collabs/load";
 import type { PaymentAvailability } from "@/lib/payments/config";
 import type { PaymentSummary } from "@/lib/payments/view";
+import { requiresOfflinePayment } from "@/lib/payments/limits";
 import { CollabActions } from "./CollabActions";
 import { FileTile } from "./FileTile";
 
@@ -24,7 +25,12 @@ type Props = {
 /** 「現在要做什麼」卡片（主色外框）：輪到自己時顯示動作；輪到對方時說明在等什麼（文字見 actionCardCopy）。 */
 export function ActionCard({ c, side, uid, latest, nowMs, devPaymentEnabled, payment, summary, adminCancelled, payoutPrompt }: Props) {
   const fromApplication = c.briefId !== null;
-  const copy = actionCardCopy(c.status, side, adminCancelled, fromApplication, payoutPrompt === true && side === "creator");
+  const offlineOnly = requiresOfflinePayment(c.amount);
+  const base = actionCardCopy(c.status, side, adminCancelled, fromApplication, payoutPrompt === true && side === "creator");
+  // 超過線上付款上限：不能選信用卡或 ATM，卡片文字改成線下付款
+  const copy = offlineOnly && c.status === "awaiting_payment" && side === "brand"
+    ? { ...base, title: "輪到你：安排線下付款", body: "這筆金額超過線上付款上限，請依下方說明聯絡平台。款項由平台保管，創作者交稿並發佈後才撥款。" }
+    : base;
   const countdown = c.status === "in_review" ? reviewCountdown(c.reviewDueAt, nowMs) : null;
   return (
     <section aria-labelledby="action-title" className={`rounded-card border p-4 md:p-6 ${copy.mine ? "border-primary bg-primary-soft" : "border-line bg-surface"}`}>
@@ -44,7 +50,7 @@ export function ActionCard({ c, side, uid, latest, nowMs, devPaymentEnabled, pay
       <div className="mt-4">
         <CollabActions
           collabId={c.id} status={c.status} side={side} uid={uid} fromApplication={fromApplication}
-          devPaymentEnabled={devPaymentEnabled} payment={payment} summary={summary}
+          devPaymentEnabled={devPaymentEnabled} payment={payment} summary={summary} offlineOnly={offlineOnly}
         />
       </div>
     </section>

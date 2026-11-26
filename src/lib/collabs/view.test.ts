@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  actionCardCopy, caseCode, COLLAB_STEPS, escrowLabel, eventText, eventTime, listBadge, parseCollabTab,
+  actionCardCopy, caseCode, COLLAB_STEPS, escrowLabel, isRefunding, eventText, eventTime, listBadge, parseCollabTab,
   reviewCountdown, revisionNotesByRound, stepNumber, stepStates, toCollab, toCollabEvent, toCollabListItem,
   toCollabStatus, toSubmission, turnOf, type CollabEvent, type CollabStatus, type Submission,
 } from "./view";
@@ -61,6 +61,10 @@ describe("金額與案號", () => {
     expect(escrowLabel("in_review", 4500, true)).toBe("NT$4,500 平台保管中");
     expect(escrowLabel("completed", 4500)).toBe("NT$4,500 已撥款");
     expect(escrowLabel("cancelled", 4500)).toBe("NT$4,500 未成立");
+    expect(escrowLabel("cancelled", 4500, false, true)).toBe("NT$4,500 已取消・退款處理中");
+    expect(escrowLabel("declined", 4500, false, true)).toBe("NT$4,500 未成立");
+    expect(isRefunding([{ action: "admin_cancel" }, { action: "refund_scheduled" }])).toBe(true);
+    expect(isRefunding([{ action: "cancel" }])).toBe(false);
   });
   it("案號是 id 前 8 碼", () => {
     expect(caseCode("1a2b3c4d-0000-0000-0000-000000000000")).toBe("1a2b3c4d");
@@ -123,7 +127,7 @@ describe("詳情", () => {
       expect(c.body).not.toContain("不用做任何事");
     }
     expect(actionCardCopy("in_review", "creator", false, false, true).body).toBe("品牌通過後你再發佈貼文。");
-    expect(actionCardCopy("awaiting_payout", "creator", false, false, true).body).toBe("平台撥款前需要你的收款帳戶，請先設定。");
+    expect(actionCardCopy("awaiting_payout", "creator", false, false, true).body).toBe("設定好收款帳戶後，平台就能撥款。");
     expect(actionCardCopy("in_review", "creator").body).toContain("你不用做任何事");
   });
   it("卡片：來自報名、等待創作者確認（錄取金額低於報價）", () => {

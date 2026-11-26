@@ -80,8 +80,8 @@ export function stepNumber(s: CollabStatus): number | null {
   return Math.min(i + 1, COLLAB_STEPS.length);
 }
 
-/** 金額與付款狀態：「NT$4,500 待付款」「NT$4,500 已付款，由平台保管」「NT$4,500 已撥款」「NT$4,500 未成立」。 */
-export function escrowLabel(s: CollabStatus, amount: number, short = false): string {
+/** 金額與付款狀態：「NT$4,500 待付款」「NT$4,500 已付款，由平台保管」「NT$4,500 已撥款」「NT$4,500 未成立」「NT$4,500 已取消・退款處理中」。 */
+export function escrowLabel(s: CollabStatus, amount: number, short = false, refunding = false): string {
   const money = formatTwd(amount);
   switch (s) {
     case "invited":
@@ -90,11 +90,17 @@ export function escrowLabel(s: CollabStatus, amount: number, short = false): str
     case "completed":
       return `${money} 已撥款`;
     case "declined":
-    case "cancelled":
       return `${money} 未成立`;
+    case "cancelled":
+      return refunding ? `${money} 已取消・退款處理中` : `${money} 未成立`;
     default:
       return `${money} ${short ? "平台保管中" : "已付款，由平台保管"}`;
   }
+}
+
+/** 付款後被平台取消：事件紀錄有 refund_scheduled（款項會退回）。 */
+export function isRefunding(events: { action: string | null }[]): boolean {
+  return events.some((e) => e.action === "refund_scheduled");
 }
 
 /** 案號 = 合作案 id 的前 8 碼（README 的管理員 SQL 用這個找合作案）。 */
@@ -295,7 +301,7 @@ export function actionCardCopy(
     case "awaiting_payout":
       return {
         mine: false, title: "撥款處理中",
-        body: needsPayoutAccount && side === "creator" ? "平台撥款前需要你的收款帳戶，請先設定。" : `平台確認後會把款項撥給創作者。${none}`,
+        body: needsPayoutAccount && side === "creator" ? "設定好收款帳戶後，平台就能撥款。" : `平台確認後會把款項撥給創作者。${none}`,
       };
     case "completed":
       return { mine: false, title: "合作已完成", body: "款項已撥給創作者，謝謝你們的合作。" };

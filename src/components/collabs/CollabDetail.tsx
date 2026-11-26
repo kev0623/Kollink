@@ -1,5 +1,5 @@
 import type { CollabDetailData } from "@/lib/collabs/load";
-import type { CollabSide } from "@/lib/collabs/view";
+import { isRefunding, type CollabSide } from "@/lib/collabs/view";
 import { messagesHref } from "@/lib/messages/view";
 import type { PaymentAvailability } from "@/lib/payments/config";
 import { summarizePayments, summaryForSide } from "@/lib/payments/view";
@@ -25,7 +25,7 @@ export function CollabDetail({ data, side, uid, nowMs, devPaymentEnabled, paymen
   const latest = submissions.length > 0 ? submissions[submissions.length - 1] : null;
   return (
     <div className="space-y-6">
-      <CollabHeader c={c} testPayment={fullSummary.testPaid} />
+      <CollabHeader c={c} testPayment={fullSummary.testPaid} refunding={isRefunding(events)} />
       <Stepper status={c.status} />
       {payoutPrompt && <PayoutPrompt />}
       {side === "brand" && c.status === "awaiting_payment" && summary.recentCreditPending && <PaymentStatusPoller />}
@@ -34,7 +34,7 @@ export function CollabDetail({ data, side, uid, nowMs, devPaymentEnabled, paymen
         devPaymentEnabled={devPaymentEnabled} payment={payment} summary={summary}
         adminCancelled={events.some((e) => e.action === "admin_cancel")} payoutPrompt={payoutPrompt}
       />
-      <SubmissionList submissions={submissions} />
+      {!(submissions.length === 0 && (c.status === "cancelled" || c.status === "declined")) && <SubmissionList submissions={submissions} />}
       <EventList events={events} chatHref={c.conversationId ? messagesHref(side, c.conversationId) : null} fromApplication={c.briefId !== null} />
     </div>
   );

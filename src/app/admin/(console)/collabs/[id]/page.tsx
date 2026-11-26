@@ -8,7 +8,7 @@ import { accountChangedRecently, adminCollabActions, lostPaymentCandidates, payo
 import { formatDateTimeTw } from "@/lib/briefs/dates";
 import { isUuid } from "@/lib/briefs/query";
 import { loadCollabDetail } from "@/lib/collabs/load";
-import { nowMs } from "@/lib/collabs/view";
+import { isRefunding, nowMs } from "@/lib/collabs/view";
 import { formatTwd } from "@/lib/format";
 import { maskAccount } from "@/lib/payout-account";
 import { summarizePayments } from "@/lib/payments/view";
@@ -68,7 +68,7 @@ async function Section({ params }: Props) {
   const lost = lostPaymentCandidates(payments).map((p) => ({ merchantTradeNo: p.merchantTradeNo, amount: p.amount }));
   return (
     <div className="space-y-6">
-      <CollabHeader c={c} testPayment={summary.testPaid} />
+      <CollabHeader c={c} testPayment={summary.testPaid} refunding={isRefunding(data.events)} />
       <p className="text-sm text-muted">
         <Link href={`/c/${c.creatorHandle}`} className="text-accent underline">@{c.creatorHandle}</Link>
         <span>・{c.brandName}</span>

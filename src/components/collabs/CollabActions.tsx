@@ -7,12 +7,13 @@ import { ConfirmAction } from "@/components/briefs/ConfirmAction";
 import { CopyButton } from "@/components/ui/CopyButton";
 import { ErrorText } from "@/components/ui/ErrorText";
 import { Notice } from "@/components/ui/Notice";
+import { SupportLink } from "@/components/ui/SupportLink";
 import { btn } from "@/components/ui/styles";
 import type { CollabSide, CollabStatus } from "@/lib/collabs/view";
 import { formatTwd } from "@/lib/format";
 import type { CheckoutForm, PaymentMethod } from "@/lib/payments/checkout";
 import type { PaymentAvailability } from "@/lib/payments/config";
-import { ATM_EXPIRE_DAYS } from "@/lib/payments/limits";
+import { ATM_EXPIRE_DAYS, PAYMENT_MAX_TWD } from "@/lib/payments/limits";
 import { atmDeadlineLabel, formatVAccount, type AtmPending, type PaymentSummary } from "@/lib/payments/view";
 import { PublishForm } from "./PublishForm";
 import { RevisionForm } from "./RevisionForm";
@@ -23,18 +24,20 @@ type Props = {
   /** 來自招募報名（invited 代表錄取金額低於報價、等待創作者確認），按鈕文字不寫「邀約」 */
   fromApplication: boolean;
   devPaymentEnabled: boolean; payment: PaymentAvailability; summary: PaymentSummary;
+  /** 金額超過線上付款上限：不顯示付款表單，改請聯絡平台線下付款 */
+  offlineOnly?: boolean;
 };
 
 const primary = `${btn.primary} w-full sm:w-auto`;
 
 /** 「現在要做什麼」卡片裡的按鈕（依狀態與視角）。 */
-export function CollabActions({ collabId, status, side, uid, fromApplication, devPaymentEnabled, payment, summary }: Props) {
+export function CollabActions({ collabId, status, side, uid, fromApplication, devPaymentEnabled, payment, summary, offlineOnly }: Props) {
   if (side === "creator" && status === "invited") return <InviteReply collabId={collabId} fromApplication={fromApplication} />;
   if (side === "brand" && (status === "invited" || status === "awaiting_payment")) {
     return (
       <BrandPayment
         collabId={collabId} status={status} fromApplication={fromApplication}
-        devPaymentEnabled={devPaymentEnabled} payment={payment} summary={summary}
+        devPaymentEnabled={devPaymentEnabled} payment={payment} summary={summary} offlineOnly={offlineOnly === true}
       />
     );
   }
@@ -80,23 +83,30 @@ function CreatorLeave({ collabId, devPaymentEnabled }: { collabId: string; devPa
 
 type BrandPaymentProps = {
   collabId: string; status: "invited" | "awaiting_payment"; fromApplication: boolean; devPaymentEnabled: boolean;
-  payment: PaymentAvailability; summary: PaymentSummary;
+  payment: PaymentAvailability; summary: PaymentSummary; offlineOnly: boolean;
 };
 
-function BrandPayment({ collabId, status, fromApplication, devPaymentEnabled, payment, summary }: BrandPaymentProps) {
+function BrandPayment({ collabId, status, fromApplication, devPaymentEnabled, payment, summary, offlineOnly }: BrandPaymentProps) {
   const [changeMethod, setChangeMethod] = useState(false);
-  const atm = status === "awaiting_payment" ? summary.atm : null;
+  const online = status === "awaiting_payment" && !offlineOnly;
+  const atm = online ? summary.atm : null;
   const cancelMessage = atm
     ? "取消後這個合作案就結束了，不能復原。已取得的 ATM 帳號請不要再轉帳；如果已經轉帳，平台會退款。確定要取消嗎？"
     : "取消後這個合作案就結束了，不能復原。確定要取消嗎？";
   return (
     <div className="space-y-3">
-      {status === "awaiting_payment" && payment.env === "stage" && (
+      {status === "awaiting_payment" && offlineOnly && (
+        <Notice tone="warning" title="這筆要線下付款">
+          金額超過線上付款上限 {formatTwd(PAYMENT_MAX_TWD)}，請聯絡平台安排匯款；平台確認入帳後會自動進入交稿。
+          <div><SupportLink subject="線下付款" /></div>
+        </Notice>
+      )}
+      {online && payment.env === "stage" && (
         <Notice tone="info" title="測試模式">目前使用綠界測試環境，不會真的扣款，付款完成也不會撥款給創作者。</Notice>
       )}
       {atm && <AtmCard atm={atm} />}
-      {status === "awaiting_payment" && (!atm || changeMethod) && (
-        <PayForm collabId={collabId} payment={payment} onCancel={atm ? () => setChangeMethod(false) : undefined} />
+      {online && (!atm || changeMethod) && (
+        <PayForm collabId={collabId} payment={payment} recentPending={summary.recentCreditPending} onCancel={atm ? () => setChangeMethod(false) : undefined} />
       )}
       <div className="flex flex-col gap-2 sm:flex-row">
         {atm && !changeMethod && (
@@ -145,7 +155,7 @@ const METHODS: { value: PaymentMethod; label: string; hint: string }[] = [
  * 選付款方式 →「前往付款」：Server Action 建單並回傳綠界表單（含 CheckMacValue），
  * 這裡渲染成隱藏表單後立刻 submit（整頁 POST 到綠界）。
  */
-function PayForm({ collabId, payment, onCancel }: { collabId: string; payment: PaymentAvailability; onCancel?: () => void }) {
+function PayForm({ collabId, payment, onCancel, recentPending = false }: { collabId: string; payment: PaymentAvailability; onCancel?: () => void; recentPending?: boolean }) {
   const [method, setMethod] = useState<PaymentMethod>("credit");
   const [form, setForm] = useState<CheckoutForm | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -207,7 +217,7 @@ function PayForm({ collabId, payment, onCancel }: { collabId: string; payment: P
         ))}
       </fieldset>
       <div className="flex flex-col gap-2 sm:flex-row">
-        <button type="button" disabled={busy} onClick={start} className={primary}>
+        <button type="button" disabled={busy} onClick={start} className={`${recentPending ? btn.secondary : btn.primary} w-full sm:w-auto`}>
           {busy ? "前往綠界付款頁…" : "確認並付款"}
         </button>
         {onCancel && (

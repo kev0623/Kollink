@@ -10,6 +10,9 @@ export function EventList({ events, chatHref, fromApplication }: { events: Colla
         <h2 id="events-title" className={h2}>對話與紀錄</h2>
         {chatHref && <Link href={chatHref} className="inline-flex min-h-11 shrink-0 items-center text-sm font-semibold text-ink underline underline-offset-4 hover:text-accent">前往對話</Link>}
       </div>
+      {events.length === 0 ? (
+        <p className="mt-3 rounded-card border border-line bg-surface p-6 text-center text-sm text-muted">還沒有紀錄</p>
+      ) : (
       <ol className={`${rows} mt-3`}>
         {events.map((e) => (
           <li key={e.id} className="flex gap-3 px-4 py-3 text-sm md:px-5">
@@ -18,6 +21,7 @@ export function EventList({ events, chatHref, fromApplication }: { events: Colla
           </li>
         ))}
       </ol>
+      )}
     </section>
   );
 }
