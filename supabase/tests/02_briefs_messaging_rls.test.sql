@@ -51,9 +51,8 @@ select set_config('request.jwt.claims',
   '{"sub":"00000000-0000-0000-0000-0000000000c1","role":"authenticated"}', true);
 select is((select count(*)::int from public.messages), 1, '對話參與者看得到訊息');
 select lives_ok(
-  $$insert into public.messages (conversation_id, body)
-    values ('00000000-0000-0000-0000-00000000a001', '謝謝，我有興趣！')$$,
-  '對話參與者可以發訊息');
+  $$select public.send_message('00000000-0000-0000-0000-00000000a001', '謝謝，我有興趣！')$$,
+  '對話參與者可以發訊息（計畫 7 起經由 send_message）');
 select throws_ok(
   $$insert into public.messages (conversation_id, body, flagged_contact)
     values ('00000000-0000-0000-0000-00000000a001', 'x', false)$$,
