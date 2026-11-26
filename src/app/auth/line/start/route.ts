@@ -1,4 +1,4 @@
-import { type NextRequest, NextResponse } from "next/server";
+import { connection, type NextRequest, NextResponse } from "next/server";
 import { safeNextPath } from "@/lib/auth/safe-next";
 import { isRole } from "@/lib/auth/post-login";
 import { LINE_CALLBACK_PATH, LINE_COOKIE_TTL, LINE_FLOW_COOKIE, lineOrigin, readLineConfig, secureCookie } from "@/lib/auth/line/config";
@@ -11,6 +11,8 @@ import { lineCookieOptions, logLine, toLoginError } from "@/lib/auth/line/http";
  * 除了設定這個暫存 cookie 之外沒有任何副作用（不建帳號、不改 session）。
  */
 export async function GET(request: NextRequest) {
+  // 一律每次請求才執行：沒設定 LINE 時這個 handler 不會讀 request，Next 會在 build 時把回應預先產生並放到 CDN
+  await connection();
   const config = readLineConfig();
   if (!config) return toLoginError("line_unavailable");
   const origin = lineOrigin(process.env.SITE_URL, request.nextUrl);
