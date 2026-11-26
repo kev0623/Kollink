@@ -2,23 +2,26 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { fetchProviderStatus } from "@/lib/auth/oauth-provider";
 import { isValidOtpCode, OTP_MAX_LENGTH, toOtpCode } from "@/lib/auth/otp-code";
 import { isEmail } from "@/lib/validation/onboarding";
 import { btn, input } from "@/components/ui/styles";
 import { ErrorText } from "@/components/ui/ErrorText";
+import { LineButton } from "./LineButton";
 
-type Props = { role: "brand" | "creator" | null; next: string | null; googleEnabled: boolean };
+type Props = { role: "brand" | "creator" | null; next: string | null; googleEnabled: boolean; lineEnabled?: boolean };
 
 const RESEND_SECONDS = 60;
 const ERROR_ID = "auth-error";
 
-export function AuthForm({ role, next, googleEnabled }: Props) {
+export function AuthForm({ role, next, googleEnabled, lineEnabled = false }: Props) {
   const supabase = useMemo(() => createClient(), []);
   const [step, setStep] = useState<"email" | "code">("email");
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [googlePending, setGooglePending] = useState(false);
   const [cooldown, setCooldown] = useState(0);
   const [attempt, setAttempt] = useState(0);
   const [done, setDone] = useState(false);
@@ -83,12 +86,25 @@ export function AuthForm({ role, next, googleEnabled }: Props) {
   async function google() {
     setError(null);
     setPending(true);
+    setGooglePending(true);
+    // Supabase 後台沒開 Google 時，導過去只會看到 JSON 錯誤：先檢查，留在這裡顯示訊息
+    const status = await fetchProviderStatus(
+      process.env.NEXT_PUBLIC_SUPABASE_URL ?? "", process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? "", "google",
+    );
+    if (status === "disabled") {
+      setPending(false);
+      setGooglePending(false);
+      setAttempt((n) => n + 1);
+      setError("Google 登入目前無法使用，請先改用 Email 驗證碼登入");
+      return;
+    }
     const { error: e } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: { redirectTo: `${window.location.origin}/auth/callback${qs}` },
     });
     if (e) {
       setPending(false);
+      setGooglePending(false);
       setAttempt((n) => n + 1);
       setError("無法使用 Google 登入，請改用 Email");
     }
@@ -96,9 +112,16 @@ export function AuthForm({ role, next, googleEnabled }: Props) {
 
   return (
     <div>
-      {googleEnabled && (
+      {(lineEnabled || googleEnabled) && (
         <>
-          <button type="button" onClick={google} disabled={pending} className={`${btn.secondary} w-full`}>用 Google 繼續</button>
+          <div className="space-y-3">
+            {lineEnabled && <LineButton href={`/auth/line/start${qs}`} disabled={pending} />}
+            {googleEnabled && (
+              <button type="button" onClick={google} disabled={pending} className={`${btn.secondary} w-full`}>
+                {googlePending ? "前往 Google 中…" : "用 Google 繼續"}
+              </button>
+            )}
+          </div>
           <div className="my-5 flex items-center gap-3 text-xs text-muted"><span className="h-px flex-1 bg-line" />或用 Email<span className="h-px flex-1 bg-line" /></div>
         </>
       )}

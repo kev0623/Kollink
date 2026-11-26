@@ -2,7 +2,8 @@ import Link from "next/link";
 import { ThreadCanvas } from "@/components/thread/ThreadCanvas";
 import { ThemeSelect } from "@/components/theme/ThemeSelect";
 import { SkipLink } from "@/components/ui/SkipLink";
-import { SITE_NAME } from "@/lib/site";
+import { textLink } from "@/components/ui/styles";
+import { PRIVACY_PAGE, SITE_NAME, TERMS_PAGE } from "@/lib/site";
 
 /** 登入／註冊外框（規格 §7）：桌面左 55% 是安靜的紅線，右邊是實心表單；手機是 160px 的紅線帶＋表單。 */
 export function AuthShell({ children }: { children: React.ReactNode }) {
@@ -21,7 +22,11 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
       <main id="main" tabIndex={-1} className="flex flex-1 flex-col justify-center bg-bg px-4 py-8 outline-none md:bg-panel md:px-12">
         <div className="mx-auto w-full max-w-[420px]">
           <div className="rounded-card border border-line bg-surface p-5 md:p-8">{children}</div>
-          <div className="mt-6 flex justify-center"><ThemeSelect /></div>
+          <p className="mt-4 flex flex-wrap items-center justify-center text-center text-xs text-muted">
+            繼續即表示你同意<Link href={TERMS_PAGE} className={`${textLink} text-xs`}>《服務條款》</Link>與
+            <Link href={PRIVACY_PAGE} className={`${textLink} text-xs`}>《隱私權政策》</Link>
+          </p>
+          <div className="mt-2 flex justify-center"><ThemeSelect /></div>
         </div>
       </main>
     </div>

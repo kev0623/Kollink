@@ -37,7 +37,7 @@ async function Signup({ searchParams }: { searchParams: SP }) {
   if (!role) {
     return (
       <>
-        <p className="mb-4 text-sm text-muted">先選身分，下一步用 Email 收驗證碼。</p>
+        <p className="mb-4 text-sm text-muted">先選身分，下一步建立帳號。</p>
         <RolePicker hrefFor={(r) => `/signup?role=${r}${next ? `&next=${encodeURIComponent(next)}` : ""}`} />
       </>
     );
@@ -48,7 +48,10 @@ async function Signup({ searchParams }: { searchParams: SP }) {
         以{role === "brand" ? "品牌" : "創作者"}身分註冊
         <Link href={next ? `/signup?next=${encodeURIComponent(next)}` : "/signup"} className={textLink}>更改身分</Link>
       </p>
-      <AuthForm role={role} next={next} googleEnabled={process.env.NEXT_PUBLIC_GOOGLE_AUTH_ENABLED === "true"} />
+      <AuthForm
+        role={role} next={next} googleEnabled={process.env.NEXT_PUBLIC_GOOGLE_AUTH_ENABLED === "true"}
+        lineEnabled={process.env.NEXT_PUBLIC_LINE_AUTH_ENABLED === "true"}
+      />
     </>
   );
 }
