@@ -38,7 +38,7 @@ async function Login({ searchParams }: { searchParams: SP }) {
   const next = safeNextPath(typeof sp.next === "string" ? sp.next : null);
   const lineEnabled = process.env.NEXT_PUBLIC_LINE_AUTH_ENABLED === "true";
   // LINE 登入後要用 Email 驗證碼確認（/auth/line/callback 導過來）
-  if (lineEnabled && isLineVerifyState(sp.line)) return <LineLinkForm onCancelHref="/login" />;
+  if (lineEnabled && isLineVerifyState(sp.line)) return <LineLinkForm onCancelHref="/login" googleEnabled={process.env.NEXT_PUBLIC_GOOGLE_AUTH_ENABLED === "true"} />;
   const lineError = lineErrorMessage(sp.error);
   return (
     <>

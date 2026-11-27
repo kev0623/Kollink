@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { COLLAB_STATUS_LABEL, COLLAB_TABS, listBadge, type CollabListItem, type CollabSide, type CollabTab } from "@/lib/collabs/view";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { LinkPending } from "@/components/ui/LinkPending";
 import { chip, rows } from "@/components/ui/styles";
 import { formatDateTw } from "@/lib/briefs/dates";
 import { formatTwd } from "@/lib/format";
@@ -24,7 +25,7 @@ export function CollabTabs({ side, tab }: { side: CollabSide; tab: CollabTab }) 
             key={t.value} href={href} aria-current={active ? "page" : undefined}
             className={chip(active)}
           >
-            {t.label}
+            {t.label}<LinkPending />
           </Link>
         );
       })}
@@ -39,7 +40,7 @@ export function CollabList({ side, tab, items }: { side: CollabSide; tab: Collab
       <div className="mt-6">
         {tab === "active"
           ? <EmptyState text={EMPTY[side].text} action={EMPTY[side].action} />
-          : <EmptyState text="這裡還沒有合作案。" />}
+          : <EmptyState text={tab === "completed" ? "還沒有完成的合作案。" : "沒有取消的合作案。"} secondary={{ href: `/${side}/collabs`, label: "看進行中" }} />}
       </div>
     );
   }

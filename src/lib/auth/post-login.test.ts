@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { homeFor, isRole, resolvePostLoginPath, withMfaStep } from "./post-login";
+import { afterOnboardingPath, homeFor, isRole, onboardingPath, resolvePostLoginPath, withMfaStep } from "./post-login";
 
 describe("resolvePostLoginPath", () => {
   it("沒有帳號、有選身分 → 對應的填資料頁", () => {
@@ -76,5 +76,39 @@ describe("withMfaStep", () => {
     expect(withMfaStep("/admin", true)).toBe("/admin/mfa");
     expect(withMfaStep("/admin/collabs?state=x", true)).toBe("/admin/mfa?next=%2Fadmin%2Fcollabs%3Fstate%3Dx");
     expect(withMfaStep("/admin/mfa", true)).toBe("/admin/mfa");
+  });
+});
+
+describe("填資料流程帶著原本要去的頁面", () => {
+  it("已選身分：只帶該身分填完後會採用的 next", () => {
+    expect(onboardingPath("brand", "/c/mei.daily")).toBe("/onboarding/brand?next=%2Fc%2Fmei.daily");
+    expect(onboardingPath("creator", "/creator/briefs/abc")).toBe("/onboarding/creator?next=%2Fcreator%2Fbriefs%2Fabc");
+    expect(onboardingPath("brand", "/creator/me")).toBe("/onboarding/brand");
+    expect(onboardingPath("brand", "/brand")).toBe("/onboarding/brand");
+    expect(onboardingPath("creator", null)).toBe("/onboarding/creator");
+  });
+  it("還沒選身分：任一身分會採用就先帶著", () => {
+    expect(onboardingPath(null, "/c/mei")).toBe("/onboarding?next=%2Fc%2Fmei");
+    expect(onboardingPath("admin", "/brand/briefs/new")).toBe("/onboarding?next=%2Fbrand%2Fbriefs%2Fnew");
+    expect(onboardingPath(null, "/admin")).toBe("/onboarding");
+    expect(onboardingPath(null, "/help")).toBe("/onboarding");
+  });
+  it("不安全的 next 一律丟掉", () => {
+    for (const next of ["//evil.com", "https://evil.com", "/c/..", "/login", "/auth/continue", "/c/mei\\x"]) {
+      expect(onboardingPath("brand", next)).toBe("/onboarding/brand");
+      expect(onboardingPath(null, next)).toBe("/onboarding");
+    }
+  });
+  it("resolvePostLoginPath：沒有帳號時帶著 next 去填資料", () => {
+    expect(resolvePostLoginPath({ role: null, requestedRole: "brand", next: "/c/mei.daily" })).toBe("/onboarding/brand?next=%2Fc%2Fmei.daily");
+    expect(resolvePostLoginPath({ role: null, requestedRole: null, next: "/c/mei.daily" })).toBe("/onboarding?next=%2Fc%2Fmei.daily");
+  });
+  it("填完後：合法就回去，否則到首頁", () => {
+    expect(afterOnboardingPath("brand", "/c/mei.daily")).toBe("/c/mei.daily");
+    expect(afterOnboardingPath("creator", "/creator/briefs/abc")).toBe("/creator/briefs/abc");
+    expect(afterOnboardingPath("brand", "/creator/briefs/abc")).toBe("/brand");
+    expect(afterOnboardingPath("creator", "//evil.com")).toBe("/creator");
+    expect(afterOnboardingPath("brand", null)).toBe("/brand");
+    expect(afterOnboardingPath("brand", undefined)).toBe("/brand");
   });
 });

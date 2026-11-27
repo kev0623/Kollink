@@ -64,7 +64,7 @@ export async function CreatorEarningsSection({ searchParams }: { searchParams: S
           {view === "all" && hasUncountedRows(all) && (
             <p className="mt-3 text-sm text-muted">邀約中與等待付款的合作案還沒有計入上面的金額。</p>
           )}
-          <MoneyRows side="creator" items={shown} empty={<FilterEmpty />} />
+          <MoneyRows side="creator" items={shown} empty={<FilterEmpty basePath="/creator/earnings" />} />
         </>
       )}
     </div>
@@ -104,7 +104,7 @@ export async function BrandPaymentsSection({ searchParams }: { searchParams: Sea
       {maybeTruncated && <TruncatedNote />}
       <Notice tone="info" className="mt-4">目前付款由平台人工確認。發票功能尚未提供。</Notice>
       <ViewChips basePath="/brand/payments" views={BRAND_PAYMENTS_VIEWS} current={view} label="付款分類" />
-      <MoneyRows side="brand" items={shown} empty={<FilterEmpty />} />
+      <MoneyRows side="brand" items={shown} empty={<FilterEmpty basePath="/brand/payments" />} />
     </div>
   );
 }

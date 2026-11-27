@@ -5,6 +5,7 @@ import { applyToBriefAction, withdrawApplicationAction, type ApplyFormState } fr
 import { Field } from "@/components/forms/Field";
 import { ErrorText } from "@/components/ui/ErrorText";
 import { btn, input, textarea } from "@/components/ui/styles";
+import { useKeyboardPanel } from "@/components/ui/useKeyboardInset";
 import { MESSAGE_MAX, textLength } from "@/lib/validation/brief";
 import { proposedPriceLabel, type ApplicationStatus } from "@/lib/briefs/view";
 import { ConfirmAction } from "./ConfirmAction";
@@ -20,7 +21,8 @@ type Props = {
 };
 
 // 手機：固定在底部（底部導覽列上方）；桌面：右欄、捲動時固定在上方
-const shell = "sticky bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-[5] max-h-[70vh] overflow-y-auto rounded-card border border-line bg-surface p-4 md:bottom-auto md:top-6 md:max-h-none md:p-5";
+// max-h 用 dvh：手機瀏覽器的網址列收合時不會算錯。鍵盤彈出時由 useKeyboardPanel 另外縮小並移到鍵盤上方。
+const shell = "sticky bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-[5] max-h-[70dvh] overflow-y-auto overscroll-contain rounded-card border border-line bg-surface p-4 md:bottom-auto md:top-6 md:max-h-none md:p-5";
 const primary = `${btn.primary} w-full`;
 
 export function ApplyPanel({ briefId, approved, ended, isMatch, application }: Props) {
@@ -72,6 +74,7 @@ function ApplyForm({ briefId, isMatch }: { briefId: string; isMatch: boolean }) 
   const [price, setPrice] = useState("");
   const count = textLength(message);
   const tooLong = count > MESSAGE_MAX;
+  const panel = useKeyboardPanel();
 
   if (stage === "idle") {
     return (
@@ -93,7 +96,7 @@ function ApplyForm({ briefId, isMatch }: { briefId: string; isMatch: boolean }) 
     );
   }
   return (
-    <aside aria-label="報名" className={shell}>
+    <aside aria-label="報名" className={shell} style={panel.style} onFocus={panel.onFocus}>
       <form action={action} noValidate className="space-y-3">
         <input type="hidden" name="briefId" value={briefId} />
         <Field label="給品牌的話（選填）" error={fe.message} hint="500 字以內">

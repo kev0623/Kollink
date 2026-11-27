@@ -12,7 +12,12 @@ type Props = { side: MessageSide; items: ConversationListItem[]; activeId: strin
 /** 對話列表。目前打開的那一列用主色淡底（primary-soft）反白、不顯示未讀數（標記已讀與重新整理有先後）。 */
 export function ConversationList({ side, items, activeId, today }: Props) {
   if (items.length === 0) {
-    return <EmptyState text={EMPTY_LIST_TEXT[side]} />;
+    return (
+      <EmptyState
+        text={EMPTY_LIST_TEXT[side]}
+        action={side === "brand" ? { href: "/brand", label: "去創作者廣場" } : { href: "/creator", label: "看機會" }}
+      />
+    );
   }
   return (
     <ul aria-label="對話列表" className={rows}>

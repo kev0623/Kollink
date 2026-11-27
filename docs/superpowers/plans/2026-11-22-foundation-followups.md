@@ -321,3 +321,17 @@
 ## 部署
 
 正式環境（Hosted Supabase 與 Vercel）的設定清單以 README 的「正式環境（Hosted Supabase）設定」與「部署（Vercel）」為準，這裡不重複（避免兩份清單不一致）。清單包含：Redirect URLs 加 `https://<site>/auth/callback**`、關閉匿名登入、Email 範本、自訂 SMTP、CAPTCHA、Google OAuth。
+
+### 體驗修整（2026-11-27，分支 `polish-errors-touch-auth-paging`）
+以下項目已完成，上面各節的同名項目以這裡為準：
+- 全站 `error.tsx`（根、品牌、創作者、管理後台、公開頁、填資料流程）與 `global-error.tsx`：分成一般錯誤、沒有網路（連上線自動重試）、網站剛更新（重新整理）三種；伺服器錯誤顯示可複製的錯誤代碼。
+- 「我的報名」「我的招募」「報名者列表」改成資料庫分頁（每頁 20，`src/lib/paging.ts`）；報名者用新函式 `list_brief_applicants_page`、`brief_applicant_status_counts`（`20261201000100_applicant_paging.sql`）。`brief_application_counts` 的 `p_ids` 現在最多 20 個。舊的 `list_brief_applicants(uuid)` 還留在資料庫，確認正式站沒有舊版程式呼叫後可以移除。
+- 註冊完回到原本的頁面：`next` 一路帶過填資料流程（`onboardingPath`、`afterOnboardingPath`）。
+- 寄驗證碼失敗的訊息依原因區分（寄信服務出錯、太頻繁、Email 被拒、沒有網路），並引導改用社群登入。
+- 手機鍵盤彈出時，報名面板與邀請面板會移到鍵盤上方並縮小（`useKeyboardPanel`）；高度單位改 `dvh`。
+- 空狀態都有下一步；篩選標籤與分頁連結在換頁時有「載入中」回饋（`LinkPending`）。
+- 兩個字的文字連結（登入、註冊）寬度補到 44px。
+
+還沒做：
+- 付款紀錄與收入頁的列表仍有筆數上限（`TruncatedNote`），沒有分頁。
+- 鍵盤面板只在模擬環境確認過計算邏輯，需要在實體 iPhone／Android 上確認。

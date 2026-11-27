@@ -58,7 +58,7 @@ export function CreatorTable({ items, sort, onSort }: Props) {
                 <div className="flex items-center gap-3">
                   <Avatar path={c.avatarPath} name={c.displayName} size="sm" />
                   <div className="min-w-0">
-                    <Link href={`/c/${c.handle}`} className="inline-flex min-h-11 items-center font-semibold text-ink hover:underline">{c.displayName}</Link>
+                    <Link href={`/c/${c.handle}`} className="inline-flex min-h-11 min-w-11 items-center font-semibold text-ink hover:underline">{c.displayName}</Link>
                     <p className="text-xs text-muted">@{c.handle}</p>
                     {/* 手機看不到右邊的欄位：把粉絲數與互動率放在第一欄 */}
                     <p className="text-xs text-muted md:hidden">粉絲 {formatNumber(c.followerCount)}・互動率 {formatPercent(c.engagementRate)}</p>

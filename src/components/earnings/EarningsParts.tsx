@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { LinkPending } from "@/components/ui/LinkPending";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Notice } from "@/components/ui/Notice";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -51,7 +52,7 @@ export function ViewChips<V extends string>({ basePath, views, current, label }:
           key={v.value} href={i === 0 ? basePath : `${basePath}?view=${v.value}`}
           aria-current={v.value === current ? "page" : undefined} className={chip(v.value === current)}
         >
-          {v.label}
+          {v.label}<LinkPending />
         </Link>
       ))}
     </nav>
@@ -86,8 +87,8 @@ export function MoneyRows({ side, items, empty }: { side: CollabSide; items: Col
   );
 }
 
-export function FilterEmpty() {
-  return <EmptyState text="這個分類目前沒有合作案。" />;
+export function FilterEmpty({ basePath }: { basePath: string }) {
+  return <EmptyState text="這個分類目前沒有合作案。" secondary={{ href: basePath, label: "看全部" }} />;
 }
 
 /** 與頁面版面一致的骨架：摘要卡＋標籤＋列。 */

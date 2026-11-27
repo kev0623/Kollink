@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { chip } from "@/components/ui/styles";
+import { LinkPending } from "@/components/ui/LinkPending";
 import { OPPORTUNITY_FILTERS, opportunityHref, sameOpportunityQuery, type OpportunityQuery } from "@/lib/briefs/query";
 
 const scroller = "scroll-fade-x -mx-4 flex gap-2 overflow-x-auto px-4 pb-1 md:mx-0 md:flex-wrap md:px-0";
@@ -10,8 +11,8 @@ export function OpportunityFilters({ query }: { query: OpportunityQuery }) {
   return (
     <div className="space-y-3">
       <nav aria-label="機會分頁" className="flex gap-2">
-        <Link href="/creator" aria-current={!applied ? "page" : undefined} className={chip(!applied)}>機會</Link>
-        <Link href="/creator?tab=applied" aria-current={applied ? "page" : undefined} className={chip(applied)}>我的報名</Link>
+        <Link href="/creator" aria-current={!applied ? "page" : undefined} className={chip(!applied)}>機會<LinkPending /></Link>
+        <Link href="/creator?tab=applied" aria-current={applied ? "page" : undefined} className={chip(applied)}>我的報名<LinkPending /></Link>
       </nav>
       {!applied && (
         // relative：捲動容器裡有 sr-only 文字時，避免它撐出整頁的水平捲軸
@@ -22,7 +23,7 @@ export function OpportunityFilters({ query }: { query: OpportunityQuery }) {
               aria-current={sameOpportunityQuery(f.query, query) ? "page" : undefined}
               className={chip(sameOpportunityQuery(f.query, query))}
             >
-              {f.label}
+              {f.label}<LinkPending />
             </Link>
           ))}
           {query.tab === "category" && !OPPORTUNITY_FILTERS.some((f) => sameOpportunityQuery(f.query, query)) && (

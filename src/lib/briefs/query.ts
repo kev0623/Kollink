@@ -80,6 +80,21 @@ export function parseBrandBriefTab(v: string | string[] | undefined): BrandBrief
   return s === "draft" || s === "ended" ? s : "open";
 }
 
+/**
+ * 「我的招募」各分頁在資料庫的條件（與 view.ts 的 displayStatusOf＋brandTabOf 相同的規則，改寫成查詢條件，才能在資料庫分頁）：
+ * 草稿 = draft；發佈中 = open 且沒有截止日或還沒過；已結束 = closed，或 open 但截止日已過。
+ * or 是 PostgREST 的 or() 字串；today 必須是 YYYY-MM-DD（不是就丟錯，不把奇怪的字串拼進查詢）。
+ */
+export function brandBriefTabFilter(tab: BrandBriefTab, today: string): { status?: "draft" | "open"; or?: string } {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(today)) throw new Error("invalid date");
+  if (tab === "draft") return { status: "draft" };
+  if (tab === "open") return { status: "open", or: `deadline.is.null,deadline.gte.${today}` };
+  return { or: `status.eq.closed,and(status.eq.open,deadline.lt.${today})` };
+}
+
+/** 招募詳情：報名者的篩選與頁數寫在網址（?applicants=、?page=），換頁後停在報名者區塊。 */
+export const APPLICANTS_ANCHOR = "applicants";
+
 export const BRAND_BRIEF_TABS: { value: BrandBriefTab; label: string }[] = [
   { value: "open", label: "發佈中" },
   { value: "draft", label: "草稿" },

@@ -9,7 +9,7 @@ import { suggestHandle } from "@/lib/validation/onboarding";
 import type { FormState } from "@/lib/auth/account-errors";
 import { createCreatorAccountAction } from "./actions";
 
-export function CreatorOnboardingForm() {
+export function CreatorOnboardingForm({ next }: { next: string | null }) {
   const [state, action, pending] = useActionState<FormState, FormData>(createCreatorAccountAction, {});
   const [ig, setIg] = useState("");
   const [handle, setHandle] = useState("");
@@ -20,6 +20,7 @@ export function CreatorOnboardingForm() {
   const k = JSON.stringify(state.values ?? null);
   return (
     <form noValidate action={action} className={`space-y-4 ${cardPad}`}>
+      {next && <input type="hidden" name="next" value={next} />}
       <Field label="顯示名稱" mark="required" error={fe.displayName}>
         {(c) => <input key={k} {...c} name="displayName" maxLength={40} defaultValue={str(v.displayName)} className={input} />}
       </Field>

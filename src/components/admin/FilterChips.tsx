@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { chip } from "@/components/ui/styles";
+import { LinkPending } from "@/components/ui/LinkPending";
 
 /** 篩選標籤（連結，寫進網址）。選到的那個 aria-current="page"。 */
 export function FilterChips<T extends string>({ label, options, current, hrefFor }: {
@@ -13,7 +14,7 @@ export function FilterChips<T extends string>({ label, options, current, hrefFor
           return (
             <li key={o.value}>
               <Link href={hrefFor(o.value)} aria-current={active ? "page" : undefined} className={chip(active)}>
-                {o.label}
+                {o.label}<LinkPending />
               </Link>
             </li>
           );

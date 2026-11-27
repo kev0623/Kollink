@@ -56,9 +56,18 @@ function Results({ initial, query, queryKey, today }: Props) {
   }
 
   if (items.length === 0) {
-    return query.tab === "match"
-      ? <EmptyState text="目前沒有完全符合你條件的招募。看看全部招募吧。" action={{ href: "/creator?tab=all", label: "看全部招募" }} />
-      : <EmptyState text="還沒有符合的機會。換個篩選條件試試。" />;
+    if (query.tab === "match") {
+      return <EmptyState text="目前沒有完全符合你條件的招募。看看全部招募吧。" action={{ href: "/creator?tab=all", label: "看全部招募" }} />;
+    }
+    if (query.tab === "all") {
+      return (
+        <EmptyState
+          text="目前沒有開放中的招募。品牌也會從創作者廣場主動邀請，把個人檔案補完整，更容易被找到。"
+          action={{ href: "/creator/me/profile", label: "編輯個人檔案" }}
+        />
+      );
+    }
+    return <EmptyState text="這個分類目前沒有招募。" action={{ href: "/creator?tab=all", label: "看全部招募" }} />;
   }
 
   return (

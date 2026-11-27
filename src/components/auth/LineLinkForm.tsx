@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { isValidOtpCode, OTP_MAX_LENGTH, toOtpCode } from "@/lib/auth/otp-code";
+import { classifyOtpSendError, lineLinkSendErrorMessage } from "@/lib/auth/otp-send-error";
 import { isLineLinkError, LINE_LINK_ERRORS, lineAccountLabel, lineVerifyNotice, type LineLinkError } from "@/lib/auth/line/messages";
 import { parsePendingResponse, type PendingViewData } from "@/lib/auth/line/pending-view";
 import { btn, input } from "@/components/ui/styles";
@@ -24,7 +25,7 @@ function safeRedirect(v: unknown): string | null {
  * 驗證碼的寄送與驗證都在瀏覽器用 Supabase 進行（與 Email 登入相同，頻率限制算在使用者自己的 IP）；
  * 驗證通過、session 建立後，POST /auth/line/link 只負責把 LINE 綁定到這個帳號。
  */
-export function LineLinkForm({ onCancelHref }: { onCancelHref: string }) {
+export function LineLinkForm({ onCancelHref, googleEnabled = false }: { onCancelHref: string; googleEnabled?: boolean }) {
   const supabase = useMemo(() => createClient(), []);
   const [view, setView] = useState<PendingViewData | null>(null);
   const [sent, setSent] = useState(false);
@@ -52,18 +53,22 @@ export function LineLinkForm({ onCancelHref }: { onCancelHref: string }) {
     setPending(true);
     const { error: e } = await supabase.auth.signInWithOtp({ email: to, options: { shouldCreateUser: true } });
     setPending(false);
-    setCooldown(RESEND_SECONDS);
-    setSent(true);
-    if (e?.status === 429) {
+    const kind = classifyOtpSendError(e);
+    if (kind === "rate") {
       // 剛寄過（例如重新整理頁面）：信箱裡的驗證碼仍然有效
+      setCooldown(RESEND_SECONDS);
+      setSent(true);
       setInfo("驗證碼剛寄出過，請查看信箱；收不到的話稍後可以重寄。");
       return;
     }
-    if (e) {
-      setSent(false);
-      fail("send");
+    if (kind) {
+      // 沒寄出去：留在原本的畫面（已經在輸入驗證碼就不退回），不啟動倒數，可以馬上再試
+      setAttempt((n) => n + 1);
+      setError(lineLinkSendErrorMessage(kind, googleEnabled));
       return;
     }
+    setCooldown(RESEND_SECONDS);
+    setSent(true);
   }
 
   useEffect(() => {

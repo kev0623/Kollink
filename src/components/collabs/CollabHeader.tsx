@@ -8,7 +8,7 @@ export function CollabHeader({ c, testPayment, refund = null }: { c: Collab; tes
     <header className="space-y-3">
       <div className="flex flex-wrap items-center gap-2">
         <h1 className="min-w-0 break-words font-serif text-[24px] font-bold leading-tight text-ink md:text-[28px]">
-          <Link href={`/c/${c.creatorHandle}`} className="inline-flex min-h-11 items-center underline-offset-4 hover:underline">{c.creatorName}</Link>
+          <Link href={`/c/${c.creatorHandle}`} className="inline-flex min-h-11 min-w-11 items-center underline-offset-4 hover:underline">{c.creatorName}</Link>
           <span className="text-muted"> × </span>
           {c.title}
         </h1>

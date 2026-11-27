@@ -8,7 +8,7 @@ import { INDUSTRIES } from "@/lib/options";
 import type { FormState } from "@/lib/auth/account-errors";
 import { createBrandAccountAction } from "./actions";
 
-export function BrandOnboardingForm({ userId }: { userId: string }) {
+export function BrandOnboardingForm({ userId, next }: { userId: string; next: string | null }) {
   const [state, action, pending] = useActionState<FormState, FormData>(createBrandAccountAction, {});
   const [logoBusy, setLogoBusy] = useState(false);
   const fe = state.fieldErrors ?? {};
@@ -17,6 +17,7 @@ export function BrandOnboardingForm({ userId }: { userId: string }) {
   const k = JSON.stringify(state.values ?? null);
   return (
     <form noValidate action={action} className={`space-y-4 ${cardPad}`}>
+      {next && <input type="hidden" name="next" value={next} />}
       <Field label="品牌名稱" mark="required" error={fe.brandName}>
         {(c) => <input key={k} {...c} name="brandName" maxLength={60} defaultValue={str(v.brandName)} className={input} />}
       </Field>
