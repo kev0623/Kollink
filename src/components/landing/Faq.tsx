@@ -13,7 +13,7 @@ const ITEMS: { q: string; a: string }[] = [
 /** 常見問題：原生 <details>，不用 JavaScript，鍵盤與螢幕閱讀器都能用。 */
 export function Faq() {
   return (
-    <section aria-labelledby="faq-title" className="mx-auto max-w-[1280px] px-5 py-14 md:px-16 md:py-24">
+    <section id="faq" aria-labelledby="faq-title" className="scroll-mt-4 mx-auto max-w-[1280px] px-5 py-14 md:px-16 md:py-24">
       <div className="grid gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:gap-16">
         <h2 id="faq-title" className="font-serif text-[28px] font-bold text-ink [text-wrap:balance] md:text-[40px]">開始之前，你可能想問</h2>
         <div className="divide-y divide-line border-y border-line">

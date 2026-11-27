@@ -19,8 +19,7 @@ export default function Home() {
       <SkipLink />
       <TopBar />
       <main id="main" tabIndex={-1} className="outline-none">
-        <Hero scene={<ThreadCanvas variant="hero" />} />
-        <FeaturedCreators />
+        <Hero scene={<ThreadCanvas variant="hero" />} cards={<FeaturedCreators />} />
         <Workflow />
         <Trust />
         <ForBoth />
