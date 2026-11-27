@@ -1,0 +1,57 @@
+import Link from "next/link";
+import { MapPin, Star } from "lucide-react";
+import { creatorMediaUrl } from "@/lib/creator-media";
+import { formatNumber, formatTwd, initialOf } from "@/lib/format";
+import { formatRating } from "@/lib/reviews/view";
+import type { DirectoryCreator } from "@/lib/creators/directory";
+
+/**
+ * 公開列表的創作者卡片：整張卡是一個連結。上方是作品（沒有作品用頭像，都沒有用名字第一個字），
+ * 左上角是粉絲數；下方是名字、類別、地區與評分。
+ */
+export function CreatorCard({ c, priority }: { c: DirectoryCreator; priority?: boolean }) {
+  const image = creatorMediaUrl(c.coverPath) ?? creatorMediaUrl(c.avatarPath);
+  return (
+    <Link
+      href={`/c/${c.handle}`}
+      className="group block min-w-0 overflow-hidden rounded-card border border-line bg-surface outline-none transition-colors hover:border-line-strong focus-visible:ring-2 focus-visible:ring-focus"
+    >
+      <div className="relative aspect-[4/5] bg-panel">
+        {image ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={image} alt="" loading={priority ? "eager" : "lazy"} className="h-full w-full object-cover" />
+        ) : (
+          <div aria-hidden="true" className="flex h-full w-full items-center justify-center font-serif text-6xl font-bold text-line-strong">
+            {initialOf(c.displayName)}
+          </div>
+        )}
+        <span className="absolute left-2 top-2 rounded-btn bg-bg/85 px-2.5 py-1 text-xs font-bold tabular-nums text-ink">
+          {formatNumber(c.followerCount)} 粉絲
+        </span>
+      </div>
+      <div className="p-3 md:p-4">
+        <p className="flex items-center justify-between gap-2">
+          <span className="min-w-0 truncate font-bold text-ink group-hover:underline group-hover:underline-offset-4">{c.displayName}</span>
+          {c.rating !== null && (
+            <span className="inline-flex shrink-0 items-center gap-0.5 text-sm font-semibold tabular-nums text-ink">
+              <Star size={13} strokeWidth={1.5} aria-hidden="true" className="fill-current text-primary" />
+              {formatRating(c.rating)}<span className="sr-only">顆星，</span>
+              <span className="font-normal text-muted">（{c.reviewCount}）</span>
+            </span>
+          )}
+        </p>
+        <p className="mt-1 truncate text-xs text-muted">{c.categories.length > 0 ? c.categories.join("・") : "尚未設定類別"}</p>
+        <p className="mt-2 flex min-h-5 items-center justify-between gap-2 text-xs text-muted">
+          <span className="inline-flex min-w-0 items-center gap-0.5 truncate">
+            {c.region && <><MapPin size={12} strokeWidth={1.5} aria-hidden="true" />{c.region}</>}
+          </span>
+          {c.minPrice !== null && (
+            <span className="shrink-0 text-sm font-bold tabular-nums text-ink">{formatTwd(c.minPrice)}<span className="ml-0.5 text-xs font-normal text-muted">起</span></span>
+          )}
+        </p>
+      </div>
+    </Link>
+  );
+}
+
+export const CREATOR_GRID = "grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4 xl:grid-cols-4";

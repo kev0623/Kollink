@@ -27,7 +27,7 @@ const SECTIONS = [
 export default function CreatorMePage() {
   return (
     <>
-      <PageHeader title="我的" description="這裡的資料會出現在你的公開頁；報價只有品牌看得到。" />
+      <PageHeader title="我的" description="這裡的資料會出現在你的公開頁；報價的最低價會以「起價」公開顯示，各項目的完整報價只有品牌看得到。" />
       <nav aria-label="本頁段落" className="scroll-fade-x -mx-4 mb-6 flex gap-2 overflow-x-auto px-4 md:mx-0 md:px-0">
         {SECTIONS.map((s) => <a key={s.id} href={`#${s.id}`} className="inline-flex h-11 shrink-0 items-center rounded-btn border border-line-strong px-4 text-sm font-bold text-ink hover:bg-subtle">{s.label}</a>)}
       </nav>

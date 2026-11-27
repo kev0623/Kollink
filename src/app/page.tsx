@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { ForBoth } from "@/components/landing/ForBoth";
 import { Hero } from "@/components/landing/Hero";
-import { HowItWorks } from "@/components/landing/HowItWorks";
+import { Faq } from "@/components/landing/Faq";
+import { FeaturedCreators } from "@/components/landing/FeaturedCreators";
+import { Workflow } from "@/components/landing/Workflow";
 import { LandingFooter } from "@/components/landing/LandingFooter";
 import { TopBar } from "@/components/landing/TopBar";
 import { Trust } from "@/components/landing/Trust";
@@ -17,10 +19,11 @@ export default function Home() {
       <SkipLink />
       <TopBar />
       <main id="main" tabIndex={-1} className="outline-none">
-        <Hero scene={<ThreadCanvas variant="hero" />} />
-        <HowItWorks />
-        <ForBoth />
+        <Hero scene={<ThreadCanvas variant="hero" />} cards={<FeaturedCreators />} />
+        <Workflow />
         <Trust />
+        <ForBoth />
+        <Faq />
       </main>
       <LandingFooter />
     </>

@@ -795,6 +795,11 @@ isOneToOne: false
               "applicant_count": number,"brand_id": string,"brand_logo_path": string,"brand_name": string,"budget_max_twd": number,"budget_min_twd": number,"categories": (string)[],"category_ok": boolean,"collab_ok": boolean,"collab_types": (string)[],"cover_path": string,"deadline": string,"followers_ok": boolean,"has_applied": boolean,"id": string,"includes_product": boolean,"is_match": boolean,"min_followers": number,"my_status": string,"region": string,"region_ok": boolean,"title": string,"total_count": number
             }[]
                            },
+"list_public_creators":
+{ Args: { "p_category"?: string,"p_keyword"?: string,"p_limit"?: number,"p_offset"?: number,"p_region"?: string,"p_sort"?: string }; Returns: {
+              "avatar_path": string,"avg_rating": number,"categories": (string)[],"cover_path": string,"display_name": string,"engagement_rate": number,"follower_count": number,"handle": string,"min_price": number,"region": string,"review_count": number,"total_count": number
+            }[]
+                           },
 "mark_conversation_read":
 { Args: { "p_conversation_id": string }; Returns: undefined
                            },
