@@ -2,7 +2,7 @@
 -- 本機資料庫可能有其他創作者：斷言一律用關鍵字 pubtest 過濾。
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(19);
+select plan(22);
 
 -- e3001 品牌；e3011 美妝／台北（1 萬粉、有評價 5 星）、e3012 美食／高雄（5 萬粉）、e3013 美妝／高雄（3 千粉、評價被隱藏）、
 -- e3014 未審核、e3015 停權
@@ -25,6 +25,11 @@ insert into public.creator_profiles (user_id, handle, ig_username, status, categ
 insert into public.creator_portfolio_items (creator_id, image_path, position) values
   ('00000000-0000-0000-0000-0000000e3011', '00000000-0000-0000-0000-0000000e3011/portfolio-p2.jpg', 2),
   ('00000000-0000-0000-0000-0000000e3011', '00000000-0000-0000-0000-0000000e3011/portfolio-p1.jpg', 1);
+-- 報價：甲 3000／8000（起價 3000）、乙 1500；丙沒有報價
+insert into public.creator_rates (creator_id, collab_type, price_twd) values
+  ('00000000-0000-0000-0000-0000000e3011', 'IG 貼文', 8000),
+  ('00000000-0000-0000-0000-0000000e3011', '限時動態', 3000),
+  ('00000000-0000-0000-0000-0000000e3012', 'IG 貼文', 1500);
 insert into public.conversations (id, brand_id, creator_id) values
   ('00000000-0000-0000-0000-0000000e3d01', '00000000-0000-0000-0000-0000000e3001', '00000000-0000-0000-0000-0000000e3011'),
   ('00000000-0000-0000-0000-0000000e3d02', '00000000-0000-0000-0000-0000000e3001', '00000000-0000-0000-0000-0000000e3013');
@@ -80,6 +85,13 @@ select results_eq(
   $$values ('pubtest_b')$$, '分頁');
 select is((select count(*)::int from public.list_public_creators('pubtest', null, null, 'newest', -5, -5)), 1, 'limit 與 offset 夾在範圍內（最少 1 筆、從頭）');
 select is((select count(*)::int from public.list_public_creators(repeat('x', 300))), 0, '超長關鍵字截斷後照常查詢');
+
+select results_eq(
+  $$select handle, min_price from public.list_public_creators('pubtest', null, null, 'price')$$,
+  $$values ('pubtest_b', 1500), ('pubtest_a', 3000), ('pubtest_c', null::integer)$$, '依起價排序：低的在前，沒有報價的排最後；起價是最低的那一筆');
+select throws_ok($$select count(*) from public.creator_rates$$, '42501', null, '訪客仍然不能直接讀完整報價');
+reset role;
+select ok(not has_table_privilege('anon', 'public.creator_rates', 'SELECT'), 'anon 對 creator_rates 沒有讀取權限');
 
 select * from finish();
 rollback;

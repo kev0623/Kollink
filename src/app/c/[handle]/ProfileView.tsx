@@ -219,7 +219,7 @@ function RatesSection({ viewer, handle, rates }: { viewer: ViewerKind; handle: s
     return (
       <Section title="報價方案" card>
         <p className="flex items-center gap-2 rounded-input bg-subtle p-4 text-sm font-semibold text-ink">
-          <Lock size={16} strokeWidth={1.5} aria-hidden="true" />報價只開放給品牌查看
+          <Lock size={16} strokeWidth={1.5} aria-hidden="true" />完整報價只開放給品牌查看
         </p>
       </Section>
     );
@@ -231,7 +231,7 @@ function RatesSection({ viewer, handle, rates }: { viewer: ViewerKind; handle: s
           href={`/login?next=${encodeURIComponent(`/c/${handle}`)}`}
           className="flex items-center gap-2 rounded-input bg-subtle p-4 text-sm font-semibold text-ink hover:bg-subtle-hover"
         >
-          <Lock size={16} strokeWidth={1.5} aria-hidden="true" />品牌登入後可查看報價
+          <Lock size={16} strokeWidth={1.5} aria-hidden="true" />品牌登入後可查看完整報價
         </Link>
       </Section>
     );

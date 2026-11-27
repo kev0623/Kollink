@@ -797,7 +797,7 @@ isOneToOne: false
                            },
 "list_public_creators":
 { Args: { "p_category"?: string,"p_keyword"?: string,"p_limit"?: number,"p_offset"?: number,"p_region"?: string,"p_sort"?: string }; Returns: {
-              "avatar_path": string,"avg_rating": number,"categories": (string)[],"cover_path": string,"display_name": string,"engagement_rate": number,"follower_count": number,"handle": string,"region": string,"review_count": number,"total_count": number
+              "avatar_path": string,"avg_rating": number,"categories": (string)[],"cover_path": string,"display_name": string,"engagement_rate": number,"follower_count": number,"handle": string,"min_price": number,"region": string,"review_count": number,"total_count": number
             }[]
                            },
 "mark_conversation_read":

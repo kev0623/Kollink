@@ -13,6 +13,7 @@ export const DIRECTORY_SORTS = [
   { value: "newest", label: "最新加入" },
   { value: "followers", label: "粉絲數多" },
   { value: "rating", label: "評價高" },
+  { value: "price", label: "起價低" },
 ] as const;
 export type DirectorySort = (typeof DIRECTORY_SORTS)[number]["value"];
 
@@ -63,6 +64,7 @@ export type DirectoryRow = {
   engagement_rate: number | string | null;
   avg_rating: number | string | null;
   review_count: number | null;
+  min_price?: number | null;
   total_count: number | string | null;
 };
 
@@ -77,6 +79,8 @@ export type DirectoryCreator = {
   engagementRate: number | null;
   rating: number | null;
   reviewCount: number;
+  /** 起價（所有報價的最低價）；沒有報價是 null。公開顯示 */
+  minPrice: number | null;
 };
 
 function num(v: number | string | null): number | null {
@@ -101,6 +105,7 @@ export function toDirectory(rows: DirectoryRow[]): { items: DirectoryCreator[]; 
       engagementRate: num(r.engagement_rate),
       rating: reviewCount > 0 ? num(r.avg_rating) : null,
       reviewCount,
+      minPrice: r.min_price ?? null,
     });
   }
   return { items, total: num(rows[0]?.total_count ?? null) ?? 0 };

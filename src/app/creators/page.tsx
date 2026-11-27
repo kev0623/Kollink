@@ -31,7 +31,7 @@ export default function CreatorsPage({ searchParams }: Props) {
   return (
     <div className="pt-4 md:pt-8">
       <h1 className={h1}>找創作者</h1>
-      <p className="mt-2 max-w-[560px] text-sm text-muted">每一位都經過平台人工審核。看報價、邀請合作需要品牌帳號，註冊免費。</p>
+      <p className="mt-2 max-w-[560px] text-sm text-muted">每一位都經過平台人工審核。卡片上是起價；看完整報價、邀請合作需要品牌帳號，註冊免費。</p>
       <Suspense fallback={<ResultsSkeleton />}>
         <Results searchParams={searchParams} />
       </Suspense>
@@ -90,7 +90,7 @@ async function Results({ searchParams }: Props) {
       <aside aria-labelledby="dir-cta" className="mt-12 rounded-card border border-line bg-panel p-6 md:flex md:items-center md:justify-between md:gap-8 md:p-8">
         <div className="min-w-0">
           <h2 id="dir-cta" className="font-serif text-xl font-bold text-ink md:text-2xl">找到適合的人了嗎？</h2>
-          <p className="mt-2 text-sm text-muted">註冊品牌帳號就能看報價、直接邀請，或刊登招募讓創作者來報名。款項由平台保管，交稿通過才撥出。</p>
+          <p className="mt-2 text-sm text-muted">註冊品牌帳號就能看完整報價、直接邀請，或刊登招募讓創作者來報名。款項由平台保管，交稿通過才撥出。</p>
         </div>
         <div className="mt-5 flex shrink-0 flex-wrap gap-3 md:mt-0">
           <Link href="/signup?role=brand" className={btn.primary}>註冊品牌帳號</Link>

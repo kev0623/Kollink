@@ -21,7 +21,7 @@ describe("ProfileView 報價區", () => {
   });
   it("創作者（含本人）只看到說明文字，沒有登入連結", () => {
     const out = html("creator");
-    expect(out).toContain("報價只開放給品牌查看");
+    expect(out).toContain("完整報價只開放給品牌查看");
     expect(out).not.toContain("/login");
   });
 });

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { Star } from "lucide-react";
 import { creatorMediaUrl } from "@/lib/creator-media";
-import { formatNumber, initialOf } from "@/lib/format";
+import { formatNumber, formatTwd, initialOf } from "@/lib/format";
 import { formatRating } from "@/lib/reviews/view";
 import { DIRECTORY_PATH, type DirectoryCreator } from "@/lib/creators/directory";
 import { loadFeaturedCreators } from "@/lib/creators/directory-load";
@@ -67,7 +67,12 @@ function HeroCard({ c }: { c: DirectoryCreator }) {
             </span>
           )}
         </p>
-        <p className="mt-0.5 truncate text-xs text-muted">{c.categories.length > 0 ? c.categories.join("・") : c.region ?? ""}</p>
+        <p className="mt-0.5 flex items-center justify-between gap-2 text-xs text-muted">
+          <span className="min-w-0 truncate">{c.categories.length > 0 ? c.categories.join("・") : c.region ?? ""}</span>
+          {c.minPrice !== null && (
+            <span className="shrink-0 text-sm font-bold tabular-nums text-ink">{formatTwd(c.minPrice)}<span className="ml-0.5 text-xs font-normal text-muted">起</span></span>
+          )}
+        </p>
       </div>
     </Link>
   );

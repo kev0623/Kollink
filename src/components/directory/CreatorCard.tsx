@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { MapPin, Star } from "lucide-react";
 import { creatorMediaUrl } from "@/lib/creator-media";
-import { formatNumber, initialOf } from "@/lib/format";
+import { formatNumber, formatTwd, initialOf } from "@/lib/format";
 import { formatRating } from "@/lib/reviews/view";
 import type { DirectoryCreator } from "@/lib/creators/directory";
 
@@ -41,11 +41,14 @@ export function CreatorCard({ c, priority }: { c: DirectoryCreator; priority?: b
           )}
         </p>
         <p className="mt-1 truncate text-xs text-muted">{c.categories.length > 0 ? c.categories.join("・") : "尚未設定類別"}</p>
-        {c.region && (
-          <p className="mt-1 flex items-center gap-0.5 text-xs text-muted">
-            <MapPin size={12} strokeWidth={1.5} aria-hidden="true" />{c.region}
-          </p>
-        )}
+        <p className="mt-2 flex min-h-5 items-center justify-between gap-2 text-xs text-muted">
+          <span className="inline-flex min-w-0 items-center gap-0.5 truncate">
+            {c.region && <><MapPin size={12} strokeWidth={1.5} aria-hidden="true" />{c.region}</>}
+          </span>
+          {c.minPrice !== null && (
+            <span className="shrink-0 text-sm font-bold tabular-nums text-ink">{formatTwd(c.minPrice)}<span className="ml-0.5 text-xs font-normal text-muted">起</span></span>
+          )}
+        </p>
       </div>
     </Link>
   );

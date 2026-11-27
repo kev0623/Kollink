@@ -5,7 +5,7 @@ import {
 
 const row = (over: Partial<DirectoryRow> = {}): DirectoryRow => ({
   handle: "mei", display_name: "小美", avatar_path: null, cover_path: null, region: "台北市", categories: ["美妝"],
-  follower_count: 1200, engagement_rate: "3.5", avg_rating: "4.8", review_count: 3, total_count: "27", ...over,
+  follower_count: 1200, engagement_rate: "3.5", avg_rating: "4.8", review_count: 3, min_price: 3000, total_count: "27", ...over,
 });
 
 describe("parseDirectoryQuery", () => {
@@ -17,7 +17,7 @@ describe("parseDirectoryQuery", () => {
       .toEqual({ q: "小美", category: "美妝", region: "台北市", sort: "rating", page: 3 });
   });
   it("不認得的值退回預設，不報錯", () => {
-    expect(parseDirectoryQuery({ category: "", region: "火星", sort: "price", page: "abc" }))
+    expect(parseDirectoryQuery({ category: "", region: "火星", sort: "cheapest", page: "abc" }))
       .toEqual({ q: "", category: null, region: null, sort: "newest", page: 1 });
     expect(parseDirectoryQuery({ category: ["美食", "美妝"], q: ["a", "b"] })).toMatchObject({ category: "美食", q: "a" });
   });
@@ -48,7 +48,7 @@ describe("toDirectory", () => {
       total: 27,
       items: [{
         handle: "mei", displayName: "小美", avatarPath: null, coverPath: null, region: "台北市", categories: ["美妝"],
-        followerCount: 1200, engagementRate: 3.5, rating: 4.8, reviewCount: 3,
+        followerCount: 1200, engagementRate: 3.5, rating: 4.8, reviewCount: 3, minPrice: 3000,
       }],
     });
   });
@@ -56,6 +56,8 @@ describe("toDirectory", () => {
     const { items } = toDirectory([row({ review_count: 0, avg_rating: null, display_name: null, categories: null }), row({ handle: null })]);
     expect(items).toHaveLength(1);
     expect(items[0]).toMatchObject({ rating: null, reviewCount: 0, displayName: "mei", categories: [] });
+    expect(toDirectory([row({ min_price: null })]).items[0].minPrice).toBeNull();
+    expect(toDirectory([row({ min_price: undefined })]).items[0].minPrice).toBeNull();
   });
   it("沒有列時 total 是 0", () => {
     expect(toDirectory([])).toEqual({ items: [], total: 0 });
