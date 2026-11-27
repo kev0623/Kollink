@@ -236,3 +236,9 @@
     }
   }
 }
+
+/* 中英文切換（src/lib/lang.ts）：兩種語言都在 HTML 裡，只顯示 <html data-lang> 指定的那一種；預設中文 */
+html:not([data-lang="en"]) [data-l="en"],
+html[data-lang="en"] [data-l="zh"] {
+  display: none !important;
+}

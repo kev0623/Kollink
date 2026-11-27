@@ -3,6 +3,8 @@ import { ThreadFallback } from "@/components/thread/ThreadFallback";
 import { btn } from "@/components/ui/styles";
 import { SearchBar } from "@/components/directory/SearchBar";
 import { directoryHref } from "@/lib/creators/directory";
+import { T } from "@/components/i18n/T";
+import { optionLabel } from "@/lib/lang";
 import { HERO_HEADLINE } from "@/lib/site";
 
 /** 首頁搜尋列下方的捷徑（類別清單的前幾個） */
@@ -21,12 +23,21 @@ export function Hero({ scene, cards }: { scene?: React.ReactNode; cards?: React.
       <div className="mx-auto w-full max-w-[1280px] px-5 pb-12 pt-36 md:px-16 md:pb-20 md:pt-44">
         <div className="mx-auto max-w-[900px] text-center">
           <h1 id="hero-title" className="font-serif text-[40px] font-black leading-[1.15] text-ink [text-wrap:balance] md:text-[56px] xl:text-[68px]">
-            {HERO_HEADLINE.split("，").map((part, i, a) => (
-              <span key={part} className="block">{part}{i < a.length - 1 ? "，" : ""}</span>
-            ))}
+            <span data-l="zh">
+              {HERO_HEADLINE.split("，").map((part, i, a) => (
+                <span key={part} className="block">{part}{i < a.length - 1 ? "，" : ""}</span>
+              ))}
+            </span>
+            <span data-l="en" lang="en">
+              <span className="block">The right brand,</span>
+              <span className="block">tied to the right creator.</span>
+            </span>
           </h1>
           <p className="mx-auto mt-5 max-w-[620px] text-base text-muted [text-wrap:pretty] md:text-lg">
-            在同一個地方找創作者、談條件、付款、交稿到撥款。款項由平台保管，交稿通過才撥出。
+            <T
+              zh="在同一個地方找創作者、談條件、付款、交稿到撥款。款項由平台保管，交稿通過才撥出。"
+              en="Find creators, agree terms, pay, review the work and release payment in one place. We hold the money until the work is approved."
+            />
           </p>
         </div>
         <div className="mx-auto mt-8 max-w-[1040px] md:mt-10">
@@ -34,7 +45,7 @@ export function Hero({ scene, cards }: { scene?: React.ReactNode; cards?: React.
           <nav aria-label="熱門類別" className="scroll-fade-x mt-3 flex gap-2 overflow-x-auto pb-1 md:justify-center">
             {QUICK.map((c) => (
               <Link key={c} href={directoryHref({ category: c })} className="inline-flex h-11 shrink-0 items-center rounded-btn border border-line-strong bg-bg/60 px-4 text-sm font-semibold text-ink hover:bg-subtle">
-                {c}
+                <T {...optionLabel(c)} />
               </Link>
             ))}
           </nav>
@@ -43,7 +54,7 @@ export function Hero({ scene, cards }: { scene?: React.ReactNode; cards?: React.
         <div className="mt-8 flex flex-col items-center gap-3 md:mt-10">
           <EntryButtons />
           <p className="text-sm text-muted">
-            已經有帳號？<Link href="/login" className="inline-flex min-h-11 min-w-11 items-center justify-center font-bold text-ink underline underline-offset-4">登入</Link>
+            <T zh="已經有帳號？" en="Already have an account? " /><Link href="/login" className="inline-flex min-h-11 min-w-11 items-center justify-center font-bold text-ink underline underline-offset-4"><T zh="登入" en="Log in" /></Link>
           </p>
         </div>
       </div>
@@ -55,8 +66,8 @@ export function Hero({ scene, cards }: { scene?: React.ReactNode; cards?: React.
 export function EntryButtons({ className = "" }: { className?: string }) {
   return (
     <div className={`grid grid-cols-2 gap-3 sm:flex ${className}`}>
-      <Link href="/signup?role=brand" data-thread-pull="brand" className={btn.secondaryLg}>我是品牌</Link>
-      <Link href="/signup?role=creator" data-thread-pull="creator" className={btn.secondaryLg}>我是創作者</Link>
+      <Link href="/signup?role=brand" data-thread-pull="brand" className={btn.secondaryLg}><T zh="我是品牌" en="I'm a brand" /></Link>
+      <Link href="/signup?role=creator" data-thread-pull="creator" className={btn.secondaryLg}><T zh="我是創作者" en="I'm a creator" /></Link>
     </div>
   );
 }

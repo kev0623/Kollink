@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ThreadCanvas } from "@/components/thread/ThreadCanvas";
-import { ThemeSelect } from "@/components/theme/ThemeSelect";
+import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { SkipLink } from "@/components/ui/SkipLink";
 import { textLink } from "@/components/ui/styles";
 import { PRIVACY_PAGE, SITE_NAME, TERMS_PAGE } from "@/lib/site";
@@ -19,14 +19,14 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
           每一次合作，都從一條線開始。
         </p>
       </div>
-      <main id="main" tabIndex={-1} className="flex flex-1 flex-col justify-center bg-bg px-4 py-8 outline-none md:bg-panel md:px-12">
+      <main id="main" tabIndex={-1} className="relative flex flex-1 flex-col justify-center bg-bg px-4 py-8 outline-none md:bg-panel md:px-12">
+        <ThemeToggle className="absolute right-3 top-3 z-10 md:right-6 md:top-6" />
         <div className="mx-auto w-full max-w-[420px]">
           <div className="rounded-card border border-line bg-surface p-5 md:p-8">{children}</div>
           <p className="mt-4 flex flex-wrap items-center justify-center text-center text-xs text-muted">
             繼續即表示你同意<Link href={TERMS_PAGE} className={`${textLink} text-xs`}>《服務條款》</Link>與
             <Link href={PRIVACY_PAGE} className={`${textLink} text-xs`}>《隱私權政策》</Link>
           </p>
-          <div className="mt-2 flex justify-center"><ThemeSelect /></div>
         </div>
       </main>
     </div>

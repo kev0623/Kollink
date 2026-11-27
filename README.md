@@ -462,6 +462,12 @@ commit;
 
 公開頁共用的頂列（`TopBar`＋`SiteNav`）有兩個下拉選單（功能、適合誰）與手機選單，連結定義在 `src/lib/site-nav.ts`；說明頁在 `src/app/(marketing)/`：`/features`、`/for-brands`、`/for-creators`、`/pricing`。這些頁面的文案只寫系統現在做到的事；流程或收費規則改了要一起更新（`/pricing` 與 `/terms` 的手續費說明必須一致）。
 
+### 主題與中英文切換
+
+- **主題**：一顆圖示按鈕（`ThemeToggle`，深色時是太陽、淺色時是月亮）。位置：公開頁頂列右上角、登入後各區的右上角（桌面 `ShellTools`、手機 `MobileTopBar`）、登入頁右上角。沒按過之前跟隨系統。其他地方不放主題選項。
+- **中英文**：公開頁頂列的主題按鈕旁邊（`LangToggle`）。範圍只有公開頁：首頁、`/creators`、`/features`、`/for-brands`、`/for-creators`、`/pricing` 與它們的頂列、頁尾。登入頁、登入後各區、條款與協助頁只有中文。
+- **做法**（`src/lib/lang.ts`）：兩種語言都寫在 HTML 裡（`<T zh en />`），`<head>` 的腳本在繪製前設定 `<html data-lang>`，CSS 只顯示其中一種；頁面照常預先產生，切換不用重新載入，選擇記在這台裝置。放不了 `<span>` 的地方（placeholder、`<option>`、aria-label）用 `useLang()`。新增公開頁文字時兩種語言都要寫。
+
 ### 公開頁給誰看什麼
 
 | 資料 | 訪客（沒登入） | 登入後 |

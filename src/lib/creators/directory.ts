@@ -1,5 +1,7 @@
 // 公開的創作者列表（/creators 與首頁）：查詢參數、型別與轉換。server 與 client 都能 import。
 // 資料庫：list_public_creators（20261203000100_public_creators.sql）。
+import type { L } from "@/lib/lang";
+import { optionLabel } from "@/lib/lang";
 import { CATEGORIES, REGIONS } from "@/lib/options";
 import { parsePage } from "@/lib/paging";
 
@@ -10,11 +12,11 @@ export const DIRECTORY_QUERY_MAX = 50;
 export const DIRECTORY_PATH = "/creators";
 
 export const DIRECTORY_SORTS = [
-  { value: "newest", label: "最新加入" },
-  { value: "followers", label: "粉絲數多" },
-  { value: "rating", label: "評價高" },
-  { value: "price", label: "起價低" },
-] as const;
+  { value: "newest", label: { zh: "最新加入", en: "Newest" } },
+  { value: "followers", label: { zh: "粉絲數多", en: "Most followers" } },
+  { value: "rating", label: { zh: "評價高", en: "Top rated" } },
+  { value: "price", label: { zh: "起價低", en: "Lowest price" } },
+] as const satisfies readonly { value: string; label: L }[];
 export type DirectorySort = (typeof DIRECTORY_SORTS)[number]["value"];
 
 /** 訪客看不到粉絲數，所以也不能依粉絲數排序（資料庫同樣會忽略）。 */
@@ -117,9 +119,11 @@ export function toDirectory(rows: DirectoryRow[]): { items: DirectoryCreator[]; 
   return { items, total: num(rows[0]?.total_count ?? null) ?? 0 };
 }
 
-/** 結果標題：「美妝・台北市的創作者」「「小美」的搜尋結果」「所有創作者」 */
-export function directoryHeading(q: DirectoryQuery): string {
-  if (q.q) return `「${q.q}」的搜尋結果`;
-  const parts = [q.category, q.region].filter(Boolean);
-  return parts.length > 0 ? `${parts.join("・")}的創作者` : "所有創作者";
+/** 結果標題：「美妝・台北市的創作者」「「小美」的搜尋結果」「所有創作者」（雙語） */
+export function directoryHeading(q: DirectoryQuery): L {
+  if (q.q) return { zh: `「${q.q}」的搜尋結果`, en: `Results for “${q.q}”` };
+  const parts = [q.category, q.region].filter((p): p is string => Boolean(p)).map(optionLabel);
+  return parts.length > 0
+    ? { zh: `${parts.map((p) => p.zh).join("・")}的創作者`, en: `${parts.map((p) => p.en).join(", ")} creators` }
+    : { zh: "所有創作者", en: "All creators" };
 }

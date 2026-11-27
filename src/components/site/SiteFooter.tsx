@@ -1,16 +1,30 @@
 import Link from "next/link";
-import { ThemeSelect } from "@/components/theme/ThemeSelect";
+import { T } from "@/components/i18n/T";
+import type { L } from "@/lib/lang";
 import { PRIVACY_PAGE, SITE_NAME, SITE_TAGLINE, SUPPORT_PAGE, TERMS_PAGE } from "@/lib/site";
 import { FEATURES_PAGE, FOR_BRANDS_PAGE, FOR_CREATORS_PAGE, PRICING_PAGE } from "@/lib/site-nav";
 
 const link = "inline-flex min-h-11 min-w-11 items-center text-sm text-muted hover:text-ink";
 
-/** 公開頁共用的頁尾：三欄連結＋主題切換。 */
+/** 公開頁共用的頁尾：三欄連結。 */
 export function SiteFooter() {
-  const cols: { title: string; links: { href: string; label: string }[] }[] = [
-    { title: "產品", links: [{ href: "/creators", label: "找創作者" }, { href: FEATURES_PAGE, label: "功能" }, { href: PRICING_PAGE, label: "收費" }] },
-    { title: "適合誰", links: [{ href: FOR_BRANDS_PAGE, label: "品牌" }, { href: FOR_CREATORS_PAGE, label: "創作者" }] },
-    { title: "帳號與協助", links: [{ href: "/login", label: "登入" }, { href: "/signup", label: "註冊" }, { href: SUPPORT_PAGE, label: "需要協助？" }, { href: TERMS_PAGE, label: "服務條款" }, { href: PRIVACY_PAGE, label: "隱私權政策" }] },
+  const cols: { key: string; title: L; links: { href: string; label: L }[] }[] = [
+    { key: "product", title: { zh: "產品", en: "Product" }, links: [
+      { href: "/creators", label: { zh: "找創作者", en: "Find creators" } },
+      { href: FEATURES_PAGE, label: { zh: "功能", en: "Features" } },
+      { href: PRICING_PAGE, label: { zh: "收費", en: "Pricing" } },
+    ] },
+    { key: "audience", title: { zh: "適合誰", en: "Who it's for" }, links: [
+      { href: FOR_BRANDS_PAGE, label: { zh: "品牌", en: "Brands" } },
+      { href: FOR_CREATORS_PAGE, label: { zh: "創作者", en: "Creators" } },
+    ] },
+    { key: "account", title: { zh: "帳號與協助", en: "Account & help" }, links: [
+      { href: "/login", label: { zh: "登入", en: "Log in" } },
+      { href: "/signup", label: { zh: "註冊", en: "Sign up" } },
+      { href: SUPPORT_PAGE, label: { zh: "需要協助？", en: "Help" } },
+      { href: TERMS_PAGE, label: { zh: "服務條款", en: "Terms" } },
+      { href: PRIVACY_PAGE, label: { zh: "隱私權政策", en: "Privacy" } },
+    ] },
   ];
   return (
     <footer className="border-t border-line">
@@ -19,14 +33,13 @@ export function SiteFooter() {
           <p className="flex items-center gap-2 text-lg font-extrabold tracking-tight text-ink">
             <span aria-hidden="true" className="h-2 w-2 rounded-full bg-thread" />{SITE_NAME}
           </p>
-          <p className="mt-2 text-sm text-muted">{SITE_TAGLINE}</p>
-          <div className="mt-4"><ThemeSelect /></div>
+          <p className="mt-2 text-sm text-muted"><T zh={SITE_TAGLINE} en="Where Taiwanese brands and creators work together" /></p>
         </div>
         {cols.map((c) => (
-          <nav key={c.title} aria-label={c.title}>
-            <p className="text-sm font-bold text-ink">{c.title}</p>
+          <nav key={c.key} aria-labelledby={`foot-${c.key}`}>
+            <p id={`foot-${c.key}`} className="text-sm font-bold text-ink"><T {...c.title} /></p>
             <ul className="mt-2">
-              {c.links.map((l) => <li key={l.href}><Link href={l.href} className={link}>{l.label}</Link></li>)}
+              {c.links.map((l) => <li key={l.href}><Link href={l.href} className={link}><T {...l.label} /></Link></li>)}
             </ul>
           </nav>
         ))}

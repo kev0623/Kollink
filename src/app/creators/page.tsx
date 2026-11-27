@@ -18,6 +18,8 @@ import { loadPublicCreators } from "@/lib/creators/directory-load";
 import { formatNumber } from "@/lib/format";
 import { CATEGORIES } from "@/lib/options";
 import { pageOverflow } from "@/lib/paging";
+import { T } from "@/components/i18n/T";
+import { optionLabel } from "@/lib/lang";
 import { SITE_NAME } from "@/lib/site";
 
 type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> };
@@ -31,8 +33,8 @@ export const metadata: Metadata = {
 export default function CreatorsPage({ searchParams }: Props) {
   return (
     <div className="pt-4 md:pt-8">
-      <h1 className={h1}>找創作者</h1>
-      <p className="mt-2 max-w-[560px] text-sm text-muted">每一位都經過平台人工審核，作品與報價公開。粉絲數登入後顯示；邀請合作需要品牌帳號，註冊免費。</p>
+      <h1 className={h1}><T zh="找創作者" en="Find creators" /></h1>
+      <p className="mt-2 max-w-[560px] text-sm text-muted"><T zh="每一位都經過平台人工審核，作品與報價公開。粉絲數登入後顯示；邀請合作需要品牌帳號，註冊免費。" en="Every creator is reviewed by a person. Work and rates are public; follower counts appear after login. Inviting needs a brand account, which is free." /></p>
       <Suspense fallback={<ResultsSkeleton />}>
         <Results searchParams={searchParams} />
       </Suspense>
@@ -50,25 +52,25 @@ async function Results({ searchParams }: Props) {
   return (
     <>
       <div className="mt-6"><SearchBar q={q.q} category={q.category} /></div>
-      <nav aria-label="類別" className="scroll-fade-x mt-3 flex gap-2 overflow-x-auto pb-1">
-        <Link href={with_({ category: null })} aria-current={q.category === null ? "page" : undefined} className={chip(q.category === null)}>全部<LinkPending /></Link>
+      <nav aria-label="類別 Categories" className="scroll-fade-x mt-3 flex gap-2 overflow-x-auto pb-1">
+        <Link href={with_({ category: null })} aria-current={q.category === null ? "page" : undefined} className={chip(q.category === null)}><T zh="全部" en="All" /><LinkPending /></Link>
         {CATEGORIES.map((c) => (
           <Link key={c} href={with_({ category: c })} aria-current={q.category === c ? "page" : undefined} className={chip(q.category === c)}>
-            {c}<LinkPending />
+            <T {...optionLabel(c)} /><LinkPending />
           </Link>
         ))}
       </nav>
       <div className="mt-6 flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
         <h2 className="min-w-0 break-words text-lg font-bold text-ink">
-          {directoryHeading(q)}<span className="ml-2 text-sm font-normal tabular-nums text-muted">{formatNumber(total)} 位</span>
+          <T {...directoryHeading(q)} /><span className="ml-2 text-sm font-normal tabular-nums text-muted">{formatNumber(total)}<T zh=" 位" en="" /></span>
         </h2>
-        <nav aria-label="排序" className="flex gap-1 text-sm">
+        <nav aria-label="排序 Sort" className="flex gap-1 text-sm">
           {directorySortsFor(me !== null).map((s) => (
             <Link
               key={s.value} href={with_({ sort: s.value })} aria-current={q.sort === s.value ? "true" : undefined}
               className={`inline-flex min-h-11 items-center rounded-btn px-3 font-semibold ${q.sort === s.value ? "bg-subtle text-ink" : "text-muted hover:text-ink"}`}
             >
-              {s.label}
+              <T {...s.label} />
             </Link>
           ))}
         </nav>
@@ -76,8 +78,8 @@ async function Results({ searchParams }: Props) {
       <div className="mt-3">
         {items.length === 0 ? (
           hasDirectoryFilter(q)
-            ? <EmptyState text="沒有符合條件的創作者。換個關鍵字，或清除篩選看全部。" action={{ href: directoryHref({ sort: q.sort }), label: "清除篩選" }} />
-            : <EmptyState text="目前還沒有公開的創作者。你是創作者嗎？現在加入，通過審核後就會出現在這裡。" action={{ href: "/signup?role=creator", label: "成為創作者" }} />
+            ? <EmptyState text={<T zh="沒有符合條件的創作者。換個關鍵字，或清除篩選看全部。" en="No creators match. Try another keyword, or clear the filters to see everyone." />} action={{ href: directoryHref({ sort: q.sort }), label: <T zh="清除篩選" en="Clear filters" /> }} />
+            : <EmptyState text={<T zh="目前還沒有公開的創作者。你是創作者嗎？現在加入，通過審核後就會出現在這裡。" en="No creators are listed yet. Are you one? Join now and you will appear here once approved." />} action={{ href: "/signup?role=creator", label: <T zh="成為創作者" en="Join as a creator" /> }} />
         ) : (
           <ul className={CREATOR_GRID}>
             {items.map((c, i) => <li key={c.handle} className="min-w-0"><CreatorCard c={c} priority={i < 4} /></li>)}
@@ -85,17 +87,17 @@ async function Results({ searchParams }: Props) {
         )}
       </div>
       <Pagination
-        page={q.page} total={total} size={PUBLIC_CREATORS_PAGE_SIZE} unit="位" label="創作者分頁"
+        page={q.page} total={total} size={PUBLIC_CREATORS_PAGE_SIZE} unit="位" label="創作者分頁" bilingual unitEn="creators"
         hrefFor={(p) => directoryHref({ ...q, page: p })}
       />
       <aside aria-labelledby="dir-cta" className="mt-12 rounded-card border border-line bg-panel p-6 md:flex md:items-center md:justify-between md:gap-8 md:p-8">
         <div className="min-w-0">
-          <h2 id="dir-cta" className="font-serif text-xl font-bold text-ink md:text-2xl">找到適合的人了嗎？</h2>
-          <p className="mt-2 text-sm text-muted">註冊品牌帳號就能看粉絲數、直接邀請，或刊登招募讓創作者來報名。款項由平台保管，交稿通過才撥出。</p>
+          <h2 id="dir-cta" className="font-serif text-xl font-bold text-ink md:text-2xl"><T zh="找到適合的人了嗎？" en="Found someone who fits?" /></h2>
+          <p className="mt-2 text-sm text-muted"><T zh="註冊品牌帳號就能看粉絲數、直接邀請，或刊登招募讓創作者來報名。款項由平台保管，交稿通過才撥出。" en="With a brand account you can see follower counts, invite creators directly, or post a brief for them to apply. We hold the payment until the work is approved." /></p>
         </div>
         <div className="mt-5 flex shrink-0 flex-wrap gap-3 md:mt-0">
-          <Link href="/signup?role=brand" className={btn.primary}>註冊品牌帳號</Link>
-          <Link href="/signup?role=creator" className={btn.secondary}>我是創作者</Link>
+          <Link href="/signup?role=brand" className={btn.primary}><T zh="註冊品牌帳號" en="Create a brand account" /></Link>
+          <Link href="/signup?role=creator" className={btn.secondary}><T zh="我是創作者" en="I'm a creator" /></Link>
         </div>
       </aside>
     </>
