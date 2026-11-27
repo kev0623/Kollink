@@ -456,11 +456,22 @@ commit;
 
 ## 公開的創作者列表與首頁
 
-`/creators` 不用登入就能瀏覽與搜尋通過審核的創作者（類別、關鍵字、排序、分頁，每頁 12 位）。資料來自 `list_public_creators`（`20261203000100_public_creators.sql`，訪客可呼叫），只回傳公開頁本來就看得到的欄位加上評分與起價（所有報價的最低價，`20261203000200_public_creator_min_price.sql`）；各合作形式的完整報價仍然只有品牌與本人看得到。品牌登入後的創作者廣場（`search_creators`，有報價與收藏）不變。
+`/creators` 不用登入就能瀏覽與搜尋通過審核的創作者（類別、關鍵字、排序、分頁，每頁 12 位）。資料來自 `list_public_creators`（`20261203000100_public_creators.sql`，訪客可呼叫），回傳公開頁看得到的欄位加上評分與起價（所有報價的最低價）。品牌登入後的創作者廣場（`search_creators`，有報價與收藏）不變。
 
 首頁的區塊順序：主視覺＋搜尋列 → 剛加入的創作者（沒有公開的創作者時不顯示）→ 流程分頁（五步，示意畫面是程式畫的、內容虛構）→ 保障 → 給品牌／給創作者 → 常見問題 → 結尾。首頁沒有放平台數字與使用者見證：等有真實資料再加，不寫假的。
 
 公開頁共用的頂列（`TopBar`＋`SiteNav`）有兩個下拉選單（功能、適合誰）與手機選單，連結定義在 `src/lib/site-nav.ts`；說明頁在 `src/app/(marketing)/`：`/features`、`/for-brands`、`/for-creators`、`/pricing`。這些頁面的文案只寫系統現在做到的事；流程或收費規則改了要一起更新（`/pricing` 與 `/terms` 的手續費說明必須一致）。
+
+### 公開頁給誰看什麼
+
+| 資料 | 訪客（沒登入） | 登入後 |
+|---|---|---|
+| 作品圖、自介、類別、風格、互動率、評價 | 看得到 | 看得到 |
+| 報價（各合作形式） | 看得到 | 看得到 |
+| 粉絲數 | 看不到（顯示「登入後顯示」） | 看得到 |
+| 作品的 IG 貼文連結、IG 帳號 | 看不到 | 看得到 |
+
+規則在資料庫執行（`20261204000100_gate_followers.sql`）：訪客對 `creator_profiles.follower_count`、`ig_username` 與 `creator_portfolio_items.link_url` 沒有讀取權限；`get_public_creator`、`list_public_creators` 對訪客回傳的粉絲數是 null，訪客也不能依粉絲數排序或用 IG 帳號搜尋。報價經由 `list_creator_rates`（訪客可呼叫）讀取，`creator_rates` 資料表本身的授權不變。目的是讓公開頁能被搜尋引擎收錄，同時把粉絲數與帳號連結留給註冊的人。
 
 ## 評價
 

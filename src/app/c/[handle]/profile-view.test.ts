@@ -16,13 +16,32 @@ const html = (viewer: ViewerKind, favorite?: boolean) =>
   renderToStaticMarkup(createElement(ProfileView, { creator, portfolio: [], rates: [], viewer, favorite }));
 
 describe("ProfileView 報價區", () => {
-  it("訪客看到登入連結", () => {
-    expect(html("guest")).toContain("/login?next=%2Fc%2Fmei");
+  const withRates = (viewer: ViewerKind, c: PublicCreator = creator) =>
+    renderToStaticMarkup(createElement(ProfileView, { creator: c, portfolio: [], rates: [{ collabType: "IG 貼文", priceTwd: 8000 }], viewer }));
+  it("報價對所有人公開（訪客、創作者、品牌）", () => {
+    for (const v of ["guest", "creator", "brand"] as const) {
+      expect(withRates(v)).toContain("IG 貼文");
+      expect(withRates(v)).toContain("NT$8,000");
+    }
   });
-  it("創作者（含本人）只看到說明文字，沒有登入連結", () => {
-    const out = html("creator");
-    expect(out).toContain("完整報價只開放給品牌查看");
-    expect(out).not.toContain("/login");
+  it("訪客多一行註冊品牌帳號的引導；登入的人沒有", () => {
+    expect(withRates("guest")).toContain("/signup?role=brand");
+    expect(withRates("creator")).not.toContain("註冊品牌帳號");
+  });
+});
+
+describe("ProfileView 粉絲數（登入後才顯示）", () => {
+  it("有粉絲數時顯示數字", () => {
+    expect(html("creator")).toContain("1,000");
+    expect(html("creator")).not.toContain("登入後顯示");
+  });
+  it("訪客（粉絲數是 null）看到登入連結，登入後回到這一頁", () => {
+    const out = renderToStaticMarkup(createElement(ProfileView, {
+      creator: { ...creator, followerCount: null } as PublicCreator, portfolio: [], rates: [], viewer: "guest",
+    }));
+    expect(out).toContain("登入後顯示");
+    expect(out).toContain("/login?next=%2Fc%2Fmei");
+    expect(out).not.toContain("1,000");
   });
 });
 

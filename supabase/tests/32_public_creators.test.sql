@@ -51,9 +51,10 @@ select results_eq(
   $$select handle from public.list_public_creators('pubtest')$$,
   $$values ('pubtest_c'), ('pubtest_b'), ('pubtest_a')$$, '只列已審核的，預設新的在前（未審核與停權不列）');
 select is((select total_count::int from public.list_public_creators('pubtest') limit 1), 3, 'total_count 是符合條件的總數');
+-- 20261204000100_gate_followers.sql：訪客不能依粉絲數排序（退回最新）；登入後的排序在 33_gate_followers.test.sql
 select results_eq(
   $$select handle from public.list_public_creators('pubtest', null, null, 'followers')$$,
-  $$values ('pubtest_b'), ('pubtest_a'), ('pubtest_c')$$, '依粉絲數排序');
+  $$values ('pubtest_c'), ('pubtest_b'), ('pubtest_a')$$, '訪客依粉絲數排序：當成最新');
 select results_eq(
   $$select handle from public.list_public_creators('pubtest', null, null, 'rating')$$,
   $$values ('pubtest_a'), ('pubtest_c'), ('pubtest_b')$$, '依評價排序：有評價的在前，其餘照新舊');

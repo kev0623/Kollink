@@ -17,6 +17,11 @@ export const DIRECTORY_SORTS = [
 ] as const;
 export type DirectorySort = (typeof DIRECTORY_SORTS)[number]["value"];
 
+/** 訪客看不到粉絲數，所以也不能依粉絲數排序（資料庫同樣會忽略）。 */
+export function directorySortsFor(signedIn: boolean) {
+  return DIRECTORY_SORTS.filter((s) => signedIn || s.value !== "followers");
+}
+
 export type DirectoryQuery = { q: string; category: string | null; region: string | null; sort: DirectorySort; page: number };
 
 type Param = string | string[] | undefined;
@@ -75,7 +80,8 @@ export type DirectoryCreator = {
   coverPath: string | null;
   region: string | null;
   categories: string[];
-  followerCount: number;
+  /** 粉絲數：登入後才有；訪客是 null */
+  followerCount: number | null;
   engagementRate: number | null;
   rating: number | null;
   reviewCount: number;
@@ -101,7 +107,7 @@ export function toDirectory(rows: DirectoryRow[]): { items: DirectoryCreator[]; 
       coverPath: r.cover_path,
       region: r.region,
       categories: r.categories ?? [],
-      followerCount: r.follower_count ?? 0,
+      followerCount: r.follower_count ?? null,
       engagementRate: num(r.engagement_rate),
       rating: reviewCount > 0 ? num(r.avg_rating) : null,
       reviewCount,

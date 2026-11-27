@@ -10,7 +10,8 @@ export type PublicCreator = {
   avatarPath: string | null;
   region: string | null;
   categories: string[];
-  followerCount: number;
+  /** 粉絲數：登入後才有；訪客是 null（資料庫就不回傳，20261204000100_gate_followers.sql） */
+  followerCount: number | null;
   engagementRate: number | null;
   audienceAge: string | null;
   styleTags: string[];
@@ -28,7 +29,7 @@ export type PublicCreatorRow = {
   avatar_path: string | null;
   region: string | null;
   categories: string[] | null;
-  follower_count: number;
+  follower_count: number | null;
   engagement_rate: number | string | null;
   audience_age: string | null;
   style_tags: string[] | null;

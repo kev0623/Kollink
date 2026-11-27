@@ -21,7 +21,7 @@ export function SearchBar({ q = "", category = null, autoFocus }: { q?: string; 
       <label className="sr-only" htmlFor="dir-q">關鍵字</label>
       <input
         id="dir-q" name="q" type="search" defaultValue={q} maxLength={DIRECTORY_QUERY_MAX} autoFocus={autoFocus}
-        placeholder="輸入名字或 IG 帳號" autoComplete="off" enterKeyHint="search"
+        placeholder="輸入創作者的名字" autoComplete="off" enterKeyHint="search"
         className="order-first h-11 w-full min-w-0 rounded-btn bg-transparent px-3 text-base text-ink outline-none placeholder:text-muted focus-visible:ring-2 focus-visible:ring-focus sm:order-none sm:w-auto sm:flex-1"
       />
       <button type="submit" className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-btn bg-primary px-6 font-bold text-on-primary hover:bg-primary-hover active:scale-[0.98]">
