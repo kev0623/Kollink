@@ -1,17 +1,15 @@
 import { Suspense } from "react";
 import { getCurrentUser } from "@/lib/auth/current-user";
-import { ThemeSelect } from "@/components/theme/ThemeSelect";
 import { HelpLink } from "./HelpLink";
 import { SignOutButton } from "./SignOutButton";
 
-/** 側邊欄底部：頭像、角色、主題、協助、登出。會讀 session，所以頭像放在 <Suspense> 內。 */
+/** 側邊欄底部：頭像、角色、協助、登出。會讀 session，所以頭像放在 <Suspense> 內。 */
 export function SideFooter() {
   return (
     <div className="flex w-full flex-col items-center gap-2 border-t border-line pt-3">
       <Suspense fallback={<div aria-hidden="true" className="h-10 w-10 rounded-full bg-subtle" />}>
         <Who />
       </Suspense>
-      <ThemeSelect compact />
       <HelpLink compact />
       <SignOutButton />
     </div>

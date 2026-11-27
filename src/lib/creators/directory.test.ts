@@ -74,9 +74,9 @@ describe("toDirectory", () => {
 describe("標題與篩選", () => {
   const base = { q: "", category: null, region: null, sort: "newest" as const, page: 1 };
   it("directoryHeading", () => {
-    expect(directoryHeading(base)).toBe("所有創作者");
-    expect(directoryHeading({ ...base, category: "美妝", region: "台北市" })).toBe("美妝・台北市的創作者");
-    expect(directoryHeading({ ...base, q: "小美", category: "美妝" })).toBe("「小美」的搜尋結果");
+    expect(directoryHeading(base)).toEqual({ zh: "所有創作者", en: "All creators" });
+    expect(directoryHeading({ ...base, category: "美妝", region: "台北市" })).toEqual({ zh: "美妝・台北市的創作者", en: "Beauty, Taipei creators" });
+    expect(directoryHeading({ ...base, q: "小美", category: "美妝" }).zh).toBe("「小美」的搜尋結果");
   });
   it("hasDirectoryFilter：排序與頁數不算篩選", () => {
     expect(hasDirectoryFilter({ ...base, sort: "rating", page: 3 })).toBe(false);

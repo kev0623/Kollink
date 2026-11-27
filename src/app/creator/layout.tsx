@@ -6,6 +6,7 @@ import { BottomTabBar } from "@/components/shell/BottomTabBar";
 import { MobileTopBar } from "@/components/shell/MobileTopBar";
 import { CREATOR_NAV } from "@/components/shell/nav";
 import { StatusBanner } from "./StatusBanner";
+import { ShellTools } from "@/components/shell/ShellTools";
 import { SkipLink } from "@/components/ui/SkipLink";
 import { ListSkeleton } from "@/components/ui/Skeleton";
 
@@ -16,8 +17,9 @@ export default function CreatorLayout({ children }: { children: React.ReactNode 
       <aside className="hidden shrink-0 border-r border-line bg-panel md:block">
         <Suspense fallback={<div aria-hidden className="h-screen w-[88px] bg-panel" />}><SideNav items={CREATOR_NAV} footer={<SideFooter />} /></Suspense>
       </aside>
-      <main id="main" tabIndex={-1} className="min-w-0 flex-1 px-4 pb-[calc(6rem+env(safe-area-inset-bottom))] pt-5 outline-none md:px-10 md:pb-12 md:pt-10">
-        <div className="mx-auto max-w-[1120px]">
+      <main id="main" tabIndex={-1} className="min-w-0 flex-1 px-4 pb-[calc(6rem+env(safe-area-inset-bottom))] pt-5 outline-none md:px-10 md:pb-12 md:pt-3">
+        <ShellTools />
+        <div className="mx-auto max-w-[1120px] md:pt-1">
           <Suspense fallback={<ListSkeleton />}>
             <Gate>{children}</Gate>
           </Suspense>

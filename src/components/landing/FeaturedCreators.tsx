@@ -4,6 +4,8 @@ import { Star } from "lucide-react";
 import { creatorMediaUrl } from "@/lib/creator-media";
 import { formatNumber, formatTwd, initialOf } from "@/lib/format";
 import { formatRating } from "@/lib/reviews/view";
+import { T, TList } from "@/components/i18n/T";
+import { optionLabel } from "@/lib/lang";
 import { DIRECTORY_PATH, type DirectoryCreator } from "@/lib/creators/directory";
 import { loadFeaturedCreators } from "@/lib/creators/directory-load";
 
@@ -27,12 +29,12 @@ async function Loaded() {
   if (items.length === 0) return null;
   return (
     <section aria-labelledby="featured-title">
-      <h2 id="featured-title" className="sr-only">剛加入的創作者</h2>
+      <h2 id="featured-title" className="sr-only"><T zh="剛加入的創作者" en="Recently joined creators" /></h2>
       <ul className={GRID}>
         {items.map((c) => <li key={c.handle} className="min-w-0"><HeroCard c={c} /></li>)}
       </ul>
       <p className="mt-4 text-center">
-        <Link href={DIRECTORY_PATH} className="inline-flex min-h-11 items-center text-sm font-bold text-ink underline underline-offset-4 hover:text-accent">看全部創作者</Link>
+        <Link href={DIRECTORY_PATH} className="inline-flex min-h-11 items-center text-sm font-bold text-ink underline underline-offset-4 hover:text-accent"><T zh="看全部創作者" en="See all creators" /></Link>
       </p>
     </section>
   );
@@ -56,7 +58,7 @@ function HeroCard({ c }: { c: DirectoryCreator }) {
       )}
       {c.followerCount !== null && (
         <span className="absolute left-2 top-2 rounded-btn bg-bg/85 px-2.5 py-1 text-xs font-bold tabular-nums text-ink">
-          {formatNumber(c.followerCount)} 粉絲
+          {formatNumber(c.followerCount)}<T zh=" 粉絲" en=" followers" />
         </span>
       )}
       <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-bg via-bg/85 to-transparent px-3 pb-3 pt-12 md:px-4 md:pb-4">
@@ -65,14 +67,14 @@ function HeroCard({ c }: { c: DirectoryCreator }) {
           {c.rating !== null && (
             <span className="inline-flex shrink-0 items-center gap-0.5 text-sm font-semibold tabular-nums text-ink">
               <Star size={13} strokeWidth={1.5} aria-hidden="true" className="fill-current text-primary" />
-              {formatRating(c.rating)}<span className="sr-only"> 顆星</span>
+              {formatRating(c.rating)}<span className="sr-only"><T zh=" 顆星" en=" stars" /></span>
             </span>
           )}
         </p>
         <p className="mt-0.5 flex items-center justify-between gap-2 text-xs text-muted">
-          <span className="min-w-0 truncate">{c.categories.length > 0 ? c.categories.join("・") : c.region ?? ""}</span>
+          <span className="min-w-0 truncate">{c.categories.length > 0 ? <TList items={c.categories.map(optionLabel)} /> : c.region ? <T {...optionLabel(c.region)} /> : null}</span>
           {c.minPrice !== null && (
-            <span className="shrink-0 text-sm font-bold tabular-nums text-ink">{formatTwd(c.minPrice)}<span className="ml-0.5 text-xs font-normal text-muted">起</span></span>
+            <span className="shrink-0 text-sm font-bold tabular-nums text-ink">{formatTwd(c.minPrice)}<span className="ml-0.5 text-xs font-normal text-muted"><T zh="起" en="+" /></span></span>
           )}
         </p>
       </div>

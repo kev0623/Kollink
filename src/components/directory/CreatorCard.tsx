@@ -4,6 +4,8 @@ import { creatorMediaUrl } from "@/lib/creator-media";
 import { formatNumber, formatTwd, initialOf } from "@/lib/format";
 import { formatRating } from "@/lib/reviews/view";
 import type { DirectoryCreator } from "@/lib/creators/directory";
+import { T, TList } from "@/components/i18n/T";
+import { optionLabel } from "@/lib/lang";
 
 /**
  * 公開列表的創作者卡片：整張卡是一個連結。上方是作品（沒有作品用頭像，都沒有用名字第一個字），
@@ -27,7 +29,7 @@ export function CreatorCard({ c, priority }: { c: DirectoryCreator; priority?: b
         )}
         {c.followerCount !== null && (
           <span className="absolute left-2 top-2 rounded-btn bg-bg/85 px-2.5 py-1 text-xs font-bold tabular-nums text-ink">
-            {formatNumber(c.followerCount)} 粉絲
+            {formatNumber(c.followerCount)}<T zh=" 粉絲" en=" followers" />
           </span>
         )}
       </div>
@@ -37,18 +39,18 @@ export function CreatorCard({ c, priority }: { c: DirectoryCreator; priority?: b
           {c.rating !== null && (
             <span className="inline-flex shrink-0 items-center gap-0.5 text-sm font-semibold tabular-nums text-ink">
               <Star size={13} strokeWidth={1.5} aria-hidden="true" className="fill-current text-primary" />
-              {formatRating(c.rating)}<span className="sr-only">顆星，</span>
+              {formatRating(c.rating)}<span className="sr-only"><T zh="顆星，" en=" stars, " /></span>
               <span className="font-normal text-muted">（{c.reviewCount}）</span>
             </span>
           )}
         </p>
-        <p className="mt-1 truncate text-xs text-muted">{c.categories.length > 0 ? c.categories.join("・") : "尚未設定類別"}</p>
+        <p className="mt-1 truncate text-xs text-muted">{c.categories.length > 0 ? <TList items={c.categories.map(optionLabel)} /> : <T zh="尚未設定類別" en="No categories yet" />}</p>
         <p className="mt-2 flex min-h-5 items-center justify-between gap-2 text-xs text-muted">
           <span className="inline-flex min-w-0 items-center gap-0.5 truncate">
-            {c.region && <><MapPin size={12} strokeWidth={1.5} aria-hidden="true" />{c.region}</>}
+            {c.region && <><MapPin size={12} strokeWidth={1.5} aria-hidden="true" /><T {...optionLabel(c.region)} /></>}
           </span>
           {c.minPrice !== null && (
-            <span className="shrink-0 text-sm font-bold tabular-nums text-ink">{formatTwd(c.minPrice)}<span className="ml-0.5 text-xs font-normal text-muted">起</span></span>
+            <span className="shrink-0 text-sm font-bold tabular-nums text-ink">{formatTwd(c.minPrice)}<span className="ml-0.5 text-xs font-normal text-muted"><T zh="起" en="+" /></span></span>
           )}
         </p>
       </div>

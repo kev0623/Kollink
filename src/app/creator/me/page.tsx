@@ -6,7 +6,6 @@ import { loadOwnPublicProfile } from "@/lib/creators/own-profile";
 import { loadHasPayoutAccount } from "@/lib/creators/payout-status";
 import { HelpLink } from "@/components/shell/HelpLink";
 import { SignOutButton } from "@/components/shell/SignOutButton";
-import { ThemeSelect } from "@/components/theme/ThemeSelect";
 import { Notice } from "@/components/ui/Notice";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -35,8 +34,7 @@ export default function CreatorMePage() {
         <Editor />
       </Suspense>
       <section aria-labelledby="look-title" className="mt-10 max-w-xl space-y-3 border-t border-line pt-6">
-        <h2 id="look-title" className="text-lg font-bold text-ink">外觀與帳號</h2>
-        <ThemeSelect />
+        <h2 id="look-title" className="text-lg font-bold text-ink">帳號</h2>
         <div className="-ml-3 flex flex-wrap gap-2"><HelpLink /><SignOutButton /></div>
       </section>
     </>

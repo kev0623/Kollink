@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { requireRole } from "@/lib/auth/current-user";
-import { ThemeSelect } from "@/components/theme/ThemeSelect";
 import { HelpLink } from "@/components/shell/HelpLink";
 import { SignOutButton } from "@/components/shell/SignOutButton";
 import { FormSkeleton } from "@/components/ui/Skeleton";
@@ -18,8 +17,7 @@ export default function BrandSettingsPage() {
         <Settings />
       </Suspense>
       <section aria-labelledby="account-title" className="mt-10 max-w-xl space-y-3 border-t border-line pt-6">
-        <h2 id="account-title" className="text-lg font-bold text-ink">外觀與帳號</h2>
-        <ThemeSelect />
+        <h2 id="account-title" className="text-lg font-bold text-ink">帳號</h2>
         <div className="-ml-3 flex flex-wrap gap-2"><HelpLink /><SignOutButton /></div>
       </section>
     </>
