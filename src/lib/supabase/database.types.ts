@@ -125,6 +125,38 @@ isOneToOne: true
       referencedColumns: ["id"]
     }
                   ]
+                },"collaboration_reviews": {
+                  Row: {
+                    "author_id": string,"author_side": string,"collaboration_id": string,"comment": string | null,"created_at": string,"hidden_at": string | null,"id": string,"rating": number,"subject_id": string,"visible_from": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "author_id": string,"author_side": string,"collaboration_id": string,"comment"?: string | null,"created_at"?: string,"hidden_at"?: string | null,"id"?: string,"rating": number,"subject_id": string,"visible_from": string
+                  }
+                  Update: {
+                    "author_id"?: string,"author_side"?: string,"collaboration_id"?: string,"comment"?: string | null,"created_at"?: string,"hidden_at"?: string | null,"id"?: string,"rating"?: number,"subject_id"?: string,"visible_from"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "collaboration_reviews_author_id_fkey"
+      columns: ["author_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "collaboration_reviews_collaboration_id_fkey"
+      columns: ["collaboration_id"]
+isOneToOne: false
+      referencedRelation: "collaborations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "collaboration_reviews_subject_id_fkey"
+      columns: ["subject_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"collaboration_submissions": {
                   Row: {
                     "collaboration_id": string,"created_at": string,"file_paths": (string)[],"id": string,"links": (string)[],"note": string | null,"round": number
@@ -504,6 +536,11 @@ isOneToOne: false
               "account_name": string,"account_number": string,"bank_code": string,"branch_code": string,"updated_at": string
             }[]
                            },
+"admin_list_collab_reviews":
+{ Args: { "p_collab_id": string }; Returns: {
+              "author_side": string,"comment": string,"created_at": string,"hidden_at": string,"id": string,"rating": number,"visible_from": string
+            }[]
+                           },
 "admin_list_collaborations":
 { Args: { "p_limit": number,"p_offset": number,"p_query": string,"p_status": string }; Returns: {
               "amount_twd": number,"brand_name": string,"created_at": string,"creator_handle": string,"creator_name": string,"id": string,"paid": boolean,"refund_pending": boolean,"status": string,"test_paid": boolean,"title": string,"total_count": number,"updated_at": string
@@ -565,6 +602,9 @@ isOneToOne: false
 "admin_record_offline_payment":
 { Args: { "p_collab_id": string,"p_note": string }; Returns: string
                            },
+"admin_set_review_hidden":
+{ Args: { "p_hidden": boolean,"p_reason": string,"p_review_id": string }; Returns: boolean
+                           },
 "apply_to_brief":
 { Args: { "p_brief_id": string,"p_message"?: string,"p_proposed_price"?: number }; Returns: string
                            },
@@ -624,6 +664,9 @@ isOneToOne: false
 "close_brief":
 { Args: { "p_id": string }; Returns: undefined
                            },
+"collab_completed_at":
+{ Args: { "p_collab_id": string }; Returns: string
+                           },
 "collab_turn":
 { Args: { "p_status": Database["public"]['Enums']["collab_status"] }; Returns: string
                            },
@@ -656,6 +699,11 @@ isOneToOne: false
 "get_collaboration":
 { Args: { "p_id": string }; Returns: {
               "amount_twd": number,"brand_id": string,"brand_logo_path": string,"brand_name": string,"brief_id": string,"brief_title": string,"conversation_id": string,"created_at": string,"creator_avatar_path": string,"creator_handle": string,"creator_id": string,"creator_name": string,"deliverables": string,"id": string,"my_side": string,"published_url": string,"review_due_at": string,"status": string,"title": string,"updated_at": string
+            }[]
+                           },
+"get_collaboration_reviews":
+{ Args: { "p_collab_id": string }; Returns: {
+              "can_review": boolean,"closes_at": string,"my_comment": string,"my_created_at": string,"my_hidden": boolean,"my_rating": number,"their_comment": string,"their_created_at": string,"their_published": boolean,"their_rating": number,"their_submitted": boolean
             }[]
                            },
 "get_conversation":
@@ -722,6 +770,11 @@ isOneToOne: false
               "action": string,"actor_kind": string,"actor_name": string,"created_at": string,"from_status": string,"id": number,"note": string,"to_status": string
             }[]
                            },
+"list_creator_reviews":
+{ Args: { "p_creator_id": string,"p_limit"?: number,"p_offset"?: number }; Returns: {
+              "brand_logo_path": string,"brand_name": string,"comment": string,"created_at": string,"id": string,"rating": number
+            }[]
+                           },
 "list_messages":
 { Args: { "p_before_at"?: string,"p_before_id"?: string,"p_conversation_id": string,"p_limit"?: number }; Returns: {
               "body": string,"created_at": string,"flagged_contact": boolean,"id": string,"sender_id": string
@@ -785,6 +838,14 @@ isOneToOne: false
 "resolve_payment_refund":
 { Args: { "p_note": string,"p_payment_id": string }; Returns: undefined
                            },
+"review_stats":
+{ Args: { "p_user_ids": (string)[] }; Returns: {
+              "avg_rating": number,"completed_count": number,"review_count": number,"user_id": string
+            }[]
+                           },
+"review_window":
+{ Args: Record<PropertyKey, never>; Returns: string
+                           },
 "save_brief":
 { Args: { "p_budget_max_twd"?: number,"p_budget_min_twd"?: number,"p_categories"?: (string)[],"p_collab_types"?: (string)[],"p_cover_path"?: string,"p_deadline"?: string,"p_description"?: string,"p_id"?: string,"p_includes_product"?: boolean,"p_min_followers"?: number,"p_publish"?: boolean,"p_region"?: string,"p_title"?: string }; Returns: string
                            },
@@ -818,6 +879,9 @@ isOneToOne: false
                            },
 "storage_upload_quota_ok":
 { Args: { "p_bucket": string }; Returns: boolean
+                           },
+"submit_collaboration_review":
+{ Args: { "p_collab_id": string,"p_comment"?: string,"p_rating": number }; Returns: undefined
                            },
 "submit_deliverables":
 { Args: { "p_collab_id": string,"p_file_paths"?: (string)[],"p_links"?: (string)[],"p_note"?: string }; Returns: number

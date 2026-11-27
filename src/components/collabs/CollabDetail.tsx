@@ -3,6 +3,8 @@ import { refundState, type CollabSide } from "@/lib/collabs/view";
 import { messagesHref } from "@/lib/messages/view";
 import type { PaymentAvailability } from "@/lib/payments/config";
 import { summarizePayments, summaryForSide } from "@/lib/payments/view";
+import type { CollabReviews } from "@/lib/reviews/view";
+import { CollabReviewSection } from "@/components/reviews/CollabReviewSection";
 import { ActionCard } from "./ActionCard";
 import { PaymentStatusPoller } from "./PaymentStatusPoller";
 import { PayoutPrompt } from "./PayoutPrompt";
@@ -15,10 +17,12 @@ type Props = {
   data: CollabDetailData; side: CollabSide; uid: string; nowMs: number; devPaymentEnabled: boolean; payment: PaymentAvailability;
   /** 創作者還沒有收款帳戶、而這個合作案已付款未撥款：行動卡上方提醒（QA m19） */
   payoutPrompt?: boolean;
+  /** 已完成的合作案才有：雙方的評價 */
+  reviews?: CollabReviews | null;
 };
 
 /** 合作案詳情：品牌與創作者共用，只差在視角。 */
-export function CollabDetail({ data, side, uid, nowMs, devPaymentEnabled, payment, payoutPrompt }: Props) {
+export function CollabDetail({ data, side, uid, nowMs, devPaymentEnabled, payment, payoutPrompt, reviews }: Props) {
   const { collab: c, submissions, events } = data;
   const fullSummary = summarizePayments(data.payments, nowMs);
   const summary = summaryForSide(fullSummary, side);
@@ -34,6 +38,12 @@ export function CollabDetail({ data, side, uid, nowMs, devPaymentEnabled, paymen
         devPaymentEnabled={devPaymentEnabled} payment={payment} summary={summary}
         adminCancelled={events.some((e) => e.action === "admin_cancel")} payoutPrompt={payoutPrompt}
       />
+      {reviews && (
+        <CollabReviewSection
+          collabId={c.id} reviews={reviews} nowMs={nowMs}
+          counterpart={side === "brand" ? c.creatorName : c.brandName}
+        />
+      )}
       {!(submissions.length === 0 && (c.status === "cancelled" || c.status === "declined")) && <SubmissionList submissions={submissions} />}
       <EventList events={events} chatHref={c.conversationId ? messagesHref(side, c.conversationId) : null} fromApplication={c.briefId !== null} />
     </div>

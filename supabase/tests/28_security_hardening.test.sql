@@ -108,7 +108,8 @@ select ok(has_column_privilege('anon', 'public.creator_profiles', 'handle', 'SEL
 select is(
   (select array_agg(p.proname::text order by p.proname) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
     where n.nspname = 'public' and has_function_privilege('anon', p.oid, 'EXECUTE')),
-  array['get_public_creator'], 'anon 只能執行 get_public_creator');
+  -- 評價（20261202000100_reviews.sql）：創作者公開頁要給訪客看已公開的評價與評分統計
+  array['get_public_creator', 'list_creator_reviews', 'review_stats'], 'anon 只能執行公開頁需要的三個函式');
 select ok(not has_sequence_privilege('authenticated', 'public.audit_logs_id_seq', 'USAGE')
           and not has_sequence_privilege('anon', 'public.payment_anomalies_id_seq', 'USAGE'), 'API 角色沒有 sequence 權限');
 create table public.sechard_tmp (x integer);

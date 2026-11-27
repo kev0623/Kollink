@@ -16,6 +16,8 @@ import { APPLICANT_EMPTY_TEXT, APPLICANT_FILTERS, proposedPriceLabel, type Appli
 import { formatDateTimeTw } from "@/lib/briefs/dates";
 import { formatNumber, formatPercent } from "@/lib/format";
 import { pageHref } from "@/lib/paging";
+import { RatingBadge } from "@/components/reviews/RatingBadge";
+import type { ReviewStats } from "@/lib/reviews/view";
 import { ConfirmAction } from "./ConfirmAction";
 import { ApplicationStatusBadge } from "./StatusBadges";
 
@@ -26,8 +28,10 @@ export type OfferBrief = { budgetMin: number | null; budgetMax: number | null; c
  * 報名者列表：篩選（全部、待處理、已錄取、已婉拒）與分頁都在網址（?applicants=、?page=），由伺服器取這一頁。
  * 換篩選時畫面不捲動（scroll={false}）；換頁時回到報名者區塊的開頭（#applicants）。
  */
-export function ApplicantList({ briefId, brief, applicants, filter, counts, page }: {
+export function ApplicantList({ briefId, brief, applicants, filter, counts, page, stats = {} }: {
   briefId: string; brief: OfferBrief; applicants: Applicant[]; filter: ApplicantFilter; counts: ApplicantCounts; page: number;
+  /** 這一頁報名者的評分（creatorId → 統計）；沒有的人不顯示 */
+  stats?: Record<string, ReviewStats>;
 }) {
   const base = `/brand/briefs/${briefId}`;
   const hrefFor = (f: ApplicantFilter, p = 1) =>
@@ -53,7 +57,7 @@ export function ApplicantList({ briefId, brief, applicants, filter, counts, page
           />
         ) : (
           <ul className={rows}>
-            {applicants.map((a) => <li key={a.id} className="p-4 md:p-5"><ApplicantItem a={a} briefId={briefId} brief={brief} /></li>)}
+            {applicants.map((a) => <li key={a.id} className="p-4 md:p-5"><ApplicantItem a={a} briefId={briefId} brief={brief} stats={stats[a.creatorId]} /></li>)}
           </ul>
         )}
       </div>
@@ -62,7 +66,7 @@ export function ApplicantList({ briefId, brief, applicants, filter, counts, page
   );
 }
 
-function ApplicantItem({ a, briefId, brief }: { a: Applicant; briefId: string; brief: OfferBrief }) {
+function ApplicantItem({ a, briefId, brief, stats }: { a: Applicant; briefId: string; brief: OfferBrief; stats?: ReviewStats }) {
   const [accepting, setAccepting] = useState(false);
 
   return (
@@ -79,6 +83,7 @@ function ApplicantItem({ a, briefId, brief }: { a: Applicant; briefId: string; b
           <p className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted">
             <span>粉絲 {formatNumber(a.followerCount)}</span>
             <span>互動率 {formatPercent(a.engagementRate)}</span>
+            <RatingBadge stats={stats} />
             {a.region && <span className="inline-flex items-center gap-0.5"><MapPin size={12} strokeWidth={1.5} aria-hidden="true" />{a.region}</span>}
             <span>報名於 {formatDateTimeTw(a.createdAt)}</span>
           </p>

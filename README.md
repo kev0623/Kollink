@@ -454,6 +454,18 @@ commit;
 
 本機開發另有「標記已付款（本機）」按鈕（開關與測試快速登入相同，正式環境不會出現、`/api/dev/mark-paid` 回 404），走的也是 `record_payment_success`。
 
+## 評價
+
+合作完成（撥款）後，品牌與創作者互相評分（1–5 星，文字選填、最多 500 字）。migration `20261202000100_reviews.sql`，規則的 TS 常數在 `src/lib/reviews/view.ts`。
+
+- **期限**：完成後 14 天內可以寫；每個合作案每一方一則，送出後不能修改。
+- **雙盲**：雙方都寫完的那一刻一起公開；只有一方寫的話，14 天期滿才公開。寫之前只知道對方「寫了沒」，看不到內容。
+- **文字**：不能有電話、Email、LINE ID 或連結（會公開）。前端與資料庫都檢查。
+- **哪裡看得到**：合作案詳情（雙方）；創作者公開頁 `/c/<handle>` 的星等與「合作評價」（訪客也看得到）；品牌看報名者列表時每位創作者的星等；創作者看機會詳情時品牌的星等。創作者寫給品牌的評價內容只有該品牌自己在合作案詳情看得到，其他人只看得到品牌的平均與則數。
+- **隱藏違規評價**：管理員在 `/admin/collabs/<id>` 的「評價」區按「隱藏這則評價」（原因必填，只有管理員看得到，寫進 audit log，action `review_hidden`／`review_unhidden`）。隱藏後不公開、不列入平均，作者看到「已被平台隱藏」。管理員是該合作案的參與者時不能處理。
+
+資料表 `collaboration_reviews` 不授權給任何 API 角色，讀寫只經由 definer 函式：`submit_collaboration_review`、`get_collaboration_reviews`（參與者）、`review_stats`、`list_creator_reviews`（訪客可呼叫）、`admin_list_collab_reviews`、`admin_set_review_hidden`。
+
 ## 站內訊息
 
 - 品牌在創作者公開頁按「傳訊息」開啟對話；創作者不能主動開啟，只能在已有的對話裡回覆（由品牌傳訊息、錄取或邀請建立）。

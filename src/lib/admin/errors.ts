@@ -37,6 +37,7 @@ const MESSAGES: Record<string, string> = {
   "not an online payment": "只有 KL 開頭的綠界付款單可以用這個方式",
   "refund not required": ADMIN_STALE_MESSAGE,
   "anomaly not found": "找不到這筆付款異常",
+  "review not found": "找不到這則評價",
   "anomaly already resolved": ADMIN_STALE_MESSAGE,
 };
 
