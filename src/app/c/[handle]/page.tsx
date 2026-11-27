@@ -5,6 +5,7 @@ import { getCurrentUser } from "@/lib/auth/current-user";
 import { loadIsFavorite, loadPortfolio, loadPublicCreator, loadRates } from "@/lib/creators/public-profile";
 import { profileMetadata } from "@/lib/creators/metadata";
 import { viewerKindOf } from "@/lib/creators/view";
+import { loadCreatorReviews, loadReviewStats } from "@/lib/reviews/load";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { ProfileView } from "./ProfileView";
 
@@ -30,13 +31,20 @@ async function Profile({ params }: Props) {
   const creator = await loadPublicCreator(handle);
   // 不存在或未審核（且不是本人）一律 404，不透露任何資料
   if (!creator) notFound();
-  const [me, portfolio] = await Promise.all([getCurrentUser(), loadPortfolio(creator.userId)]);
+  const [me, portfolio, stats, reviews] = await Promise.all([
+    getCurrentUser(), loadPortfolio(creator.userId), loadReviewStats(creator.userId), loadCreatorReviews(creator.userId),
+  ]);
   const viewer = viewerKindOf(me?.profile?.role);
   // 報價與收藏狀態只有品牌需要（RLS 也只讓品牌與自己的收藏讀得到）
   const [rates, favorite] = viewer === "brand"
     ? await Promise.all([loadRates(creator.userId, creator.collabTypes), loadIsFavorite(creator.userId)])
     : [[], undefined];
-  return <ProfileView creator={creator} portfolio={portfolio} rates={rates} viewer={viewer} favorite={favorite} />;
+  return (
+    <ProfileView
+      creator={creator} portfolio={portfolio} rates={rates} viewer={viewer} favorite={favorite}
+      stats={stats} reviews={reviews.items} hasMoreReviews={reviews.hasMore}
+    />
+  );
 }
 
 function ProfileSkeleton() {

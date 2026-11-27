@@ -7,17 +7,25 @@ import { FavoriteButton } from "@/components/square/FavoriteButton";
 import { creatorMediaUrl } from "@/lib/creator-media";
 import { formatNumber, formatPercent, formatTwd, initialOf } from "@/lib/format";
 import type { CreatorStatus, PortfolioItem, PublicCreator, Rate, ViewerKind } from "@/lib/creators/view";
+import { brandLogoUrl } from "@/lib/brand-logo";
+import { formatDateTw } from "@/lib/briefs/dates";
+import { NO_REVIEW_STATS, statsSummary, type PublicReview, type ReviewStats } from "@/lib/reviews/view";
+import { Stars } from "@/components/reviews/Stars";
 
 /** favorite：品牌是否已收藏；只有品牌瀏覽時才有意義（其他身分不顯示 ♡）。 */
-type Props = { creator: PublicCreator; portfolio: PortfolioItem[]; rates: Rate[]; viewer: ViewerKind; favorite?: boolean };
+type Props = {
+  creator: PublicCreator; portfolio: PortfolioItem[]; rates: Rate[]; viewer: ViewerKind; favorite?: boolean;
+  /** 評分統計與品牌寫的評價（已公開的）；hasMoreReviews＝還有更舊的沒列出來 */
+  stats?: ReviewStats; reviews?: PublicReview[]; hasMoreReviews?: boolean;
+};
 
-export function ProfileView({ creator: c, portfolio, rates, viewer, favorite }: Props) {
+export function ProfileView({ creator: c, portfolio, rates, viewer, favorite, stats = NO_REVIEW_STATS, reviews = [], hasMoreReviews }: Props) {
   return (
     <div className="pt-2 md:pt-6">
       {c.isSelf && c.status !== "approved" && <SelfPreviewBanner status={c.status} />}
       <div className="grid gap-4 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] md:gap-6">
         <div className="space-y-4 md:space-y-6">
-          <HeaderCard c={c} favorite={viewer === "brand" ? (favorite ?? false) : undefined} />
+          <HeaderCard c={c} stats={stats} favorite={viewer === "brand" ? (favorite ?? false) : undefined} />
           <StatsCard c={c} />
           {c.styleTags.length > 0 && (
             <Section title="風格"><Chips label="風格標籤" items={c.styleTags} /></Section>
@@ -32,9 +40,7 @@ export function ProfileView({ creator: c, portfolio, rates, viewer, favorite }: 
               : <p className="text-sm text-muted">尚未設定</p>}
           </Section>
           <RatesSection viewer={viewer} handle={c.handle} rates={rates} />
-          <Section title="合作過的品牌">
-            <p className="text-sm text-muted">還沒有完成的合作</p>
-          </Section>
+          <ReviewsSection stats={stats} reviews={reviews} hasMore={hasMoreReviews === true} />
         </div>
       </div>
     </div>
@@ -74,7 +80,7 @@ function Chips({ label, items, dark }: { label: string; items: string[]; dark?: 
   );
 }
 
-function HeaderCard({ c, favorite }: { c: PublicCreator; favorite?: boolean }) {
+function HeaderCard({ c, stats, favorite }: { c: PublicCreator; stats: ReviewStats; favorite?: boolean }) {
   const avatar = creatorMediaUrl(c.avatarPath);
   return (
     <section className="relative overflow-hidden rounded-card border border-line bg-surface">
@@ -100,11 +106,55 @@ function HeaderCard({ c, favorite }: { c: PublicCreator; favorite?: boolean }) {
           {c.region && <span className="inline-flex items-center gap-1"><MapPin size={14} strokeWidth={1.5} aria-hidden="true" />{c.region}</span>}
         </p>
         {c.categories.length > 0 && <div className="mt-4"><Chips label="內容領域" items={c.categories} dark /></div>}
-        <p className="mt-4 flex items-center gap-1 text-sm text-muted">
-          <Star size={14} strokeWidth={1.5} aria-hidden="true" />新創作者・尚無評價
+        <p className={`mt-4 flex items-center gap-1 text-sm ${stats.avg === null ? "text-muted" : "font-semibold text-ink"}`}>
+          <Star size={14} strokeWidth={1.5} aria-hidden="true" className={stats.avg === null ? "" : "fill-current text-primary"} />
+          {stats.avg === null
+            ? statsSummary(stats, stats.completed > 0 ? "尚無評價" : "新創作者・尚無評價")
+            : <a href="#reviews" className="underline-offset-4 hover:underline">{statsSummary(stats, "")}</a>}
         </p>
         {c.bio && <p className="mt-5 whitespace-pre-line break-words border-t border-line pt-5 text-sm text-ink">{c.bio}</p>}
       </div>
+    </section>
+  );
+}
+
+/** 品牌寫的評價（雙方都寫完或期滿後才公開）。評價只來自平台上完成的合作案。 */
+function ReviewsSection({ stats, reviews, hasMore }: { stats: ReviewStats; reviews: PublicReview[]; hasMore: boolean }) {
+  return (
+    <section id="reviews" className="scroll-mt-4 border-t border-line pt-5 md:pt-6">
+      <h2 className={h2}>合作評價{stats.count > 0 && <span className="ml-2 text-sm font-normal text-muted">{stats.count} 則</span>}</h2>
+      {reviews.length === 0 ? (
+        <p className="mt-3 text-sm text-muted">
+          {stats.completed > 0 ? "已完成合作，評價還沒公開" : "還沒有完成的合作"}
+        </p>
+      ) : (
+        <ul className="mt-3 divide-y divide-line">
+          {reviews.map((r) => {
+            const logo = brandLogoUrl(r.brandLogoPath);
+            return (
+              <li key={r.id} className="flex gap-3 py-4 first:pt-0">
+                {logo ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={logo} alt="" loading="lazy" className="h-10 w-10 shrink-0 rounded-full border border-line bg-subtle object-cover" />
+                ) : (
+                  <div aria-hidden="true" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-subtle text-sm font-bold text-ink">
+                    {initialOf(r.brandName)}
+                  </div>
+                )}
+                <div className="min-w-0">
+                  <p className="break-words text-sm font-bold text-ink">{r.brandName}</p>
+                  <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1">
+                    <Stars rating={r.rating} size={14} />
+                    {r.createdAt && <span className="text-xs text-muted">{formatDateTw(r.createdAt)}</span>}
+                  </p>
+                  {r.comment && <p className="mt-2 whitespace-pre-line break-words text-sm text-ink">{r.comment}</p>}
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+      {hasMore && <p className="mt-3 text-sm text-muted">只顯示最新的 {reviews.length} 則</p>}
     </section>
   );
 }

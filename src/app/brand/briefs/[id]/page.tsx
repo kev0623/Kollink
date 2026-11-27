@@ -10,6 +10,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { BriefStatusBadge } from "@/components/briefs/StatusBadges";
 import { requireRole } from "@/lib/auth/current-user";
 import { loadApplicantsPage, loadOwnBrief } from "@/lib/briefs/brand";
+import { loadReviewStatsMany } from "@/lib/reviews/load";
 import { todayTw } from "@/lib/briefs/dates";
 import { APPLICANTS_ANCHOR, isUuid } from "@/lib/briefs/query";
 import {
@@ -54,6 +55,7 @@ async function BriefDetail({ params, searchParams }: Props) {
     redirect(pageHref(`/brand/briefs/${id}`, { applicants: filter === "all" ? undefined : filter }, last, `#${APPLICANTS_ANCHOR}`));
   }
   const counted = activeApplicantCount(counts);
+  const stats = Object.fromEntries(await loadReviewStatsMany(applicants.map((a) => a.creatorId)));
 
   return (
     <div className="space-y-6">
@@ -99,7 +101,7 @@ async function BriefDetail({ params, searchParams }: Props) {
             <ApplicantList
               briefId={brief.id}
               brief={{ budgetMin: brief.budgetMin, budgetMax: brief.budgetMax, collabTypes: brief.collabTypes, description: brief.description }}
-              applicants={applicants} filter={filter} counts={counts} page={page}
+              applicants={applicants} filter={filter} counts={counts} page={page} stats={stats}
             />
           )}
         </div>

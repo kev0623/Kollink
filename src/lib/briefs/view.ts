@@ -306,12 +306,15 @@ export function appendUniqueById<T extends { id: string }>(current: T[], more: T
 }
 
 export type OpportunityDetail = Opportunity & {
+  /** 刊登的品牌（查品牌評分用）；get_opportunity 才有 */
+  brandId: string | null;
   description: string;
   status: BriefStatus;
   application: { id: string; status: ApplicationStatus; message: string | null; proposedPrice: number | null } | null;
 };
 
 export type OpportunityDetailRow = OpportunityRow & {
+  brand_id?: string | null;
   description: string | null;
   status: string;
   my_application_id: string | null;
@@ -322,6 +325,7 @@ export type OpportunityDetailRow = OpportunityRow & {
 export function toOpportunityDetail(r: OpportunityDetailRow): OpportunityDetail {
   return {
     ...toOpportunity(r),
+    brandId: r.brand_id ?? null,
     description: r.description ?? "",
     status: toBriefStatus(r.status),
     application: r.my_application_id

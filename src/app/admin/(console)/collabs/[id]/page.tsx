@@ -22,6 +22,8 @@ import { CollabHeader } from "@/components/collabs/CollabHeader";
 import { EventList } from "@/components/collabs/EventList";
 import { Stepper } from "@/components/collabs/Stepper";
 import { SubmissionList } from "@/components/collabs/SubmissionList";
+import { AdminReviews } from "@/components/admin/AdminReviews";
+import { loadAdminCollabReviews } from "@/lib/reviews/load";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -54,6 +56,7 @@ async function Section({ params }: Props) {
     loadAdminPayments("all", 1, id),
     c.status === "completed" ? loadPayoutRecord(id) : Promise.resolve(null),
   ]);
+  const reviews = c.status === "completed" ? await loadAdminCollabReviews(id) : null;
   const summary = summarizePayments(data.payments, now);
   const actions = adminCollabActions(c.status);
   let payout: PayoutPanel | null = null;
@@ -102,6 +105,7 @@ async function Section({ params }: Props) {
         <h2 id="payments-title" className="text-lg font-bold text-ink">付款單</h2>
         <PaymentRows items={payments} withCollab={false} empty="還沒有付款單" participant={participant} />
       </section>
+      {reviews && <AdminReviews reviews={reviews} nowMs={now} participant={participant} />}
       <SubmissionList submissions={data.submissions} />
       <EventList events={data.events} chatHref={null} fromApplication={c.briefId !== null} />
     </div>

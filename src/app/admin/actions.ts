@@ -156,6 +156,19 @@ export async function resolveRefundAction(paymentId: unknown, memo: unknown): Pr
   return { ok: true };
 }
 
+/** 隱藏或恢復一則評價（原因必填，只有管理員看得到）。狀態沒變時也當成成功。 */
+export async function setReviewHiddenAction(reviewId: unknown, hidden: unknown, memo: unknown): Promise<AdminActionResult> {
+  await requireAdmin();
+  if (!isUuid(reviewId) || typeof hidden !== "boolean") return { ok: false, error: BAD_INPUT };
+  const n = note(memo, "原因");
+  if (!n.ok) return n;
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("admin_set_review_hidden", { p_review_id: reviewId, p_hidden: hidden, p_reason: n.value });
+  if (error) return { ok: false, error: adminErrorMessage(error) };
+  revalidateAdmin();
+  return { ok: true };
+}
+
 /** 付款異常處理完成：記錄說明。 */
 export async function resolveAnomalyAction(anomalyId: unknown, memo: unknown): Promise<AdminActionResult> {
   await requireAdmin();
