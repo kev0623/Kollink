@@ -770,6 +770,11 @@ isOneToOne: false
               "action": string,"actor_kind": string,"actor_name": string,"created_at": string,"from_status": string,"id": number,"note": string,"to_status": string
             }[]
                            },
+"list_creator_rates":
+{ Args: { "p_creator_id": string }; Returns: {
+              "collab_type": string,"price_twd": number
+            }[]
+                           },
 "list_creator_reviews":
 { Args: { "p_creator_id": string,"p_limit"?: number,"p_offset"?: number }; Returns: {
               "brand_logo_path": string,"brand_name": string,"comment": string,"created_at": string,"id": string,"rating": number

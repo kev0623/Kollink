@@ -54,9 +54,11 @@ function HeroCard({ c }: { c: DirectoryCreator }) {
           {initialOf(c.displayName)}
         </div>
       )}
-      <span className="absolute left-2 top-2 rounded-btn bg-bg/85 px-2.5 py-1 text-xs font-bold tabular-nums text-ink">
-        {formatNumber(c.followerCount)} 粉絲
-      </span>
+      {c.followerCount !== null && (
+        <span className="absolute left-2 top-2 rounded-btn bg-bg/85 px-2.5 py-1 text-xs font-bold tabular-nums text-ink">
+          {formatNumber(c.followerCount)} 粉絲
+        </span>
+      )}
       <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-bg via-bg/85 to-transparent px-3 pb-3 pt-12 md:px-4 md:pb-4">
         <p className="flex items-center justify-between gap-2">
           <span className="min-w-0 truncate font-bold text-ink group-hover:underline group-hover:underline-offset-4">{c.displayName}</span>

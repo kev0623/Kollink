@@ -5,6 +5,7 @@ import { Faq } from "@/components/landing/Faq";
 import { FeaturedCreators } from "@/components/landing/FeaturedCreators";
 import { Workflow } from "@/components/landing/Workflow";
 import { LandingFooter } from "@/components/landing/LandingFooter";
+import { SiteFooter } from "@/components/site/SiteFooter";
 import { TopBar } from "@/components/landing/TopBar";
 import { Trust } from "@/components/landing/Trust";
 import { ThreadCanvas } from "@/components/thread/ThreadCanvas";
@@ -17,7 +18,7 @@ export default function Home() {
   return (
     <>
       <SkipLink />
-      <TopBar />
+      <TopBar overlay />
       <main id="main" tabIndex={-1} className="outline-none">
         <Hero scene={<ThreadCanvas variant="hero" />} cards={<FeaturedCreators />} />
         <Workflow />
@@ -26,6 +27,7 @@ export default function Home() {
         <Faq />
       </main>
       <LandingFooter />
+      <SiteFooter />
     </>
   );
 }

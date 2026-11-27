@@ -7,7 +7,7 @@ import type { DirectoryCreator } from "@/lib/creators/directory";
 
 /**
  * 公開列表的創作者卡片：整張卡是一個連結。上方是作品（沒有作品用頭像，都沒有用名字第一個字），
- * 左上角是粉絲數；下方是名字、類別、地區與評分。
+ * 左上角是粉絲數（登入後才有）；下方是名字、類別、地區、評分與起價。
  */
 export function CreatorCard({ c, priority }: { c: DirectoryCreator; priority?: boolean }) {
   const image = creatorMediaUrl(c.coverPath) ?? creatorMediaUrl(c.avatarPath);
@@ -25,9 +25,11 @@ export function CreatorCard({ c, priority }: { c: DirectoryCreator; priority?: b
             {initialOf(c.displayName)}
           </div>
         )}
-        <span className="absolute left-2 top-2 rounded-btn bg-bg/85 px-2.5 py-1 text-xs font-bold tabular-nums text-ink">
-          {formatNumber(c.followerCount)} 粉絲
-        </span>
+        {c.followerCount !== null && (
+          <span className="absolute left-2 top-2 rounded-btn bg-bg/85 px-2.5 py-1 text-xs font-bold tabular-nums text-ink">
+            {formatNumber(c.followerCount)} 粉絲
+          </span>
+        )}
       </div>
       <div className="p-3 md:p-4">
         <p className="flex items-center justify-between gap-2">

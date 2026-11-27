@@ -39,7 +39,7 @@ export function ProfileView({ creator: c, portfolio, rates, viewer, favorite, st
               ? <Chips label="想接的合作" items={c.collabTypes} />
               : <p className="text-sm text-muted">尚未設定</p>}
           </Section>
-          <RatesSection viewer={viewer} handle={c.handle} rates={rates} />
+          <RatesSection viewer={viewer} rates={rates} />
           <ReviewsSection stats={stats} reviews={reviews} hasMore={hasMoreReviews === true} />
         </div>
       </div>
@@ -163,7 +163,21 @@ function StatsCard({ c }: { c: PublicCreator }) {
   return (
     <section className="border-t border-line pt-5 md:pt-6" aria-label="數據">
       <dl className="grid grid-cols-3 gap-2 text-center">
-        <Stat label="IG 粉絲" value={formatNumber(c.followerCount)} />
+        {c.followerCount !== null ? (
+          <Stat label="IG 粉絲" value={formatNumber(c.followerCount)} />
+        ) : (
+          <div>
+            <dt className="text-xs text-muted">IG 粉絲</dt>
+            <dd className="mt-1">
+              <Link
+                href={`/login?next=${encodeURIComponent(`/c/${c.handle}`)}`}
+                className="inline-flex min-h-11 items-center justify-center gap-1 rounded-btn px-2 text-sm font-bold text-ink underline underline-offset-4 hover:text-accent"
+              >
+                <Lock size={14} strokeWidth={1.5} aria-hidden="true" />登入後顯示
+              </Link>
+            </dd>
+          </div>
+        )}
         <Stat label="互動率" value={formatPercent(c.engagementRate)} />
         <Stat label="主要受眾" value={c.audienceAge ? `${c.audienceAge} 歲` : "—"} />
       </dl>
@@ -214,32 +228,12 @@ function PortfolioGrid({ name, items }: { name: string; items: PortfolioItem[] }
   );
 }
 
-function RatesSection({ viewer, handle, rates }: { viewer: ViewerKind; handle: string; rates: Rate[] }) {
-  if (viewer === "creator") {
-    return (
-      <Section title="報價方案" card>
-        <p className="flex items-center gap-2 rounded-input bg-subtle p-4 text-sm font-semibold text-ink">
-          <Lock size={16} strokeWidth={1.5} aria-hidden="true" />完整報價只開放給品牌查看
-        </p>
-      </Section>
-    );
-  }
-  if (viewer !== "brand") {
-    return (
-      <Section title="報價方案" card>
-        <Link
-          href={`/login?next=${encodeURIComponent(`/c/${handle}`)}`}
-          className="flex items-center gap-2 rounded-input bg-subtle p-4 text-sm font-semibold text-ink hover:bg-subtle-hover"
-        >
-          <Lock size={16} strokeWidth={1.5} aria-hidden="true" />品牌登入後可查看完整報價
-        </Link>
-      </Section>
-    );
-  }
+/** 報價是公開的：所有人（含訪客）都看得到。訪客另外看到一行「怎麼邀請」。 */
+function RatesSection({ viewer, rates }: { viewer: ViewerKind; rates: Rate[] }) {
   return (
     <Section title="報價方案" card>
       {rates.length === 0 ? (
-        <p className="text-sm text-muted">尚未提供報價，可以直接邀請洽談</p>
+        <p className="text-sm text-muted">{viewer === "brand" ? "尚未提供報價，可以直接邀請洽談" : "尚未提供報價"}</p>
       ) : (
         <ul className="divide-y divide-line">
           {rates.map((r) => (
@@ -249,6 +243,11 @@ function RatesSection({ viewer, handle, rates }: { viewer: ViewerKind; handle: s
             </li>
           ))}
         </ul>
+      )}
+      {viewer === "guest" && (
+        <p className="mt-4 border-t border-line pt-4 text-sm text-muted">
+          想合作？<Link href="/signup?role=brand" className="font-bold text-ink underline underline-offset-4 hover:text-accent">註冊品牌帳號</Link>就能直接邀請，款項由平台保管。
+        </p>
       )}
     </Section>
   );

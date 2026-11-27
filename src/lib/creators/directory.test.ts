@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  DIRECTORY_QUERY_MAX, directoryHeading, directoryHref, hasDirectoryFilter, parseDirectoryQuery, toDirectory, type DirectoryRow,
+  directorySortsFor, DIRECTORY_QUERY_MAX, directoryHeading, directoryHref, hasDirectoryFilter, parseDirectoryQuery, toDirectory, type DirectoryRow,
 } from "./directory";
 
 const row = (over: Partial<DirectoryRow> = {}): DirectoryRow => ({
@@ -58,6 +58,13 @@ describe("toDirectory", () => {
     expect(items[0]).toMatchObject({ rating: null, reviewCount: 0, displayName: "mei", categories: [] });
     expect(toDirectory([row({ min_price: null })]).items[0].minPrice).toBeNull();
     expect(toDirectory([row({ min_price: undefined })]).items[0].minPrice).toBeNull();
+  });
+  it("訪客拿到的粉絲數是 null（不是 0）", () => {
+    expect(toDirectory([row({ follower_count: null })]).items[0].followerCount).toBeNull();
+  });
+  it("訪客沒有「粉絲數多」的排序", () => {
+    expect(directorySortsFor(false).map((s) => s.value)).toEqual(["newest", "rating", "price"]);
+    expect(directorySortsFor(true).map((s) => s.value)).toEqual(["newest", "followers", "rating", "price"]);
   });
   it("沒有列時 total 是 0", () => {
     expect(toDirectory([])).toEqual({ items: [], total: 0 });

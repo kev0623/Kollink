@@ -21,6 +21,8 @@ describe("profileMetadata", () => {
   });
   it("沒有地區與內容領域時只剩粉絲數", () => {
     expect(profileMetadata({ ...c, region: null, categories: [], followerCount: 0 }).description).toBe("IG 粉絲 0");
+    // 訪客拿不到粉絲數：描述裡就不寫
+    expect(profileMetadata({ ...c, followerCount: null }).description).not.toContain("粉絲");
   });
   it("找不到時不洩漏任何資料", () => {
     const m = profileMetadata(null);

@@ -31,20 +31,34 @@ export async function loadApprovedCreatorAsGuest(handle: string): Promise<Public
   return data ? toPublicCreator(data as PublicCreatorRow) : null;
 }
 
-export async function loadPortfolio(creatorId: string): Promise<PortfolioItem[]> {
+/**
+ * 作品。withLinks＝目前的人已登入：貼文連結（會連到創作者本人的 IG）登入後才看得到，
+ * 訪客連欄位都沒有讀取權限，所以不能選這一欄。
+ */
+export async function loadPortfolio(creatorId: string, withLinks: boolean): Promise<PortfolioItem[]> {
   const supabase = await createClient();
+  if (!withLinks) {
+    const { data, error } = await supabase
+      .from("creator_portfolio_items").select("image_path").eq("creator_id", creatorId).order("position");
+    if (error) throw error;
+    return (data ?? []).map((r) => ({ imagePath: r.image_path, linkUrl: null }));
+  }
   const { data, error } = await supabase
     .from("creator_portfolio_items").select("image_path, link_url").eq("creator_id", creatorId).order("position");
   if (error) throw error;
   return (data ?? []).map((r) => ({ imagePath: r.image_path, linkUrl: r.link_url }));
 }
 
-/** 報價受 RLS 限制：只有品牌（已審核的創作者）與本人讀得到，其他人得到空陣列。 */
+/** 報價是公開的（已審核的創作者給所有人，未審核的只有本人）：經由 list_creator_rates，訪客也讀得到。 */
 export async function loadRates(creatorId: string, collabTypes: string[]): Promise<Rate[]> {
   const supabase = await createClient();
-  const { data, error } = await supabase.from("creator_rates").select("collab_type, price_twd").eq("creator_id", creatorId);
+  const { data, error } = await supabase.rpc("list_creator_rates", { p_creator_id: creatorId });
   if (error) throw error;
-  return sortRatesByTypes((data ?? []).map((r) => ({ collabType: r.collab_type, priceTwd: r.price_twd })), collabTypes);
+  const rows = (data ?? []) as unknown as { collab_type: string | null; price_twd: number | null }[];
+  return sortRatesByTypes(
+    rows.filter((r) => r.collab_type && r.price_twd !== null).map((r) => ({ collabType: r.collab_type!, priceTwd: r.price_twd! })),
+    collabTypes,
+  );
 }
 
 /** 目前的品牌有沒有收藏這位創作者。RLS 只讓品牌看到自己的收藏；不是品牌時永遠是 false。會讀 cookies。 */

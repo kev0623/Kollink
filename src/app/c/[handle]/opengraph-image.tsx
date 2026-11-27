@@ -63,9 +63,12 @@ export default async function Image({ params }: { params: Promise<{ handle: stri
             >
               {`@${c.handle}`}
             </div>
-            <div style={{ display: "block", maxWidth: 808, fontSize: 36, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
-              {`IG 粉絲 ${formatNumber(c.followerCount)}`}
-            </div>
+            {/* 粉絲數登入後才看得到；OG 圖以訪客身分產生，所以通常沒有這一行 */}
+            {c.followerCount !== null && (
+              <div style={{ display: "block", maxWidth: 808, fontSize: 36, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
+                {`IG 粉絲 ${formatNumber(c.followerCount)}`}
+              </div>
+            )}
             <div style={{ display: "flex", gap: 12, maxWidth: 808, overflow: "hidden", marginTop: 4 }}>
               {c.categories.slice(0, MAX_OG_CATEGORIES).map((cat) => (
                 <div

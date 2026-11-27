@@ -33,7 +33,7 @@ select has_column('public', 'creator_profiles', 'audience_age', '有 audience_ag
 select ok(not has_table_privilege('authenticated', 'public.creator_rates', 'INSERT'), 'authenticated 沒有 creator_rates INSERT');
 select ok(not has_table_privilege('authenticated', 'public.creator_rates', 'UPDATE'), 'authenticated 沒有 creator_rates UPDATE');
 select ok(not has_table_privilege('authenticated', 'public.creator_rates', 'DELETE'), 'authenticated 沒有 creator_rates DELETE');
-select ok(has_table_privilege('anon', 'public.creator_portfolio_items', 'SELECT'), 'anon 可以讀作品（受 RLS 限制）');
+select ok(has_column_privilege('anon', 'public.creator_portfolio_items', 'image_path', 'SELECT'), 'anon 可以讀作品（受 RLS 限制）');
 select ok(not has_table_privilege('authenticated', 'public.creator_portfolio_items', 'INSERT'), 'authenticated 沒有作品 INSERT');
 select ok(not has_table_privilege('service_role', 'public.creator_portfolio_items', 'INSERT'), 'service_role 沒有作品 INSERT');
 select ok(has_function_privilege('anon', 'public.get_public_creator(text)', 'EXECUTE'), 'anon 可以呼叫 get_public_creator');

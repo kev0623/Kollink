@@ -31,14 +31,14 @@ async function Profile({ params }: Props) {
   const creator = await loadPublicCreator(handle);
   // 不存在或未審核（且不是本人）一律 404，不透露任何資料
   if (!creator) notFound();
-  const [me, portfolio, stats, reviews] = await Promise.all([
-    getCurrentUser(), loadPortfolio(creator.userId), loadReviewStats(creator.userId), loadCreatorReviews(creator.userId),
+  const me = await getCurrentUser();
+  const [portfolio, stats, reviews, rates] = await Promise.all([
+    loadPortfolio(creator.userId, me !== null), loadReviewStats(creator.userId), loadCreatorReviews(creator.userId),
+    loadRates(creator.userId, creator.collabTypes),
   ]);
   const viewer = viewerKindOf(me?.profile?.role);
-  // 報價與收藏狀態只有品牌需要（RLS 也只讓品牌與自己的收藏讀得到）
-  const [rates, favorite] = viewer === "brand"
-    ? await Promise.all([loadRates(creator.userId, creator.collabTypes), loadIsFavorite(creator.userId)])
-    : [[], undefined];
+  // 收藏狀態只有品牌需要（RLS 也只讓品牌讀得到自己的收藏）
+  const favorite = viewer === "brand" ? await loadIsFavorite(creator.userId) : undefined;
   return (
     <ProfileView
       creator={creator} portfolio={portfolio} rates={rates} viewer={viewer} favorite={favorite}
