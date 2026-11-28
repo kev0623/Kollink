@@ -35,10 +35,10 @@ export function Faq() {
   return (
     <section id="faq" aria-labelledby="faq-title" className="mx-auto max-w-[1280px] scroll-mt-20 px-5 py-16 md:px-16 md:py-28">
       <div className="grid gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:gap-16">
-        <h2 id="faq-title" className="reveal font-serif text-[30px] font-bold text-ink md:text-[44px]">
+        <h2 id="faq-title" className="font-serif text-[clamp(28px,3.4vw,40px)] font-extrabold leading-tight text-ink">
           <T zh="開始之前，你可能想問" en="Before you start" />
         </h2>
-        <div className="reveal divide-y divide-line border-y border-line">
+        <div className="divide-y divide-line border-y border-line">
           {ITEMS.map((it) => (
             <details key={it.q.zh} className="group">
               <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-4 py-3 text-base font-bold text-ink outline-none transition-colors duration-150 hover:text-accent focus-visible:ring-2 focus-visible:ring-focus [&::-webkit-details-marker]:hidden">

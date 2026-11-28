@@ -12,19 +12,20 @@ import { HERO_HEADLINE } from "@/lib/site";
 const QUICK = ["美妝", "保養", "美食", "旅遊", "穿搭", "親子", "寵物", "3C"];
 
 /**
- * 主視覺：置中的大標 → 搜尋列 → 類別捷徑 → 創作者卡片（cards，沒有公開的創作者時不佔位置），
+ * 主視覺：狀態徽章（badge，公開的創作者人數）→ 置中的大標 → 搜尋列 → 類別捷徑 → 創作者卡片（cards，沒有公開的創作者時不佔位置），
  * 都在第一屏。文字是伺服器渲染的 HTML（LCP 是大標），紅線在背景。
  */
-export function Hero({ scene, cards }: { scene?: React.ReactNode; cards?: React.ReactNode }) {
+export function Hero({ scene, cards, badge }: { scene?: React.ReactNode; cards?: React.ReactNode; badge?: React.ReactNode }) {
   return (
-    <section aria-labelledby="hero-title" className="relative isolate -mt-16 overflow-hidden md:-mt-20">
+    <section aria-labelledby="hero-title" className="relative isolate -mt-[68px] overflow-hidden md:-mt-[76px]">
       <div className="absolute inset-x-0 top-0 -z-10 h-[max(100svh,640px)]">{scene ?? <ThreadFallback variant="hero" />}</div>
       {/* 紅線在上半部，往下淡到底色，卡片與搜尋列才讀得清楚 */}
       <div aria-hidden="true" className="absolute inset-x-0 top-0 -z-10 h-[max(100svh,640px)] bg-gradient-to-b from-transparent via-bg/40 to-bg" />
       <div aria-hidden="true" className="hero-glow absolute inset-x-0 top-0 -z-10 h-[720px]" />
-      <div className="mx-auto w-full max-w-[1280px] px-5 pb-12 pt-36 md:px-16 md:pb-20 md:pt-44">
+      <div className="mx-auto w-full max-w-[1280px] px-5 pb-12 pt-28 md:px-16 md:pb-20 md:pt-36">
         <div className="mx-auto max-w-[900px] text-center">
-          <h1 id="hero-title" className="font-serif text-[40px] font-black leading-[1.15] tracking-[-0.01em] text-ink [text-wrap:balance] md:text-[60px] xl:text-[76px]">
+          {badge}
+          <h1 id="hero-title" className="font-serif text-[clamp(38px,5.4vw,72px)] font-black leading-[1.14] tracking-[-0.03em] text-ink [text-wrap:balance]">
             <span data-l="zh">
               {HERO_HEADLINE.split("，").map((part, i, a) => (
                 <span key={part} className="block">{part}{i < a.length - 1 ? "，" : ""}</span>

@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { connection } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { pageRange } from "@/lib/paging";
@@ -27,11 +28,14 @@ export async function loadPublicCreators(q: DirectoryQuery): Promise<{ items: Di
   return toDirectory((data ?? []) as unknown as DirectoryRow[]);
 }
 
-/** 首頁用：最新加入的幾位。讀取失敗時回傳空陣列（首頁其他內容照常顯示）。 */
-export async function loadFeaturedCreators(limit: number): Promise<DirectoryCreator[]> {
+/**
+ * 首頁用：最新加入的幾位，以及公開的創作者總數（主視覺的狀態徽章）。
+ * 同一個請求裡卡片和徽章各呼叫一次，用 cache 併成一次查詢。讀取失敗時回傳空的（首頁其他內容照常顯示）。
+ */
+export const loadFeatured = cache(async (limit: number): Promise<{ items: DirectoryCreator[]; total: number }> => {
   await connection();
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("list_public_creators", { p_sort: "newest", p_limit: limit, p_offset: 0 });
-  if (error) return [];
-  return toDirectory((data ?? []) as unknown as DirectoryRow[]).items;
-}
+  if (error) return { items: [], total: 0 };
+  return toDirectory((data ?? []) as unknown as DirectoryRow[]);
+});

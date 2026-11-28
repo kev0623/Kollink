@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { ForBoth } from "@/components/landing/ForBoth";
 import { Hero } from "@/components/landing/Hero";
 import { Faq } from "@/components/landing/Faq";
-import { FeaturedCreators } from "@/components/landing/FeaturedCreators";
+import { CreatorCountBadge, FeaturedCreators } from "@/components/landing/FeaturedCreators";
 import { Workflow } from "@/components/landing/Workflow";
 import { LandingFooter } from "@/components/landing/LandingFooter";
 import { SiteFooter } from "@/components/site/SiteFooter";
@@ -18,9 +18,9 @@ export default function Home() {
   return (
     <>
       <SkipLink />
-      <TopBar overlay />
-      <main id="main" tabIndex={-1} className="outline-none">
-        <Hero scene={<ThreadCanvas variant="hero" />} cards={<FeaturedCreators />} />
+      <TopBar />
+      <main id="main" tabIndex={-1} className="page-in outline-none">
+        <Hero scene={<ThreadCanvas variant="hero" />} cards={<FeaturedCreators />} badge={<CreatorCountBadge />} />
         <Workflow />
         <Trust />
         <ForBoth />

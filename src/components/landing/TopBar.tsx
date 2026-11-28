@@ -4,13 +4,13 @@ import { SiteNav } from "@/components/site/SiteNav";
 import { SITE_NAME } from "@/lib/site";
 
 /**
- * 公開頁的頂列：黏在上緣的毛玻璃（globals.css 的 .topbar-glass）。
- * overlay：首頁用，一開始是透明的、疊在主視覺上，捲動後才變成毛玻璃（主視覺用 -mt-20 墊到頂列底下）。
+ * 公開頁的頂列：浮在頁面上的膠囊（globals.css 的 .nav-float／.nav-pill）。
+ * 佔的高度是 12px 間距加膠囊（手機 56px、桌面 64px）；首頁主視覺用負的 margin 墊到它底下。
  */
-export function TopBar({ overlay }: { overlay?: boolean }) {
+export function TopBar() {
   return (
-    <header data-overlay={overlay ? "" : undefined} className="topbar-glass z-30">
-      <div className="relative mx-auto flex h-16 max-w-[1280px] md:h-20 items-center px-5 md:px-16">
+    <header className="nav-float z-30">
+      <div className="nav-pill relative mx-auto flex h-14 max-w-[1200px] items-center pl-5 pr-2 md:h-16 md:pl-7 md:pr-3">
         <Link href="/" className="flex h-11 shrink-0 items-center gap-2 text-lg font-extrabold tracking-tight text-ink">
           <span aria-hidden="true" className="h-2 w-2 rounded-full bg-thread" />{SITE_NAME}
         </Link>

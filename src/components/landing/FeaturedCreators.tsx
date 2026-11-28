@@ -7,7 +7,7 @@ import { formatRating } from "@/lib/reviews/view";
 import { T, TList } from "@/components/i18n/T";
 import { optionLabel } from "@/lib/lang";
 import { DIRECTORY_PATH, type DirectoryCreator } from "@/lib/creators/directory";
-import { loadFeaturedCreators } from "@/lib/creators/directory-load";
+import { loadFeatured } from "@/lib/creators/directory-load";
 
 const COUNT = 4;
 const GRID = "mx-auto mt-6 grid max-w-[1040px] grid-cols-2 gap-3 md:mt-8 md:gap-4 lg:grid-cols-4";
@@ -24,8 +24,31 @@ export function FeaturedCreators() {
   );
 }
 
+/**
+ * 主視覺大標上方的狀態徽章：目前公開的創作者人數（從資料算，沒有人時不顯示）。
+ * 外層固定高度：數字晚一點到時大標不會被往下推。
+ */
+export function CreatorCountBadge() {
+  return (
+    <div className="mb-4 flex h-9 items-center justify-center md:mb-5">
+      <Suspense fallback={null}><Count /></Suspense>
+    </div>
+  );
+}
+
+async function Count() {
+  const { total } = await loadFeatured(COUNT);
+  if (total === 0) return null;
+  return (
+    <Link href={DIRECTORY_PATH} className="inline-flex h-9 items-center gap-2 rounded-btn border border-line bg-surface/80 px-4 text-sm font-semibold text-ink transition-colors duration-150 hover:border-line-strong">
+      <span aria-hidden="true" className="h-2 w-2 rounded-full bg-success" />
+      <T zh={`目前有 ${formatNumber(total)} 位創作者通過審核`} en={`${formatNumber(total)} reviewed creators right now`} />
+    </Link>
+  );
+}
+
 async function Loaded() {
-  const items = await loadFeaturedCreators(COUNT);
+  const { items } = await loadFeatured(COUNT);
   if (items.length === 0) return null;
   return (
     <section aria-labelledby="featured-title">
@@ -46,11 +69,11 @@ function HeroCard({ c }: { c: DirectoryCreator }) {
   return (
     <Link
       href={`/c/${c.handle}`}
-      className="group relative block aspect-[4/5] overflow-hidden rounded-card border border-line bg-panel elev-card outline-none transition-[border-color,transform] duration-200 ease-out hover:-translate-y-0.5 hover:border-line-strong focus-visible:ring-2 focus-visible:ring-focus"
+      className="group relative block aspect-[4/5] overflow-hidden rounded-card bg-panel outline-none focus-visible:ring-2 focus-visible:ring-focus"
     >
       {image ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={image} alt="" className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04]" />
+        <img src={image} alt="" className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]" />
       ) : (
         <div aria-hidden="true" className="absolute inset-0 flex items-center justify-center pb-10 font-serif text-7xl font-bold text-line-strong">
           {initialOf(c.displayName)}
