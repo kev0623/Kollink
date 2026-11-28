@@ -33,15 +33,15 @@ const ITEMS: { q: L; a: L }[] = [
 /** 常見問題：原生 <details>，不用 JavaScript，鍵盤與螢幕閱讀器都能用。 */
 export function Faq() {
   return (
-    <section id="faq" aria-labelledby="faq-title" className="scroll-mt-4 mx-auto max-w-[1280px] px-5 py-14 md:px-16 md:py-24">
+    <section id="faq" aria-labelledby="faq-title" className="mx-auto max-w-[1280px] scroll-mt-20 px-5 py-16 md:px-16 md:py-28">
       <div className="grid gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:gap-16">
-        <h2 id="faq-title" className="font-serif text-[28px] font-bold text-ink [text-wrap:balance] md:text-[40px]">
+        <h2 id="faq-title" className="reveal font-serif text-[30px] font-bold text-ink md:text-[44px]">
           <T zh="開始之前，你可能想問" en="Before you start" />
         </h2>
-        <div className="divide-y divide-line border-y border-line">
+        <div className="reveal divide-y divide-line border-y border-line">
           {ITEMS.map((it) => (
             <details key={it.q.zh} className="group">
-              <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-4 py-3 text-base font-bold text-ink outline-none focus-visible:ring-2 focus-visible:ring-focus [&::-webkit-details-marker]:hidden">
+              <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-4 py-3 text-base font-bold text-ink outline-none transition-colors duration-150 hover:text-accent focus-visible:ring-2 focus-visible:ring-focus [&::-webkit-details-marker]:hidden">
                 <span><T {...it.q} /></span>
                 <ChevronDown size={18} strokeWidth={1.5} aria-hidden="true" className="shrink-0 text-muted transition-transform group-open:rotate-180" />
               </summary>

@@ -1,15 +1,15 @@
 // 共用 class（server 與 client 元件都能 import）。規格 §9。
 const btnBase =
-  "inline-flex items-center justify-center gap-2 rounded-btn font-bold transition-colors active:scale-[0.98] " +
+  "inline-flex items-center justify-center gap-2 rounded-btn font-bold transition-[background-color,border-color,color,box-shadow,transform] duration-150 ease-out active:scale-[0.98] " +
   "disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100";
 
 export const btn = {
   /** 每頁唯一的主要動作：實心紅、無圖示 */
-  primary: `${btnBase} h-11 px-6 bg-primary text-on-primary hover:bg-primary-hover`,
+  primary: `${btnBase} h-11 px-6 bg-primary text-on-primary elev-btn hover:bg-primary-hover`,
   /** 首頁入口等大按鈕 */
-  primaryLg: `${btnBase} h-[52px] px-7 text-base bg-primary text-on-primary hover:bg-primary-hover`,
-  secondary: `${btnBase} h-11 px-5 border border-line-strong bg-surface text-ink hover:bg-subtle`,
-  secondaryLg: `${btnBase} h-[52px] px-7 text-base border border-line-strong bg-transparent text-ink hover:bg-subtle`,
+  primaryLg: `${btnBase} h-[52px] px-7 text-base bg-primary text-on-primary elev-btn hover:bg-primary-hover`,
+  secondary: `${btnBase} h-11 px-5 border border-line-strong bg-surface text-ink hover:border-ink hover:bg-subtle`,
+  secondaryLg: `${btnBase} h-[52px] px-7 text-base border border-line-strong bg-transparent text-ink hover:border-ink hover:bg-subtle`,
   ghost: `${btnBase} h-11 px-4 text-ink hover:bg-subtle`,
   /** 破壞性動作的第一顆按鈕：描邊＋圖示＋動詞（一定接 ConfirmAction） */
   danger: `${btnBase} h-11 px-5 border border-danger bg-transparent text-danger hover:bg-danger-soft`,
@@ -23,24 +23,24 @@ export const btn = {
 
 export const input =
   "h-11 w-full min-w-0 rounded-input border border-line-strong bg-surface px-3 text-base text-ink placeholder:text-muted " +
-  "outline-none focus-visible:ring-2 focus-visible:ring-focus aria-[invalid=true]:border-danger disabled:opacity-60";
+  "outline-none transition-[border-color,box-shadow] duration-150 hover:border-ink focus-visible:border-ink focus-visible:ring-2 focus-visible:ring-focus aria-[invalid=true]:border-danger disabled:opacity-60";
 
 export const textarea =
   "block w-full min-w-0 rounded-input border border-line-strong bg-surface px-3 py-2 text-base text-ink placeholder:text-muted " +
-  "outline-none focus-visible:ring-2 focus-visible:ring-focus aria-[invalid=true]:border-danger disabled:opacity-60";
+  "outline-none transition-[border-color,box-shadow] duration-150 hover:border-ink focus-visible:border-ink focus-visible:ring-2 focus-visible:ring-focus aria-[invalid=true]:border-danger disabled:opacity-60";
 
-export const card = "rounded-card border border-line bg-surface";
-export const cardPad = "rounded-card border border-line bg-surface p-5 md:p-8";
+export const card = "rounded-card border border-line bg-surface elev-card";
+export const cardPad = "rounded-card border border-line bg-surface elev-card p-5 md:p-8";
 /** 列表外框：裡面的每列用 row */
-export const rows = "divide-y divide-line overflow-hidden rounded-card border border-line bg-surface";
-export const row = "block min-h-11 px-4 py-3 hover:bg-subtle md:px-5 md:py-4";
+export const rows = "divide-y divide-line overflow-hidden rounded-card border border-line bg-surface elev-card";
+export const row = "block min-h-11 px-4 py-3 transition-colors duration-150 hover:bg-subtle md:px-5 md:py-4";
 
 /** 連結裡有 <LinkPending />、而且正在換頁時：淡出並閃動，讓人知道按下去有反應 */
 export const linkPending = "has-[[data-pending]]:animate-pulse has-[[data-pending]]:opacity-70";
 
 /** 篩選標籤（44px）；選中時反白膠囊 */
 export function chip(active: boolean): string {
-  return `inline-flex h-11 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-btn border px-4 text-sm font-semibold ${linkPending} ${
+  return `inline-flex h-11 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-btn border px-4 text-sm font-semibold transition-colors duration-150 ${linkPending} ${
     active ? "border-ink bg-ink text-on-ink" : "border-line-strong bg-surface text-ink hover:bg-subtle"
   }`;
 }

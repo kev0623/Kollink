@@ -56,7 +56,7 @@ export function SiteNav({ account }: { account: React.ReactNode }) {
               <ChevronDown size={16} strokeWidth={1.5} aria-hidden="true" className={`transition-transform ${open === g.key ? "rotate-180" : ""}`} />
             </button>
             {open === g.key && (
-              <ul id={`nav-${g.key}`} className="absolute left-0 top-full z-20 mt-2 w-[300px] rounded-card border border-line bg-surface p-2 shadow-lg">
+              <ul id={`nav-${g.key}`} className="absolute left-0 top-full z-20 mt-2 w-[300px] origin-top-left rounded-card border border-line bg-surface p-2 elev-pop motion-safe:animate-[fade-in_140ms_ease-out]">
                 {g.items.map((it) => (
                   <li key={it.href}>
                     <Link href={it.href} onClick={() => setOpen(null)} className="block rounded-input px-3 py-2.5 outline-none hover:bg-subtle focus-visible:ring-2 focus-visible:ring-focus">
@@ -92,7 +92,7 @@ export function SiteNav({ account }: { account: React.ReactNode }) {
       </div>
 
       {open === "mobile" && (
-        <nav id="nav-mobile" aria-label={lang === "en" ? "Main" : "主要"} className="absolute inset-x-0 top-full z-20 max-h-[calc(100dvh-5rem)] overflow-y-auto border-y border-line bg-surface px-5 py-4 lg:hidden">
+        <nav id="nav-mobile" aria-label={lang === "en" ? "Main" : "主要"} className="absolute inset-x-0 top-full z-20 max-h-[calc(100dvh-4rem)] overflow-y-auto border-y border-line bg-surface px-5 py-4 elev-pop lg:hidden">
           {NAV_GROUPS.map((g) => (
             <div key={g.key} className="border-b border-line pb-3 pt-1">
               <p className="py-2 text-xs font-bold text-muted"><T {...g.label} /></p>
