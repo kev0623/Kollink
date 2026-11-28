@@ -676,6 +676,9 @@ isOneToOne: false
 "create_creator_account":
 { Args: { "p_categories": (string)[],"p_display_name": string,"p_follower_count": number,"p_handle": string,"p_ig_username": string,"p_region": string }; Returns: string
                            },
+"create_creator_with_rates":
+{ Args: { "p_categories": (string)[],"p_display_name": string,"p_follower_count": number,"p_handle": string,"p_ig_username": string,"p_rates": Json,"p_region": string }; Returns: string
+                           },
 "create_payment_order":
 { Args: { "p_collab_id": string,"p_method": string }; Returns: {
               "amount_twd": number,"created_at": string,"merchant_trade_no": string
@@ -725,6 +728,9 @@ isOneToOne: false
 { Args: { "p_handle": string }; Returns: {
               "audience_age": string,"avatar_path": string,"bio": string,"categories": (string)[],"collab_types": (string)[],"display_name": string,"engagement_rate": number,"follower_count": number,"handle": string,"is_self": boolean,"region": string,"status": string,"style_tags": (string)[],"user_id": string
             }[]
+                           },
+"handle_available":
+{ Args: { "p_handle": string }; Returns: boolean
                            },
 "has_bidi":
 { Args: { "p": string }; Returns: boolean
