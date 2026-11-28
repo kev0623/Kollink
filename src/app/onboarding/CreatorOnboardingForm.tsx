@@ -1,12 +1,13 @@
 "use client";
 import { useActionState, useEffect, useRef, useState, useTransition } from "react";
-import { ChevronLeft, Lightbulb, PartyPopper } from "lucide-react";
+import { ChevronLeft, ExternalLink, Lightbulb, PartyPopper } from "lucide-react";
+import { InstagramIcon } from "@/components/ui/InstagramIcon";
 import { Field } from "@/components/forms/Field";
 import { ErrorText } from "@/components/ui/ErrorText";
 import { btn, cardPad, input } from "@/components/ui/styles";
 import { CategoryPicker } from "@/components/forms/CategoryPicker";
 import { COLLAB_TYPES, REGIONS } from "@/lib/options";
-import { validateCreatorInput } from "@/lib/validation/onboarding";
+import { IG_RE, normalizeIgUsername, validateCreatorInput } from "@/lib/validation/onboarding";
 import { validateRates } from "@/lib/validation/creator-profile";
 import type { FormState } from "@/lib/auth/account-errors";
 import { OnboardingProgress } from "@/components/auth/OnboardingProgress";
@@ -63,6 +64,8 @@ export function CreatorOnboardingForm({ next, siteHost = "" }: { next: string | 
   }, [step]);
 
   const fe = { ...(state.fieldErrors ?? {}), ...local };
+  /** 填的 IG 帳號格式正確時才有值（去掉 @），用來產生「在 Instagram 開啟」的連結 */
+  const igName = IG_RE.test(normalizeIgUsername(ig)) ? normalizeIgUsername(ig) : "";
   const input_ = { displayName, handle, igUsername: ig, followerCount: followers, region, categories };
 
   function go(to: Step) {
@@ -178,7 +181,7 @@ export function CreatorOnboardingForm({ next, siteHost = "" }: { next: string | 
 
         {step === "ig" && (
           <>
-            <p className="text-sm text-muted">審核時我們會打開這個帳號確認是你本人。粉絲數請照實填，登入的品牌才看得到。</p>
+            <p className="text-sm text-muted">填好後點下面的連結，確認開到的是你的帳號。送出後要把驗證碼放到這個帳號的自我介紹，我們審核時會打開它核對。</p>
             <Field label="IG 帳號" mark="required" error={fe.igUsername}>
               {(c) => (
                 <input
@@ -187,6 +190,19 @@ export function CreatorOnboardingForm({ next, siteHost = "" }: { next: string | 
                 />
               )}
             </Field>
+            {igName && (
+              <a
+                href={`https://www.instagram.com/${igName}/`} target="_blank" rel="noopener noreferrer"
+                className="flex min-h-14 items-center gap-3 rounded-input border border-line-strong bg-subtle px-3 py-2 text-ink transition-colors duration-150 hover:border-ink"
+              >
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-input bg-surface"><InstagramIcon size={22} /></span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate font-bold">@{igName}</span>
+                  <span className="block text-xs text-muted">點一下在 Instagram 開啟，確認是你的帳號<span className="sr-only">（另開新分頁）</span></span>
+                </span>
+                <ExternalLink size={16} strokeWidth={1.5} aria-hidden="true" className="shrink-0 text-muted" />
+              </a>
+            )}
             <Field label="IG 粉絲數" mark="required" error={fe.followerCount}>
               {(c) => <input {...c} value={followers} inputMode="numeric" placeholder="例如 1700" className={input} onChange={(e) => { setFollowers(e.target.value); setLocal({}); }} />}
             </Field>
