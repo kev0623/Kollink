@@ -2,13 +2,14 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
+import { CategoryIcon } from "@/components/directory/CategoryIcon";
 import { CREATOR_GRID, CreatorCard } from "@/components/directory/CreatorCard";
 import { SearchBar } from "@/components/directory/SearchBar";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { LinkPending } from "@/components/ui/LinkPending";
 import { Pagination } from "@/components/ui/Pagination";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { btn, chip, h1 } from "@/components/ui/styles";
+import { btn, h1, linkPending } from "@/components/ui/styles";
 import {
   directorySortsFor, PUBLIC_CREATORS_PAGE_SIZE, directoryHeading, directoryHref, hasDirectoryFilter, parseDirectoryQuery,
   type DirectoryQuery,
@@ -52,13 +53,21 @@ async function Results({ searchParams }: Props) {
   return (
     <>
       <div className="mt-6"><SearchBar q={q.q} category={q.category} /></div>
-      <nav aria-label="類別 Categories" className="scroll-fade-x mt-3 flex gap-2 overflow-x-auto pb-1">
-        <Link href={with_({ category: null })} aria-current={q.category === null ? "page" : undefined} className={chip(q.category === null)}><T zh="全部" en="All" /><LinkPending /></Link>
-        {CATEGORIES.map((c) => (
-          <Link key={c} href={with_({ category: c })} aria-current={q.category === c ? "page" : undefined} className={chip(q.category === c)}>
-            <T {...optionLabel(c)} /><LinkPending />
-          </Link>
-        ))}
+      <nav aria-label="類別 Categories" className="scroll-fade-x mt-4 flex gap-1 overflow-x-auto border-b border-line">
+        {[null, ...CATEGORIES].map((c) => {
+          const on = q.category === c;
+          return (
+            <Link
+              key={c ?? "all"} href={with_({ category: c })} aria-current={on ? "page" : undefined}
+              className={`${linkPending} -mb-px flex min-h-[64px] min-w-[68px] shrink-0 flex-col items-center justify-center gap-1 border-b-2 px-3 pb-2 pt-1 text-xs font-semibold transition-colors duration-150 ${
+                on ? "border-ink text-ink" : "border-transparent text-muted hover:border-line-strong hover:text-ink"}`}
+            >
+              <CategoryIcon category={c} />
+              <span className="whitespace-nowrap">{c === null ? <T zh="全部" en="All" /> : <T {...optionLabel(c)} />}</span>
+              <LinkPending />
+            </Link>
+          );
+        })}
       </nav>
       <div className="mt-6 flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
         <h2 className="min-w-0 break-words text-lg font-bold text-ink">
@@ -90,7 +99,7 @@ async function Results({ searchParams }: Props) {
         page={q.page} total={total} size={PUBLIC_CREATORS_PAGE_SIZE} unit="位" label="創作者分頁" bilingual unitEn="creators"
         hrefFor={(p) => directoryHref({ ...q, page: p })}
       />
-      <aside aria-labelledby="dir-cta" className="mt-12 rounded-card border border-line bg-panel p-6 md:flex md:items-center md:justify-between md:gap-8 md:p-8">
+      <aside aria-labelledby="dir-cta" className="mt-12 rounded-card border border-line bg-panel elev-card p-6 md:flex md:items-center md:justify-between md:gap-8 md:p-8">
         <div className="min-w-0">
           <h2 id="dir-cta" className="font-serif text-xl font-bold text-ink md:text-2xl"><T zh="找到適合的人了嗎？" en="Found someone who fits?" /></h2>
           <p className="mt-2 text-sm text-muted"><T zh="註冊品牌帳號就能看粉絲數、直接邀請，或刊登招募讓創作者來報名。款項由平台保管，交稿通過才撥出。" en="With a brand account you can see follower counts, invite creators directly, or post a brief for them to apply. We hold the payment until the work is approved." /></p>

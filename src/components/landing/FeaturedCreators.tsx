@@ -46,11 +46,11 @@ function HeroCard({ c }: { c: DirectoryCreator }) {
   return (
     <Link
       href={`/c/${c.handle}`}
-      className="group relative block aspect-[4/5] overflow-hidden rounded-card border border-line bg-panel outline-none transition-colors hover:border-line-strong focus-visible:ring-2 focus-visible:ring-focus"
+      className="group relative block aspect-[4/5] overflow-hidden rounded-card border border-line bg-panel elev-card outline-none transition-[border-color,transform] duration-200 ease-out hover:-translate-y-0.5 hover:border-line-strong focus-visible:ring-2 focus-visible:ring-focus"
     >
       {image ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={image} alt="" className="absolute inset-0 h-full w-full object-cover" />
+        <img src={image} alt="" className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04]" />
       ) : (
         <div aria-hidden="true" className="absolute inset-0 flex items-center justify-center pb-10 font-serif text-7xl font-bold text-line-strong">
           {initialOf(c.displayName)}

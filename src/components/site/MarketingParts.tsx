@@ -9,8 +9,9 @@ export type Cta = { href: string; label: L };
 
 export function PageHero({ title, body, primary, secondary }: { title: L; body: L; primary: Cta; secondary?: Cta }) {
   return (
-    <section className="mx-auto max-w-[1280px] px-5 pb-10 pt-12 md:px-16 md:pb-16 md:pt-20">
-      <h1 className="max-w-[820px] font-serif text-[36px] font-black leading-[1.2] text-ink [text-wrap:balance] md:text-[52px]"><T {...title} /></h1>
+    <section className="relative isolate mx-auto max-w-[1280px] px-5 pb-10 pt-12 md:px-16 md:pb-20 md:pt-24">
+      <div aria-hidden="true" className="hero-glow absolute inset-x-0 -top-20 -z-10 h-[420px]" />
+      <h1 className="max-w-[880px] font-serif text-[36px] font-black leading-[1.15] tracking-[-0.01em] text-ink md:text-[60px]"><T {...title} /></h1>
       <p className="mt-5 max-w-[620px] text-base text-muted [text-wrap:pretty] md:text-lg"><T {...body} /></p>
       <div className="mt-8 flex flex-wrap gap-3">
         <Link href={primary.href} className={btn.primaryLg}><T {...primary.label} /></Link>
@@ -25,11 +26,11 @@ export function FeatureBlock({ id, title, body, points }: { id?: string; title: 
   return (
     <section id={id} className="scroll-mt-6 border-t border-line">
       <div className="mx-auto grid max-w-[1280px] gap-6 px-5 py-12 md:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] md:gap-16 md:px-16 md:py-16">
-        <div className="min-w-0">
-          <h2 className="font-serif text-2xl font-bold text-ink [text-wrap:balance] md:text-[32px]"><T {...title} /></h2>
+        <div className="reveal min-w-0">
+          <h2 className="font-serif text-2xl font-bold text-ink md:text-[36px]"><T {...title} /></h2>
           <p className="mt-3 text-base text-muted [text-wrap:pretty]"><T {...body} /></p>
         </div>
-        <ul className="min-w-0 divide-y divide-line border-y border-line">
+        <ul className="reveal min-w-0 divide-y divide-line border-y border-line">
           {points.map((p) => (
             <li key={p.zh} className="flex items-start gap-3 py-4 text-base text-ink">
               <Check size={18} strokeWidth={2} aria-hidden="true" className="mt-1 shrink-0 text-success" />

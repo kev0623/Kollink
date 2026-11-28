@@ -462,6 +462,16 @@ commit;
 
 公開頁共用的頂列（`TopBar`＋`SiteNav`）有兩個下拉選單（功能、適合誰）與手機選單，連結定義在 `src/lib/site-nav.ts`；說明頁在 `src/app/(marketing)/`：`/features`、`/for-brands`、`/for-creators`、`/pricing`。這些頁面的文案只寫系統現在做到的事；流程或收費規則改了要一起更新（`/pricing` 與 `/terms` 的手續費說明必須一致）。
 
+### 介面質感（2026-11-28）
+
+參考 Linear、Stripe、Vercel、Apple、Airbnb 的共通做法，顏色與紅線風格不變。共用的樣式都在 `src/app/globals.css` 結尾與 `src/components/ui/styles.ts`：
+
+- **層次**：`elev-card`／`elev-pop`／`elev-btn`。深色用上緣一道很淡的亮邊，淺色用柔和陰影（變數 `--elev-*`，兩個淺色區塊都要寫）。卡片、列表、下拉選單、搜尋列、主要按鈕都套用。
+- **頂列**：`topbar-glass`，黏在上緣的毛玻璃；首頁一開始透明、捲動後才出現。
+- **進場**：`reveal`，區塊捲到才淡入上移一次；瀏覽器不支援或使用者關閉動態時直接顯示。只用在公開頁的區塊標題與卡片，登入後的頁面不用。
+- **互動**：按鈕、輸入框、列表列、標籤統一 150ms 過場；創作者卡片滑過時圖片微放大。
+- **版面**：首頁保障區改成不等寬方格加細格線背景；`/creators` 的類別列是圖示加文字、選中的有底線（`CategoryIcon`）。
+
 ### 主題與中英文切換
 
 - **主題**：一顆圖示按鈕（`ThemeToggle`，深色時是太陽、淺色時是月亮）。位置：公開頁頂列右上角、登入後各區的右上角（桌面 `ShellTools`、手機 `MobileTopBar`）、登入頁右上角。沒按過之前跟隨系統。其他地方不放主題選項。

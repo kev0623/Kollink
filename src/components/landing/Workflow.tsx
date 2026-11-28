@@ -88,15 +88,15 @@ export function Workflow() {
   }
 
   return (
-    <section id="how" aria-labelledby="how-title" className="mx-auto max-w-[1280px] px-5 py-14 md:px-16 md:py-28">
-      <h2 id="how-title" className="font-serif text-[28px] font-bold text-ink [text-wrap:balance] md:text-[40px]"><T zh="從找人到撥款，一條線走完" en="From first search to payout, on one thread" /></h2>
-      <p className="mt-3 max-w-[560px] text-base text-muted [text-wrap:pretty]"><T zh="不用在 IG 私訊、試算表和匯款截圖之間來回。五個步驟都在同一個地方。" en="No more bouncing between Instagram DMs, spreadsheets and transfer screenshots. All five steps happen in one place." /></p>
+    <section id="how" aria-labelledby="how-title" className="mx-auto max-w-[1280px] scroll-mt-20 px-5 py-16 md:px-16 md:py-32">
+      <h2 id="how-title" className="reveal max-w-[820px] font-serif text-[30px] font-bold text-ink md:text-[48px]"><T zh="從找人到撥款，一條線走完" en="From first search to payout, on one thread" /></h2>
+      <p className="reveal mt-4 max-w-[560px] text-base text-muted [text-wrap:pretty] md:text-lg"><T zh="不用在 IG 私訊、試算表和匯款截圖之間來回。五個步驟都在同一個地方。" en="No more bouncing between Instagram DMs, spreadsheets and transfer screenshots. All five steps happen in one place." /></p>
 
       {/* 15 秒的流程短片（沒有聲音）：不自動播放，按下去才載入影片檔 */}
       <video
         controls muted playsInline loop preload="none" poster="/video/kollink-flow.jpg" width={1280} height={720}
         aria-label={lang === "en" ? "The collaboration flow in 15 seconds (captions in Chinese)" : "15 秒看完合作流程：邀約、確認、付款、交稿、審核、發佈、撥款"}
-        className="mt-8 aspect-video h-auto w-full rounded-card border border-line bg-bg md:mt-12"
+        className="reveal mt-8 aspect-video h-auto w-full rounded-card border border-line bg-bg elev-pop md:mt-12"
       >
         <source src="/video/kollink-flow.mp4" type="video/mp4" />
       </video>
@@ -129,7 +129,7 @@ export function Workflow() {
 
       <div
         id={`${id}-panel`} role="tabpanel" aria-labelledby={`${id}-tab-${step.key}`} tabIndex={0}
-        className="mt-6 grid gap-8 rounded-card border border-line bg-panel p-5 outline-none focus-visible:ring-2 focus-visible:ring-focus md:mt-8 md:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] md:items-center md:gap-12 md:p-10"
+        className="mt-6 grid gap-8 rounded-card border border-line bg-panel p-5 elev-card outline-none focus-visible:ring-2 focus-visible:ring-focus md:mt-8 md:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] md:items-center md:gap-12 md:p-10"
       >
         <div className="min-w-0">
           <h3 className="font-serif text-2xl font-bold text-ink [text-wrap:balance] md:text-[28px]"><T {...step.title} /></h3>
@@ -143,7 +143,7 @@ export function Workflow() {
           </ul>
         </div>
         {/* 示意畫面：不是截圖，內容是虛構的，螢幕閱讀器略過 */}
-        <div aria-hidden="true" key={step.key} className="min-w-0 rounded-card border border-line bg-bg p-4 motion-safe:animate-[fade-in_240ms_ease-out] md:p-5">
+        <div aria-hidden="true" key={step.key} className="min-w-0 rounded-card border border-line bg-bg p-4 elev-pop motion-safe:animate-[fade-in_240ms_ease-out] md:p-5">
           <step.Mock />
         </div>
       </div>

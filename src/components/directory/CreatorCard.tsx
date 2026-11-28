@@ -16,12 +16,12 @@ export function CreatorCard({ c, priority }: { c: DirectoryCreator; priority?: b
   return (
     <Link
       href={`/c/${c.handle}`}
-      className="group block min-w-0 overflow-hidden rounded-card border border-line bg-surface outline-none transition-colors hover:border-line-strong focus-visible:ring-2 focus-visible:ring-focus"
+      className="group block min-w-0 overflow-hidden rounded-card border border-line bg-surface elev-card outline-none transition-[border-color,transform] duration-200 ease-out hover:-translate-y-0.5 hover:border-line-strong focus-visible:ring-2 focus-visible:ring-focus"
     >
-      <div className="relative aspect-[4/5] bg-panel">
+      <div className="relative aspect-[4/5] overflow-hidden bg-panel">
         {image ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={image} alt="" loading={priority ? "eager" : "lazy"} className="h-full w-full object-cover" />
+          <img src={image} alt="" loading={priority ? "eager" : "lazy"} className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04]" />
         ) : (
           <div aria-hidden="true" className="flex h-full w-full items-center justify-center font-serif text-6xl font-bold text-line-strong">
             {initialOf(c.displayName)}

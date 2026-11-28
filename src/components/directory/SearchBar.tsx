@@ -16,7 +16,7 @@ export function SearchBar({ q = "", category = null, autoFocus }: { q?: string; 
   const en = useLang() === "en";
   return (
     <form action={DIRECTORY_PATH} method="get" role="search" aria-label={en ? "Search creators" : "搜尋創作者"}
-      className="flex flex-wrap items-stretch gap-2 rounded-card border border-line-strong bg-surface p-2 sm:flex-nowrap sm:rounded-btn">
+      className="flex flex-wrap items-stretch gap-2 rounded-card border border-line-strong bg-surface p-2 elev-pop transition-[border-color] duration-150 focus-within:border-ink sm:flex-nowrap sm:rounded-btn">
       <label className="sr-only" htmlFor="dir-category"><T zh="類別" en="Category" /></label>
       <select
         id="dir-category" name="category" defaultValue={category ?? ""}
@@ -31,7 +31,7 @@ export function SearchBar({ q = "", category = null, autoFocus }: { q?: string; 
         placeholder={en ? "Search by creator name" : "輸入創作者的名字"} autoComplete="off" enterKeyHint="search"
         className="order-first h-11 w-full min-w-0 rounded-btn bg-transparent px-3 text-base text-ink outline-none placeholder:text-muted focus-visible:ring-2 focus-visible:ring-focus sm:order-none sm:w-auto sm:flex-1"
       />
-      <button type="submit" className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-btn bg-primary px-6 font-bold text-on-primary hover:bg-primary-hover active:scale-[0.98]">
+      <button type="submit" className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-btn bg-primary px-6 font-bold text-on-primary elev-btn transition-[background-color,transform] duration-150 hover:bg-primary-hover active:scale-[0.98]">
         <Search size={18} strokeWidth={2} aria-hidden="true" /><T zh="搜尋" en="Search" />
       </button>
     </form>

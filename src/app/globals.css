@@ -76,6 +76,9 @@
   --color-focus: #B8281F;
   --color-qr-bg: #FFFFFF;
   color-scheme: light;
+  --elev-card: 0 1px 2px rgb(13 20 36 / 0.05), 0 10px 28px -16px rgb(13 20 36 / 0.16);
+  --elev-pop: 0 2px 6px rgb(13 20 36 / 0.06), 0 24px 48px -16px rgb(13 20 36 / 0.22);
+  --elev-btn: inset 0 1px 0 rgb(255 255 255 / 0.22), 0 1px 2px rgb(13 20 36 / 0.12);
 }
 /* light:end */
 
@@ -111,12 +114,19 @@
     --color-focus: #B8281F;
     --color-qr-bg: #FFFFFF;
     color-scheme: light;
+    --elev-card: 0 1px 2px rgb(13 20 36 / 0.05), 0 10px 28px -16px rgb(13 20 36 / 0.16);
+    --elev-pop: 0 2px 6px rgb(13 20 36 / 0.06), 0 24px 48px -16px rgb(13 20 36 / 0.22);
+    --elev-btn: inset 0 1px 0 rgb(255 255 255 / 0.22), 0 1px 2px rgb(13 20 36 / 0.12);
   }
   /* light-nojs:end */
 }
 
 :root {
   color-scheme: dark;
+  /* 層次（不是顏色 token）：深色用「上緣一道很淡的亮邊」分層（陰影在深色底上看不到），淺色用柔和的陰影。 */
+  --elev-card: inset 0 1px 0 rgb(255 255 255 / 0.045);
+  --elev-pop: inset 0 1px 0 rgb(255 255 255 / 0.06), 0 24px 48px -16px rgb(0 0 0 / 0.55);
+  --elev-btn: inset 0 1px 0 rgb(255 255 255 / 0.16);
 }
 
 @layer base {
@@ -130,6 +140,11 @@
   }
   h1, h2, h3 {
     line-height: 1.2;
+    text-wrap: balance;
+  }
+  html {
+    scroll-behavior: smooth;
+    -webkit-tap-highlight-color: transparent;
   }
   /* 焦點框全站一致（規格 §9.13）；既有的 focus-visible:ring-* 可以並存 */
   :focus-visible {
@@ -241,4 +256,62 @@
 html:not([data-lang="en"]) [data-l="en"],
 html[data-lang="en"] [data-l="zh"] {
   display: none !important;
+}
+
+/*
+ * 介面質感（2026-11-28，參考 Linear／Stripe／Vercel／Apple／Airbnb 的共通做法，顏色仍然只用 token）。
+ */
+/* 層次：卡片、彈出層、主要按鈕 */
+.elev-card { box-shadow: var(--elev-card); }
+.elev-pop { box-shadow: var(--elev-pop); }
+.elev-btn { box-shadow: var(--elev-btn); }
+
+/* 公開頁頂列：黏在上緣；捲動後變成半透明毛玻璃並出現底線。不支援 scroll-driven animation 時一律是毛玻璃。 */
+.topbar-glass {
+  position: sticky;
+  top: 0;
+  background: color-mix(in srgb, var(--color-bg) 78%, transparent);
+  -webkit-backdrop-filter: saturate(160%) blur(14px);
+  backdrop-filter: saturate(160%) blur(14px);
+  border-bottom: 1px solid var(--color-line);
+}
+@keyframes topbar-in {
+  from { background: transparent; -webkit-backdrop-filter: none; backdrop-filter: none; border-bottom-color: transparent; }
+}
+@supports (animation-timeline: scroll()) {
+  .topbar-glass[data-overlay] {
+    animation: topbar-in linear both;
+    animation-timeline: scroll(root);
+    animation-range: 0 96px;
+  }
+}
+
+/* 區塊進場：捲到才淡入並上移一點（只做一次、幅度小）。不支援或使用者關閉動態時直接顯示。 */
+@keyframes reveal {
+  from { opacity: 0; transform: translateY(20px); }
+}
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .reveal {
+      animation: reveal ease-out both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 55%;
+    }
+  }
+}
+
+/* 主視覺的光暈：大標後面一團很淡的紅線色，讓標題從背景浮出來 */
+.hero-glow {
+  background:
+    radial-gradient(60% 55% at 50% 30%, color-mix(in srgb, var(--color-thread) 14%, transparent), transparent 70%);
+}
+
+/* 細格線背景（保障區）：往四周淡出 */
+.grid-fade {
+  background-image:
+    linear-gradient(to right, color-mix(in srgb, var(--color-line) 55%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in srgb, var(--color-line) 55%, transparent) 1px, transparent 1px);
+  background-size: 56px 56px;
+  -webkit-mask-image: radial-gradient(80% 70% at 50% 40%, #000 30%, transparent 85%);
+  mask-image: radial-gradient(80% 70% at 50% 40%, #000 30%, transparent 85%);
 }

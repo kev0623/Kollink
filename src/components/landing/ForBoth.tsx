@@ -18,9 +18,9 @@ const CREATOR: L[] = [
 
 function Column({ id, title, items, cta }: { id: string; title: L; items: L[]; cta: { href: string; label: L } }) {
   return (
-    <div className="min-w-0">
-      <h2 id={id} className="font-serif text-2xl font-bold text-ink"><T {...title} /></h2>
-      <ul aria-labelledby={id} className="mt-4 divide-y divide-line border-y border-line">
+    <div className="reveal min-w-0 rounded-card border border-line bg-surface p-6 elev-card md:p-10">
+      <h2 id={id} className="font-serif text-2xl font-bold text-ink md:text-[32px]"><T {...title} /></h2>
+      <ul aria-labelledby={id} className="mt-5 divide-y divide-line border-y border-line">
         {items.map((t) => <li key={t.zh} className="py-4 text-base text-ink [text-wrap:pretty]"><T {...t} /></li>)}
       </ul>
       <Link href={cta.href} className={`${btn.secondary} mt-6`}><T {...cta.label} /></Link>
@@ -30,10 +30,9 @@ function Column({ id, title, items, cta }: { id: string; title: L; items: L[]; c
 
 export function ForBoth() {
   return (
-    <section aria-labelledby="for-brand for-creator" className="mx-auto max-w-[1280px] px-5 py-14 md:px-16 md:py-28">
-      <div className="grid gap-12 lg:grid-cols-[1fr_1px_1fr] lg:gap-16">
+    <section aria-labelledby="for-brand for-creator" className="mx-auto max-w-[1280px] px-5 py-16 md:px-16 md:py-28">
+      <div className="grid gap-4 lg:grid-cols-2 lg:gap-6">
         <Column id="for-brand" title={{ zh: "給品牌", en: "For brands" }} items={BRAND} cta={{ href: "/signup?role=brand", label: { zh: "註冊品牌帳號", en: "Create a brand account" } }} />
-        <div aria-hidden="true" className="hidden bg-thread opacity-60 lg:block" />
         <Column id="for-creator" title={{ zh: "給創作者", en: "For creators" }} items={CREATOR} cta={{ href: "/signup?role=creator", label: { zh: "成為創作者", en: "Join as a creator" } }} />
       </div>
     </section>
