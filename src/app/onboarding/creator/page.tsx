@@ -23,5 +23,14 @@ export default function CreatorOnboardingPage({ searchParams }: { searchParams: 
 async function Form({ searchParams }: { searchParams: SP }) {
   const sp = await searchParams;
   // 填完要回去的頁面：這裡只擋外部網址，是否採用由送出時的 afterOnboardingPath 決定
-  return <CreatorOnboardingForm next={safeNextPath(typeof sp.next === "string" ? sp.next : null)} />;
+  return <CreatorOnboardingForm next={safeNextPath(typeof sp.next === "string" ? sp.next : null)} siteHost={siteHost()} />;
+}
+
+/** 網站的主機名稱（例如 kollink.vercel.app），讓「領取網址」顯示完整網址；沒設定 SITE_URL 時只顯示路徑。 */
+function siteHost(): string {
+  try {
+    return new URL(process.env.SITE_URL ?? "").host;
+  } catch {
+    return "";
+  }
 }

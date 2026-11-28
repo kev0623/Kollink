@@ -31,7 +31,9 @@ const TITLES: Record<Step, string> = {
   rates: "設定你的報價",
 };
 
-export function CreatorOnboardingForm({ next }: { next: string | null }) {
+export function CreatorOnboardingForm({ next, siteHost = "" }: { next: string | null; siteHost?: string }) {
+  /** 公開頁網址的前半段：有網站主機名稱就顯示完整網址，不然只有路徑 */
+  const prefix = `${siteHost}/c/`;
   const [step, setStep] = useState<Step>("handle");
   const [handle, setHandle] = useState("");
   const [displayName, setDisplayName] = useState("");
@@ -141,7 +143,7 @@ export function CreatorOnboardingForm({ next }: { next: string | null }) {
         {step === "claimed" ? (
           <div className="space-y-4">
             <span aria-hidden="true" className="flex h-14 w-14 items-center justify-center rounded-card bg-subtle text-ink"><PartyPopper size={26} strokeWidth={1.5} /></span>
-            <h2 ref={headingRef} tabIndex={-1} className="break-all text-lg text-ink outline-none"><b>/c/{handle}</b> 可以使用</h2>
+            <h2 ref={headingRef} tabIndex={-1} className="break-all text-lg text-ink outline-none"><b>{prefix}{handle}</b> 可以使用</h2>
             <p className="flex items-start gap-2 rounded-input bg-subtle p-3 text-sm text-muted">
               <Lightbulb size={16} strokeWidth={1.5} aria-hidden="true" className="mt-0.5 shrink-0" />
               <span>完成註冊後，這個網址就是你的公開頁，可以放在 IG 自我介紹或直接傳給品牌。</span>
@@ -153,11 +155,11 @@ export function CreatorOnboardingForm({ next }: { next: string | null }) {
 
         {step === "handle" && (
           <>
-            <p className="text-sm text-muted">這是你的公開頁網址，品牌會從這裡看到你的作品和報價。審核通過後就不能修改。</p>
+            <p className="text-sm text-muted">這是你的公開頁網址，網址裡的 c 代表創作者（creator）。品牌會從這裡看到你的作品和報價。審核通過後就不能修改。</p>
             <Field label="公開頁網址" mark="required" error={fe.handle} hint="小寫英文、數字、底線和點，3–30 字">
               {(c) => (
                 <div className="flex items-center gap-1">
-                  <span className="text-sm text-muted" aria-hidden="true">/c/</span>
+                  <span className="shrink-0 text-sm text-muted" aria-hidden="true">{prefix}</span>
                   <input
                     {...c} value={handle} autoComplete="off" autoCapitalize="none" spellCheck={false} className={input}
                     onChange={(e) => { setHandle(e.target.value.toLowerCase().replace(/[^a-z0-9_.]/g, "").slice(0, 30)); setLocal({}); }}
