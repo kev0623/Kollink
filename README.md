@@ -213,7 +213,7 @@ select count(*) from information_schema.tables where table_schema = 'public' and
    `SITE_URL` 用來組 LINE 的回呼網址（不會看請求的 Host 標頭）；只設 `SITE_URL` 不會開啟綠界付款（付款還需要 `ECPAY_*`）。
 7. 重新部署：Deployments → 最新一筆 Production → ⋯ → Redeploy。
 8. 測試（用無痕視窗、頻道 Developing 時用已加入 Tester 的 LINE 帳號）：
-   - [ ] `/signup` 選「創作者」→「使用 LINE 登入」→ LINE 同意畫面要列出 Email → 回到網站顯示「要綁定的 LINE 帳號：（你的 LINE 名稱）」與 LINE 的 Email → 按「寄驗證碼到這個信箱」→ 收信輸入驗證碼 → 進入填寫創作者資料。
+   - [ ] `/signup` 選「創作者」→「使用 LINE 登入」→ LINE 同意畫面要列出 Email → 回到網站顯示「要綁定的 LINE 帳號：（你的 LINE 名稱）」與 LINE 的 Email → 按「寄驗證碼到這個信箱」→ 收信輸入驗證碼 → 進入建立創作者檔案（一步一題：領取公開頁網址 → 名字 → IG 帳號與粉絲數 → 地區與領域 → 報價至少一種 → 送出後到 `/creator/welcome`）。
    - [ ] 登出後再用 LINE 登入 → 不需要驗證碼，直接進入。
    - [ ] 用已經以 Email 註冊過的信箱的 LINE 帳號登入 → 同樣的驗證碼畫面 → 輸入驗證碼 → 進到原本的帳號（不會多一個帳號）。
    - [ ] 已經登入的瀏覽器再按「使用 LINE 登入」（未綁定的 LINE）→ 會先登出、出現驗證碼畫面。
