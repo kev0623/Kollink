@@ -39,7 +39,10 @@
   --radius-card: 20px;
   --radius-btn: 9999px;
   --radius-nav: 16px;
-  --radius-input: 12px;
+  --radius-input: 14px;
+  /* 圓角分級：越大的東西圓角越大（按鈕 999 → 資訊卡與便當格 28 → 主視覺與頁尾 36；照片卡 20、輸入框 14） */
+  --radius-panel: 28px;
+  --radius-hero: 36px;
 
   --font-sans: var(--font-manrope), var(--font-noto-sans), "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
   --font-serif: var(--font-noto-serif), "Songti TC", "PMingLiU", serif;
@@ -260,58 +263,55 @@ html[data-lang="en"] [data-l="zh"] {
 
 /*
  * 介面質感（2026-11-28，參考 Linear／Stripe／Vercel／Apple／Airbnb 的共通做法，顏色仍然只用 token）。
+ * 2026-11-29：公開頁版面改用浮動膠囊頂列、分級圓角、無框照片卡、深色頁尾，進場動畫只留換頁淡入。
  */
 /* 層次：卡片、彈出層、主要按鈕 */
 .elev-card { box-shadow: var(--elev-card); }
 .elev-pop { box-shadow: var(--elev-pop); }
 .elev-btn { box-shadow: var(--elev-btn); }
 
-/* 公開頁頂列：黏在上緣；捲動後變成半透明毛玻璃並出現底線。不支援 scroll-driven animation 時一律是毛玻璃。 */
-.topbar-glass {
+/*
+ * 公開頁頂列：浮在頁面上的膠囊，距離頂端 12px，半透明加模糊。
+ * 外層不接收點擊（膠囊兩側的空白不會擋住下面的內容），膠囊本身才接收。
+ */
+.nav-float {
   position: sticky;
   top: 0;
-  background: color-mix(in srgb, var(--color-bg) 78%, transparent);
+  padding: 12px 12px 0;
+  pointer-events: none;
+}
+.nav-pill {
+  pointer-events: auto;
+  border-radius: 9999px;
+  border: 1px solid var(--color-line);
+  background: color-mix(in srgb, var(--color-surface) 82%, transparent);
   -webkit-backdrop-filter: saturate(160%) blur(14px);
   backdrop-filter: saturate(160%) blur(14px);
-  border-bottom: 1px solid var(--color-line);
-}
-@keyframes topbar-in {
-  from { background: transparent; -webkit-backdrop-filter: none; backdrop-filter: none; border-bottom-color: transparent; }
-}
-@supports (animation-timeline: scroll()) {
-  .topbar-glass[data-overlay] {
-    animation: topbar-in linear both;
-    animation-timeline: scroll(root);
-    animation-range: 0 96px;
-  }
+  box-shadow: var(--elev-pop);
 }
 
-/* 區塊進場：捲到才淡入並上移一點（只做一次、幅度小）。不支援或使用者關閉動態時直接顯示。 */
-@keyframes reveal {
-  from { opacity: 0; transform: translateY(20px); }
+/* 換頁時內容淡入並上移一點：全站唯一的進場動畫（不做捲動時逐區浮現）。使用者關閉動態時不播。 */
+@keyframes page-in {
+  from { opacity: 0; transform: translateY(10px); }
 }
-@supports (animation-timeline: view()) {
-  @media (prefers-reduced-motion: no-preference) {
-    .reveal {
-      animation: reveal ease-out both;
-      animation-timeline: view();
-      animation-range: entry 0% entry 55%;
-    }
-  }
+@media (prefers-reduced-motion: no-preference) {
+  .page-in { animation: page-in 0.45s ease-out both; }
+}
+
+/* 頁尾：兩種主題都是深色底、淺色字（區塊內把顏色 token 換成深色主題的值） */
+.night {
+  --color-ink: #EEF1F7;
+  --color-muted: #9AA6BF;
+  --color-line: #2A3654;
+  --color-thread: #F0483E;
+  --color-accent: #FF7A70;
+  --color-focus: #FF9A8F;
+  background: #131C31;
+  color: var(--color-ink);
 }
 
 /* 主視覺的光暈：大標後面一團很淡的紅線色，讓標題從背景浮出來 */
 .hero-glow {
   background:
     radial-gradient(60% 55% at 50% 30%, color-mix(in srgb, var(--color-thread) 14%, transparent), transparent 70%);
-}
-
-/* 細格線背景（保障區）：往四周淡出 */
-.grid-fade {
-  background-image:
-    linear-gradient(to right, color-mix(in srgb, var(--color-line) 55%, transparent) 1px, transparent 1px),
-    linear-gradient(to bottom, color-mix(in srgb, var(--color-line) 55%, transparent) 1px, transparent 1px);
-  background-size: 56px 56px;
-  -webkit-mask-image: radial-gradient(80% 70% at 50% 40%, #000 30%, transparent 85%);
-  mask-image: radial-gradient(80% 70% at 50% 40%, #000 30%, transparent 85%);
 }

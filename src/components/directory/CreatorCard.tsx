@@ -8,7 +8,8 @@ import { T, TList } from "@/components/i18n/T";
 import { optionLabel } from "@/lib/lang";
 
 /**
- * 公開列表的創作者卡片：整張卡是一個連結。上方是作品（沒有作品用頭像，都沒有用名字第一個字），
+ * 公開列表的創作者卡片：整張卡是一個連結，沒有外框、底色和陰影，滑過只有照片放大。
+ * 上方是 4:5 的圓角作品（沒有作品用頭像，都沒有用名字第一個字），
  * 左上角是粉絲數（登入後才有）；下方是名字、類別、地區、評分與起價。
  */
 export function CreatorCard({ c, priority }: { c: DirectoryCreator; priority?: boolean }) {
@@ -16,12 +17,12 @@ export function CreatorCard({ c, priority }: { c: DirectoryCreator; priority?: b
   return (
     <Link
       href={`/c/${c.handle}`}
-      className="group block min-w-0 overflow-hidden rounded-card border border-line bg-surface elev-card outline-none transition-[border-color,transform] duration-200 ease-out hover:-translate-y-0.5 hover:border-line-strong focus-visible:ring-2 focus-visible:ring-focus"
+      className="group block min-w-0 rounded-card outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-4 focus-visible:ring-offset-bg"
     >
-      <div className="relative aspect-[4/5] overflow-hidden bg-panel">
+      <div className="relative aspect-[4/5] overflow-hidden rounded-card bg-panel">
         {image ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={image} alt="" loading={priority ? "eager" : "lazy"} className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04]" />
+          <img src={image} alt="" loading={priority ? "eager" : "lazy"} className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]" />
         ) : (
           <div aria-hidden="true" className="flex h-full w-full items-center justify-center font-serif text-6xl font-bold text-line-strong">
             {initialOf(c.displayName)}
@@ -33,7 +34,7 @@ export function CreatorCard({ c, priority }: { c: DirectoryCreator; priority?: b
           </span>
         )}
       </div>
-      <div className="p-3 md:p-4">
+      <div className="px-1 pt-3">
         <p className="flex items-center justify-between gap-2">
           <span className="min-w-0 truncate font-bold text-ink group-hover:underline group-hover:underline-offset-4">{c.displayName}</span>
           {c.rating !== null && (

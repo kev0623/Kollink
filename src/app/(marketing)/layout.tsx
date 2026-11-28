@@ -8,7 +8,7 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
     <div className="min-h-screen bg-bg">
       <SkipLink />
       <TopBar />
-      <main id="main" tabIndex={-1} className="outline-none">{children}</main>
+      <main id="main" tabIndex={-1} className="page-in outline-none">{children}</main>
       <SiteFooter />
     </div>
   );

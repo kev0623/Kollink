@@ -8,7 +8,7 @@ export default function CreatorsLayout({ children }: { children: React.ReactNode
     <div className="min-h-screen bg-bg">
       <SkipLink />
       <TopBar />
-      <main id="main" tabIndex={-1} className="mx-auto max-w-[1280px] px-5 pb-20 outline-none md:px-16">{children}</main>
+      <main id="main" tabIndex={-1} className="page-in mx-auto max-w-[1280px] px-5 pb-20 pt-4 outline-none md:px-16">{children}</main>
       <SiteFooter />
     </div>
   );

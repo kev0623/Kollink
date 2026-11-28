@@ -6,7 +6,7 @@ import { FEATURES_PAGE, FOR_BRANDS_PAGE, FOR_CREATORS_PAGE, PRICING_PAGE } from 
 
 const link = "inline-flex min-h-11 min-w-11 items-center text-sm text-muted hover:text-ink";
 
-/** 公開頁共用的頁尾：三欄連結。 */
+/** 公開頁共用的頁尾：三欄連結。兩種主題都是深色底、上緣大圓角（globals.css 的 .night）。 */
 export function SiteFooter() {
   const cols: { key: string; title: L; links: { href: string; label: L }[] }[] = [
     { key: "product", title: { zh: "產品", en: "Product" }, links: [
@@ -27,8 +27,8 @@ export function SiteFooter() {
     ] },
   ];
   return (
-    <footer className="border-t border-line">
-      <div className="mx-auto grid max-w-[1280px] gap-8 px-5 py-12 md:grid-cols-[minmax(0,2fr)_repeat(3,minmax(0,1fr))] md:px-16">
+    <footer className="night rounded-t-[28px] md:rounded-t-hero">
+      <div className="mx-auto grid max-w-[1280px] gap-8 px-5 py-14 md:grid-cols-[minmax(0,2fr)_repeat(3,minmax(0,1fr))] md:px-16">
         <div>
           <p className="flex items-center gap-2 text-lg font-extrabold tracking-tight text-ink">
             <span aria-hidden="true" className="h-2 w-2 rounded-full bg-thread" />{SITE_NAME}
